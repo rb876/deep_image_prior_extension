@@ -1,0 +1,34 @@
+dataset_specs:
+  im_shape: [128, 128]
+  seed: 1
+
+geometry_specs:
+  src_radius: 500
+  det_radius: 500
+  num_angles: 600
+  impl: astra_cuda
+
+noise_specs:
+  noise_type: white
+  stddev: 0.05
+
+# noise_specs:
+#   noise_type: poisson
+#   mu_water: 0.02
+#   photons_per_pixel: 8000
+
+reconstructor_specs:
+  arch:
+    scales: 5
+    channels: [128, 128, 128, 128, 128]
+    skip_channels: [0, 0, 0, 0, 0]
+  loss:
+    lr: 1e-3
+    gamma: 1e-4
+    iterations: 50000
+    loss_function: mse
+    # loss_function: poisson
+    # mu_water: 0.02
+    # photons_per_pixel: 8000
+  show_pbar: True
+  torch_manual_seed: 10
