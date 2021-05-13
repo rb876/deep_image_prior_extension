@@ -8,9 +8,9 @@ def get_standard_dataset(name, cfg):
 
     name = name.lower()
 
-    space = odl.uniform_discr([-cfg.dataset_specs.im_shape[0] / 2, -cfg.dataset_specs.im_shape[0] / 2],
-                              [cfg.dataset_specs.im_shape[0] / 2, cfg.dataset_specs.im_shape[0] / 2],
-                              [cfg.dataset_specs.im_shape[0], cfg.dataset_specs.im_shape[1]],
+    space = odl.uniform_discr([-cfg.im_shape / 2, -cfg.im_shape / 2],
+                              [cfg.im_shape / 2, cfg.im_shape / 2],
+                              [cfg.im_shape, cfg.im_shape],
                               dtype='float32')
     geometry = odl.tomo.cone_beam_geometry(space,
             src_radius=cfg.geometry_specs.src_radius,
@@ -31,12 +31,14 @@ def get_standard_dataset(name, cfg):
         raise NotImplementedError
 
     if name == 'ellipses':
-        ellipses_dataset = EllipsesDataset(image_size=cfg.dataset_specs.im_shape[0])
+        dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
+                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
+        ellipses_dataset = EllipsesDataset(**dataset_specs)
         dataset = ellipses_dataset.create_pair_dataset(ray_trafo=ray_trafo,
                 pinv_ray_trafo=smooth_pinv_ray_trafo, noise_type=cfg.noise_specs.noise_type,
                 specs_kwargs=specs_kwargs,
-                noise_seeds={'train': cfg.dataset_specs.seed, 'validation': cfg.dataset_specs.seed + 1,
-                'test': cfg.dataset_specs.seed + 2})
+                noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
+                'test': cfg.seed + 2})
     else:
         raise NotImplementedError
 

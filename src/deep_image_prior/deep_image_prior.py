@@ -1,3 +1,4 @@
+import os
 import torch
 import numpy as np
 import torch.nn as nn
@@ -24,33 +25,55 @@ class DeepImagePriorReconstructor():
            https://doi.org/10.1088/1361-6420/aba415
     """
 
-    def __init__(self, ray_trafo):
+    def __init__(self, ray_trafo, reco_space, observation_space, arch_cfg):
 
         self.ray_trafo = ray_trafo
-        self.reco_space = ray_trafo.domain
-        self.observation_space = ray_trafo.range
+        self.reco_space = reco_space
+        self.observation_space = observation_space
+        self.arch_cfg = arch_cfg
         self.ray_trafo_module = OperatorModule(self.ray_trafo)
+        self.device = torch.device(('cuda:0' if torch.cuda.is_available() else 'cpu'))
+        self.init_model()
 
-    def reconstruct(self, cfg, noisy_observation, ground_truth=None):
-        if cfg.torch_manual_seed:
-            torch.random.manual_seed(cfg.torch_manual_seed)
+    def init_model(self):
 
-        output_depth = 1
         input_depth = 1
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        output_depth = 1
 
-        self.net_input = 0.1 * \
-            torch.randn(input_depth, *self.reco_space.shape)[None].to(device)
         self.model = UNet(
             input_depth,
             output_depth,
-            channels=cfg.arch.channels[:cfg.arch.scales],
-            skip_channels=cfg.arch.skip_channels[:cfg.arch.scales],
-            use_sigmoid=True,
-            use_norm=True).to(device)
+            channels=self.arch_cfg.channels[:self.arch_cfg.scales],
+            skip_channels=self.arch_cfg.skip_channels[:self.arch_cfg.scales],
+            use_sigmoid=self.arch_cfg.use_sigmoid,
+            use_norm=self.arch_cfg.use_norm,
+            ).to(self.device)
+
+    def reconstruct(self, cfg, noisy_observation, fbp, ground_truth=None):
+
+        if cfg.torch_manual_seed:
+            torch.random.manual_seed(cfg.torch_manual_seed)
+
+        self.init_model()
+
+        if cfg.load_pretain_model:
+            path = cfg.learned_params_path if cfg.learned_params_path.endswith('.pt') else cfg.learned_params_path + '.pt'
+            path = os.path.join(os.getcwd(), path)
+            self.model.load_state_dict(torch.load(path, map_location=self.device))
+        else:
+            self.model.to(self.device)
+
+        self.model.train()
+
+        if cfg.recon_from_randn:
+            input_depth = 1
+            self.net_input = 0.1 * \
+                torch.randn(input_depth, *self.reco_space.shape)[None].to(self.device)
+        else:
+            self.net_input = fbp.to(self.device)
 
         self.optimizer = Adam(self.model.parameters(), lr=cfg.loss.lr)
-        y_delta = noisy_observation.to(device)
+        y_delta = noisy_observation.to(self.device)
 
         if cfg.loss.loss_function == 'mse':
             criterion = MSELoss()

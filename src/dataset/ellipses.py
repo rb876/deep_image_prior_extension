@@ -86,9 +86,6 @@ class ObservationGroundTruthPairDataset(Dataset):
             noisy_obs = self.ground_truth_to_obs(ground_truth, random_state)
             fbp_reco = self.pinv_ray_trafo(noisy_obs)
             yield (noisy_obs, fbp_reco, ground_truth)
-        else:
-            raise NotImplementedError
-
 
 class GroundTruthDataset(Dataset):
     """
