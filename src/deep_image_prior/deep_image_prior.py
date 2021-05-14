@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 import torch.nn as nn
+import tensorboardX
 from torch.optim import Adam
 from torch.nn import MSELoss
 from odl.contrib.torch import OperatorModule
@@ -48,8 +49,9 @@ class DeepImagePriorReconstructor():
             use_sigmoid=self.arch_cfg.use_sigmoid,
             use_norm=self.arch_cfg.use_norm,
             ).to(self.device)
+        self.writer = tensorboardX.SummaryWriter(comment='DIP+TV')
 
-    def reconstruct(self, cfg, noisy_observation, fbp, ground_truth=None):
+    def reconstruct(self, cfg, noisy_observation, fbp=None, ground_truth=None):
 
         if cfg.torch_manual_seed:
             torch.random.manual_seed(cfg.torch_manual_seed)
@@ -87,6 +89,9 @@ class DeepImagePriorReconstructor():
 
         best_loss = np.inf
         best_output = self.model(self.net_input).detach()
+        # saving ground_truth and filter-backprojection
+        self.writer.add_image('ground_truth', ground_truth[0, ...].cpu().clone().numpy(), 0)
+        self.writer.add_image('initial_guess', fbp[0, ...].cpu().clone().numpy(), 0)
         with tqdm(range(cfg.loss.iterations), desc='DIP', disable= not cfg.show_pbar) as pbar:
             for i in pbar:
                 self.optimizer.zero_grad()
@@ -103,9 +108,16 @@ class DeepImagePriorReconstructor():
                     best_loss = loss.item()
                     best_output = output.detach()
 
+                self.writer.add_scalar('loss', loss.item(),  i)
+
                 if ground_truth is not None:
-                    pbar.set_postfix(
-                        {"psnr": PSNR(best_output.detach().cpu(), ground_truth)}
-                    )
+                    psnr = PSNR(best_output.detach().cpu(), ground_truth)
+                    pbar.set_postfix({"psnr": psnr})
+                    self.writer.add_scalar('psnr', psnr,i)
+
+                if i % 100:
+                    self.writer.add_image('reco', best_output[0, ...].cpu().numpy(), i)
+
+        self.writer.close()
 
         return best_output[0, 0, ...].cpu().numpy()

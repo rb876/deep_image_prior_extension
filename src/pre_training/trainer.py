@@ -5,6 +5,7 @@ import h5py
 import torch
 import numpy as np
 import torch.nn.functional as F
+import tensorboardX
 from copy import deepcopy
 from math import ceil
 from tqdm import tqdm, trange
@@ -23,6 +24,7 @@ class Trainer():
         self.model = model
         self.configs = configs
         self.device = torch.device(('cuda:0' if torch.cuda.is_available() else 'cpu'))
+        self.writer = tensorboardX.SummaryWriter(comment='trainer.train')
 
     def train(self, dataset):
         if self.configs.torch_manual_seed:
@@ -62,6 +64,7 @@ class Trainer():
         self.model.to(self.device)
         self.model.train()
 
+        num_iter = 0
         for epoch in range(self.configs.epochs):
             # Each epoch has a training and validation phase
             for phase in ['train', 'validation']:
@@ -113,6 +116,11 @@ class Trainer():
                                           'loss': running_loss/running_size,
                                           'psnr': running_psnr/running_size})
 
+                        if phase == 'train':
+                            num_iter += 1
+                            self.writer.add_scalar('loss', running_loss/running_size, num_iter)
+                            self.writer.add_scalar('psnr', running_psnr/running_size, num_iter)
+
                     if (self._scheduler is not None
                             and not schedule_every_batch):
                         self._scheduler.step()
@@ -130,6 +138,7 @@ class Trainer():
 
         print('Best val psnr: {:4f}'.format(best_psnr))
         self.model.load_state_dict(best_model_wts)
+        self.writer.close()
 
     def init_optimizer(self):
         """
