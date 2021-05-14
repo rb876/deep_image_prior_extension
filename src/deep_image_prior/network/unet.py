@@ -45,18 +45,18 @@ class UNet(nn.Module):
 
 
 class DownBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel_size=3, use_norm=True):
+    def __init__(self, in_ch, out_ch, kernel_size=3, num_groups=4, use_norm=True):
         super(DownBlock, self).__init__()
         to_pad = int((kernel_size - 1) / 2)
         if use_norm:
             self.conv = nn.Sequential(
                 nn.Conv2d(in_ch, out_ch, kernel_size,
                           stride=2, padding=to_pad),
-                nn.BatchNorm2d(out_ch),
+                nn.GroupNorm(num_channels=out_ch, num_groups=num_groups),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(out_ch, out_ch, kernel_size,
                           stride=1, padding=to_pad),
-                nn.BatchNorm2d(out_ch),
+                nn.GroupNorm(num_channels=out_ch, num_groups=num_groups),
                 nn.LeakyReLU(0.2, inplace=True))
         else:
             self.conv = nn.Sequential(
@@ -73,14 +73,14 @@ class DownBlock(nn.Module):
 
 
 class InBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel_size=3, use_norm=True):
+    def __init__(self, in_ch, out_ch, kernel_size=3, num_groups=2, use_norm=True):
         super(InBlock, self).__init__()
         to_pad = int((kernel_size - 1) / 2)
         if use_norm:
             self.conv = nn.Sequential(
                 nn.Conv2d(in_ch, out_ch, kernel_size,
                           stride=1, padding=to_pad),
-                nn.BatchNorm2d(out_ch),
+                nn.GroupNorm(num_channels=out_ch, num_groups=num_groups),
                 nn.LeakyReLU(0.2, inplace=True))
         else:
             self.conv = nn.Sequential(
@@ -94,7 +94,7 @@ class InBlock(nn.Module):
 
 
 class UpBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, skip_ch=4, kernel_size=3, use_norm=True):
+    def __init__(self, in_ch, out_ch, skip_ch=4, kernel_size=3, num_groups=2, use_norm=True):
         super(UpBlock, self).__init__()
         to_pad = int((kernel_size - 1) / 2)
         self.skip = skip_ch > 0
@@ -102,14 +102,14 @@ class UpBlock(nn.Module):
             skip_ch = 1
         if use_norm:
             self.conv = nn.Sequential(
-                nn.BatchNorm2d(in_ch + skip_ch),
+                nn.GroupNorm(num_channels=in_ch + skip_ch, num_groups=1), #LayerNorm
                 nn.Conv2d(in_ch + skip_ch, out_ch, kernel_size, stride=1,
                           padding=to_pad),
-                nn.BatchNorm2d(out_ch),
+                nn.GroupNorm(num_channels=out_ch, num_groups=num_groups),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(out_ch, out_ch, kernel_size,
                           stride=1, padding=to_pad),
-                nn.BatchNorm2d(out_ch),
+                nn.GroupNorm(num_channels=out_ch, num_groups=num_groups),
                 nn.LeakyReLU(0.2, inplace=True))
         else:
             self.conv = nn.Sequential(
@@ -123,7 +123,7 @@ class UpBlock(nn.Module):
         if use_norm:
             self.skip_conv = nn.Sequential(
                 nn.Conv2d(out_ch, skip_ch, kernel_size=1, stride=1),
-                nn.BatchNorm2d(skip_ch),
+                nn.GroupNorm(num_channels=skip_ch, num_groups=1), #LayerNorm
                 nn.LeakyReLU(0.2, inplace=True))
         else:
             self.skip_conv = nn.Sequential(

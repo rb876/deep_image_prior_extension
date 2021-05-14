@@ -20,15 +20,15 @@ dataset_specs:
 
 recon_specs:
   arch:
-    scales: 5
-    channels: [128, 128, 128, 128, 128]
-    skip_channels: [0, 0, 0, 0, 0]
-    use_norm: False
+    scales: 6
+    channels: [128, 128, 128, 128, 128, 128]
+    skip_channels: [0, 0, 0, 0, 4, 4]
+    use_norm: True
     use_sigmoid: True
   loss:
     lr: 1e-3
     gamma: 1e-4
-    iterations: 5000
+    iterations: 50000
     loss_function: mse
     # loss_function: poisson
     # mu_water: 0.02
@@ -40,7 +40,7 @@ recon_specs:
   recon_from_randn: False
 
 trainer_specs:
-  epochs: 5
+  epochs: 20
   batch_size: 32
   lr: 0.001
   lr_min: 0.0001
