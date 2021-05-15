@@ -14,6 +14,7 @@ dataset_specs:
   noise_specs:
     noise_type: white
     stddev: 0.05
+  fbp_scaling_factor: 0.003206774358456126
   fbp_filter_type: 'Hann'
   fbp_frequency_scaling: 0.6
 

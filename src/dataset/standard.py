@@ -23,7 +23,7 @@ def get_standard_dataset(name, cfg):
                       cfg.geometry_specs.num_det_pixels)
         smooth_pinv_ray_trafo = FBP(
                 matrix_ray_trafo.apply_adjoint, proj_shape,
-                scaling_factor=1.11382176502 / 347.334,
+                scaling_factor=cfg.fbp_scaling_factor,
                 filter_type=cfg.fbp_filter_type,
                 frequency_scaling=cfg.fbp_frequency_scaling).apply
     else:
