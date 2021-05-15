@@ -16,8 +16,8 @@ class ObservationGroundTruthPairDataset(Dataset):
     """
     def __init__(self, ground_truth_gen, ray_trafo, pinv_ray_trafo,
                  train_len=None, validation_len=None, test_len=None,
-                 domain=None, noise_type=None, specs_kwargs=None,
-                 noise_seeds=None):
+                 domain=None, proj_space=None, noise_type=None,
+                 specs_kwargs=None, noise_seeds=None):
 
         self.ground_truth_gen = ground_truth_gen
         self.ray_trafo = ray_trafo
@@ -33,8 +33,9 @@ class ObservationGroundTruthPairDataset(Dataset):
         self.specs_kwargs = specs_kwargs
         self.noise_type = noise_type
         self.noise_seeds = noise_seeds or {}
-        range_ = (self.ray_trafo.range)
-        super().__init__(space=(range_, domain))
+        if proj_space is None:
+            proj_space = self.ray_trafo.range
+        super().__init__(space=(proj_space, domain))
         self.shape = (self.space[0].shape, self.space[1].shape)
         self.num_elements_per_sample = 3
 
@@ -43,10 +44,10 @@ class ObservationGroundTruthPairDataset(Dataset):
         def white_forward_func(ground_truth, stddev):
 
             # apply forward operator
-            obs = self.ray_trafo(ground_truth).asarray()
+            obs = np.asarray(self.ray_trafo(ground_truth))
             # noise model
             relative_stddev = np.mean(np.abs(obs))
-            noisy_obs = obs + odl.phantom.white_noise(self.ray_trafo.range) \
+            noisy_obs = obs + odl.phantom.white_noise(self.space[0]) \
                 * relative_stddev * stddev
             return noisy_obs
 
@@ -55,7 +56,7 @@ class ObservationGroundTruthPairDataset(Dataset):
             mu_water):
 
             # apply forward operator
-            obs = self.ray_trafo(ground_truth).asarray()
+            obs = np.asarray(self.ray_trafo(ground_truth))
             # noise model
             obs *= mu_water
             obs *= -1
@@ -96,7 +97,7 @@ class GroundTruthDataset(Dataset):
         self.num_elements_per_sample = 1
         super().__init__(space=space)
 
-    def create_pair_dataset(self, ray_trafo, pinv_ray_trafo, noise_type=None, specs_kwargs=None, noise_seeds=None):
+    def create_pair_dataset(self, ray_trafo, pinv_ray_trafo, domain=None, proj_space=None, noise_type=None, specs_kwargs=None, noise_seeds=None):
 
         try:
             train_len = self.get_train_len()
@@ -111,10 +112,11 @@ class GroundTruthDataset(Dataset):
         except NotImplementedError:
             test_len = None
         dataset = ObservationGroundTruthPairDataset(
-            self.generator, ray_trafo, pinv_ray_trafo,
-            train_len=train_len, validation_len=validation_len,
-            test_len=test_len, noise_type=noise_type,
-            specs_kwargs=specs_kwargs, noise_seeds=noise_seeds)
+                self.generator, ray_trafo, pinv_ray_trafo,
+                train_len=train_len, validation_len=validation_len,
+                test_len=test_len, domain=domain, proj_space=proj_space,
+                noise_type=noise_type, specs_kwargs=specs_kwargs,
+                noise_seeds=noise_seeds)
         return dataset
 
 class EllipsesDataset(GroundTruthDataset):

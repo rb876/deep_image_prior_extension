@@ -20,8 +20,8 @@ def coordinator(cfg : DictConfig) -> None:
                             shuffle=True, pin_memory=True)
 
     ray_trafo = {'ray_trafo': ray_trafo,
-                 'reco_space': ray_trafo.domain,
-                 'observation_space': ray_trafo.range
+                 'reco_space': dataset.space[1],
+                 'observation_space': dataset.space[0]
                  }
 
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, arch_cfg=cfg.recon_specs.arch)

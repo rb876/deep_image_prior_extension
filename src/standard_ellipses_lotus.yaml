@@ -1,0 +1,56 @@
+dataset_specs:
+  im_shape: 128
+  train_len: 32000
+  validation_len: 3200
+  test_len: 3200
+  seed: 1
+  geometry_specs:
+    src_radius: 540
+    det_radius: 90
+    num_angles: 120
+    num_det_pixels: 429
+    impl: 'matrix'
+    ray_trafo_filename: '/localdata/data/FIPS_Lotus/LotusData128.mat'
+  noise_specs:
+    noise_type: white
+    stddev: 0.05
+  fbp_filter_type: 'Hann'
+  fbp_frequency_scaling: 0.6
+
+# noise_specs:
+#   noise_type: poisson
+#   mu_water: 0.02
+#   photons_per_pixel: 8000
+
+recon_specs:
+  arch:
+    scales: 6
+    channels: [128, 128, 128, 128, 128, 128]
+    skip_channels: [0, 0, 0, 0, 4, 4]
+    use_norm: True
+    use_sigmoid: True
+  loss:
+    lr: 1e-3
+    gamma: 1e-4
+    iterations: 50000
+    loss_function: mse
+    # loss_function: poisson
+    # mu_water: 0.02
+    # photons_per_pixel: 8000
+  show_pbar: True
+  torch_manual_seed: 10
+  load_pretain_model: True
+  learned_params_path: 'params/model'
+  recon_from_randn: False
+
+trainer_specs:
+  epochs: 20
+  batch_size: 32
+  lr: 0.001
+  lr_min: 0.0001
+  weight_decay: 1e-5
+  scheduler: cosine
+  torch_manual_seed: 1
+  num_data_loader_workers: 0
+  show_pbar: True
+  save_best_learned_params_path: './params/model'
