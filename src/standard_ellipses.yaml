@@ -12,6 +12,8 @@ dataset_specs:
   noise_specs:
     noise_type: white
     stddev: 0.05
+  fbp_filter_type: 'Hann'
+  fbp_frequency_scaling: 0.6
 
 # noise_specs:
 #   noise_type: poisson
