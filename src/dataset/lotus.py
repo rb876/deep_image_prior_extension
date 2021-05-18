@@ -11,23 +11,49 @@ from scipy.io import loadmat
 
 SRC_RADIUS = 540
 DET_RADIUS = 90
+
 NUM_ANGLES = 120
 NUM_DET_PIXELS = 429
 NUM_DET_PIXELS128 = NUM_DET_PIXELS
 
+NUM_ANGLES_FULL = 360
+NUM_DET_PIXELS_FULL = 2221
+NUM_ANGLES_FULL_UNCROPPED = 366
+NUM_DET_PIXELS_FULL_UNCROPPED = 2240
 
 def get_ray_trafo_matrix(filename, normalize=False):
     """
-    Interface to the `filled lotus root data <https://zenodo.org/record/1254204>`_.
+    Return the matrix `A` implementing the ray transform.
+
+    Parameters
+    ----------
+    filename : str
+        Filename (including path) of the Matlab file containing `A`, i.e. one
+        of the files ``LotusData128.mat`` and ``LotusData256.mat`` (which in
+        https://arxiv.org/abs/1609.07299 are called ``Data128.mat`` and
+        ``Data256.mat``, respectively).
+    normalize : bool, optional
+        Whether to divide by the scalar `normA` included in the Matlab file.
+        The default is `False`.
+
+    Returns
+    -------
+    A : array
+        Numpy array of shape ``(120 * 429, size * size)``,
+        where ``size=128`` or ``size=256`` depending on `filename`.
+        It is converted to ``dtype='float32'``.
     """
     matrix = loadmat(filename, variable_names=['A'])['A'].astype('float32')
     if normalize:
-        matrix /= np.squeeze(
-                loadmat(filename, variable_names=['normA'])['normA'])
+        matrix /= get_norm_ray_trafo(filename)
     return matrix
 
 
 def get_domain128():
+    """
+    Return an :class:`odl.DiscretizedSpace` describing the image domain
+    corresponding to the ray transform `A` from ``LotusData128.mat``.
+    """
     cell_side = 0.627  # pixel size in mm
     size = 128
     domain = odl.uniform_discr(
@@ -39,6 +65,13 @@ def get_domain128():
 
 
 def get_proj_space128():
+    """
+    Return an :class:`odl.DiscretizedSpace` describing the projection space
+    corresponding to the ray transform `A` from ``LotusData128.mat``.
+
+    Note that the exact geometry of `A` is not known (to me), but the returned
+    space seems to match approximately.
+    """
     angle_step = 2.*np.pi / NUM_ANGLES
     det_extent = 132.41564427  # detector size in mm computed by:
     # det_extent = odl.tomo.cone_beam_geometry(get_domain128(),
@@ -59,11 +92,86 @@ def get_proj_space128():
     return domain
 
 
-def get_sinogram_full(filename):
-    sinogram = loadmat(filename, variable_names=['sinogram'])['sinogram']
+def get_sinogram_full(filename, crop=True):
+    """
+    Return the full measured sinogram (of the 2D slice).
+
+    Parameters
+    ----------
+    filename : str
+        Filepath of the Matlab file ``sinogram.mat``, containing `sinogram`.
+        In https://arxiv.org/abs/1609.07299 the file is called
+        ``FullSizeSinograms.mat`` and the variable is named `sinogram360`,
+        having size ``2221 x 360``, which according to ``Lotus_FBP.m``
+        corresponds to the first rows and columns of `sinogram` in
+        ``sinogram.mat`` (which has size ``2240 x 366``).
+    crop : bool, optional
+        Whether to return a cropped array of shape ``(360, 2221)`` (instead of
+        shape ``(366, 2240)``), analogously to ``Lotus_FBP.m``.
+        The default is `True`.
+
+    Returns
+    -------
+    sinogram : array
+        Numpy array of shape ``(360, 2221)``, or ``(366, 2240)`` if
+        ``crop=False``.
+    """
+    sinogram = loadmat(filename, variable_names=['sinogram'])['sinogram'].T
+    if crop:
+        sinogram = sinogram[:NUM_ANGLES_FULL, :NUM_DET_PIXELS_FULL]
     return sinogram
 
 
-def get_sinogram(filename):
+def get_sinogram(filename, normalize=False):
+    """
+    Return the down-sampled measured sinogram `m`.
+
+    Parameters
+    ----------
+    filename : str
+        Filename (including path) of the Matlab file containing `m`, i.e. one
+        of the files ``LotusData128.mat`` and ``LotusData256.mat`` (which in
+        https://arxiv.org/abs/1609.07299 are called ``Data128.mat`` and
+        ``Data256.mat``, respectively).
+    normalize : bool, optional
+        Whether to divide by the scalar `normA` included in the Matlab file.
+        The default is `False`.
+
+    Returns
+    -------
+    m : array
+        Numpy array of shape ``(120, 429)``.
+    """
     sinogram = loadmat(filename, variable_names=['m'])['m'].T
+    if normalize:
+        sinogram /= get_norm_ray_trafo(filename)
     return sinogram
+
+
+def get_norm_ray_trafo(filename, upper_bound=False):
+    """
+    Return (an upper bound to) the norm of the ray transform.
+
+    Parameters
+    ----------
+    filename : str
+        Filename (including path) of the Matlab file containing `normA` and
+        `normA_est`, i.e. one of the files ``LotusData128.mat`` and
+        ``LotusData256.mat`` (which in https://arxiv.org/abs/1609.07299 are
+        called ``Data128.mat`` and ``Data256.mat``, respectively).
+    upper_bound : bool, optional
+        Whether to return the upper bound `normA_est` instead of `normA`.
+        Note that the numbers are numerically almost indistinguishable (with
+        absolute differences smaller than 2e-12; in fact for
+        ``LotusData128.mat`` the "upper bound" `normA_est` is even slightly
+        smaller than `normA`).
+        The default is `False`.
+
+    Returns
+    -------
+    norm : float
+        Norm of the ray transform, or upper bound to it.
+    """
+    var_name = 'normA_est' if upper_bound else 'normA'
+    norm = np.squeeze(loadmat(filename, variable_names=[var_name])[var_name])
+    return norm
