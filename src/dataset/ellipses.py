@@ -39,19 +39,19 @@ class ObservationGroundTruthPairDataset(Dataset):
         self.shape = (self.space[0].shape, self.space[1].shape)
         self.num_elements_per_sample = 3
 
-    def ground_truth_to_obs(self, ground_truth, random_state=None):
+    def ground_truth_to_obs(self, ground_truth, random_gen=None):
 
-        def white_forward_func(ground_truth, stddev):
+        def white_forward_func(ground_truth, random_gen, stddev):
 
             # apply forward operator
             obs = np.asarray(self.ray_trafo(ground_truth))
             # noise model
             relative_stddev = np.mean(np.abs(obs))
-            noisy_obs = obs + odl.phantom.white_noise(self.space[0]) \
+            noisy_obs = obs + random_gen.normal(size=self.space[0].shape) \
                 * relative_stddev * stddev
             return noisy_obs
 
-        def poisson_forward_func(ground_truth, random_state,
+        def poisson_forward_func(ground_truth, random_gen,
             photons_per_pixel,
             mu_water):
 
@@ -62,16 +62,19 @@ class ObservationGroundTruthPairDataset(Dataset):
             obs *= -1
             np.exp(obs, out=obs)
             obs *= photons_per_pixel
-            noisy_obs = random_state.poisson(obs)
+            noisy_obs = random_gen.poisson(obs)
             noisy_obs = np.maximum(1, noisy_obs) / photons_per_pixel
             post_log_noisy_obs = np.log(noisy_obs) * (-1. / mu_water)
             return post_log_noisy_obs
 
+        if random_gen is None:
+            random_gen = np.random.default_rng()
+
         if self.noise_type == 'white':
-            forward_func = partial(white_forward_func,
+            forward_func = partial(white_forward_func, random_gen=random_gen,
                                   stddev=self.specs_kwargs['stddev'])
         elif self.noise_type == 'poisson':
-            forward_func = partial(poisson_forward_func, random_state=random_state,
+            forward_func = partial(poisson_forward_func, random_gen=random_gen,
                                   photons_per_pixel=self.specs_kwargs['photons_per_pixel'],
                                   mu_water=self.specs_kwargs['mu_water'])
         else:
@@ -81,10 +84,10 @@ class ObservationGroundTruthPairDataset(Dataset):
 
     def generator(self, fold='train'):
         # construct noise
-        random_state = np.random.RandomState(self.noise_seeds.get(fold))
+        random_gen = np.random.default_rng(self.noise_seeds.get(fold))
         gt_gen_instance = self.ground_truth_gen(fold=fold)
         for ground_truth in gt_gen_instance:
-            noisy_obs = self.ground_truth_to_obs(ground_truth, random_state)
+            noisy_obs = self.ground_truth_to_obs(ground_truth, random_gen)
             fbp_reco = self.pinv_ray_trafo(noisy_obs)
             yield (noisy_obs, fbp_reco, ground_truth)
 
