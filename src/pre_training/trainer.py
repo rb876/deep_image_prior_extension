@@ -20,15 +20,15 @@ class Trainer():
     """
     Wrapper for pre-trainig a model.
     """
-    def __init__(self, model, configs):
+    def __init__(self, model, cfg):
         self.model = model
-        self.configs = configs
+        self.cfg = cfg
         self.device = torch.device(('cuda:0' if torch.cuda.is_available() else 'cpu'))
         self.writer = tensorboardX.SummaryWriter(comment='trainer.train')
 
     def train(self, dataset):
-        if self.configs.torch_manual_seed:
-            torch.random.manual_seed(self.configs.torch_manual_seed)
+        if self.cfg.torch_manual_seed:
+            torch.random.manual_seed(self.cfg.torch_manual_seed)
         # create PyTorch datasets
         dataset_train = dataset.create_torch_dataset(
             fold='train', reshape=((1,) + dataset.space[0].shape,
@@ -44,11 +44,11 @@ class Trainer():
         self.init_optimizer()
 
         # create PyTorch dataloaders
-        data_loaders = {'train': DataLoader(dataset_train, batch_size=self.configs.batch_size,
-            num_workers=self.configs.num_data_loader_workers, shuffle=True,
+        data_loaders = {'train': DataLoader(dataset_train, batch_size=self.cfg.batch_size,
+            num_workers=self.cfg.num_data_loader_workers, shuffle=True,
             pin_memory=True),
-                        'validation': DataLoader(dataset_validation, batch_size=self.configs.batch_size,
-            num_workers=self.configs.num_data_loader_workers,
+                        'validation': DataLoader(dataset_validation, batch_size=self.cfg.batch_size,
+            num_workers=self.cfg.num_data_loader_workers,
             shuffle=True, pin_memory=True)}
 
         dataset_sizes = {'train': len(dataset_train), 'validation': len(dataset_validation)}
@@ -65,7 +65,7 @@ class Trainer():
         self.model.train()
 
         num_iter = 0
-        for epoch in range(self.configs.epochs):
+        for epoch in range(self.cfg.epochs):
             # Each epoch has a training and validation phase
             for phase in ['train', 'validation']:
                 if phase == 'train':
@@ -78,11 +78,14 @@ class Trainer():
                 running_size = 0
                 with tqdm(data_loaders[phase],
                           desc='epoch {:d}'.format(epoch + 1),
-                          disable=not self.configs.show_pbar) as pbar:
+                          disable=not self.cfg.show_pbar) as pbar:
                     for _, fbp, gt in pbar:
 
                         fbp = fbp.to(self.device)
                         gt = gt.to(self.device)
+
+                        if self.cfg.add_randn_mask:
+                            fbp = torch.cat([fbp, 0.1*torch.randn(*fbp.shape).to(self.device)], dim=1)
 
                         # zero the parameter gradients
                         self._optimizer.zero_grad()
@@ -132,9 +135,9 @@ class Trainer():
                     if phase == 'validation' and epoch_psnr > best_psnr:
                         best_psnr = epoch_psnr
                         best_model_wts = deepcopy(self.model.state_dict())
-                        if self.configs.save_best_learned_params_path is not None:
+                        if self.cfg.save_best_learned_params_path is not None:
                             self.save_learned_params(
-                                self.configs.save_best_learned_params_path)
+                                self.cfg.save_best_learned_params_path)
 
         print('Best val psnr: {:4f}'.format(best_psnr))
         self.model.load_state_dict(best_model_wts)
@@ -144,7 +147,7 @@ class Trainer():
         """
         Initialize the optimizer.
         """
-        self._optimizer = torch.optim.Adam(self.model.parameters(), lr=self.configs.lr, weight_decay=self.configs.weight_decay)
+        self._optimizer = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr, weight_decay=self.cfg.weight_decay)
 
     @property
     def optimizer(self):
@@ -160,11 +163,11 @@ class Trainer():
         self._optimizer = value
 
     def init_scheduler(self):
-        if self.configs.scheduler.lower() == 'cosine':
+        if self.cfg.scheduler.lower() == 'cosine':
             self._scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.optimizer,
-                T_max=self.configs.epochs,
-                eta_min=self.configs.lr_min)
+                T_max=self.cfg.epochs,
+                eta_min=self.cfg.lr_min)
         else:
             raise NotImplementedError
 

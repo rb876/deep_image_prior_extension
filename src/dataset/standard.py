@@ -1,8 +1,12 @@
 import odl
+import torch
+import numpy as np
 from .ellipses import EllipsesDataset
-from .lotus import get_ray_trafo_matrix, get_domain128, get_proj_space128
+from .lotus import get_ray_trafo_matrix, get_domain128, get_proj_space128, get_sinogram
 from util.matrix_ray_trafo import MatrixRayTrafo
+from util.matrix_ray_trafo_torch import get_matrix_ray_trafo_module
 from util.fbp import FBP
+
 
 def get_standard_dataset(name, cfg):
     """
@@ -78,3 +82,31 @@ def get_standard_dataset(name, cfg):
         raise NotImplementedError
 
     return dataset, ray_trafo
+
+def get_lotus_data(cfg):
+
+    matrix = get_ray_trafo_matrix(
+            cfg.geometry_specs.ray_trafo_filename)
+    matrix_ray_trafo = MatrixRayTrafo(matrix,
+            im_shape=(cfg.im_shape, cfg.im_shape),
+            proj_shape=(cfg.geometry_specs.num_angles,
+                        cfg.geometry_specs.num_det_pixels))
+    proj_shape = (cfg.geometry_specs.num_angles,
+                  cfg.geometry_specs.num_det_pixels)
+    smooth_pinv_ray_trafo = FBP(
+            matrix_ray_trafo.apply_adjoint, proj_shape,
+            scaling_factor=cfg.fbp_scaling_factor,
+            filter_type=cfg.fbp_filter_type,
+            frequency_scaling=cfg.fbp_frequency_scaling).apply
+
+    matrix_ray_trafo_mod = get_matrix_ray_trafo_module(matrix,
+            (cfg.im_shape, cfg.im_shape), (cfg.geometry_specs.num_angles,
+            cfg.geometry_specs.num_det_pixels), sparse=True)
+
+    sinogram = np.asarray(get_sinogram(
+                    cfg.geometry_specs.ray_trafo_filename))
+    fbp = np.asarray(smooth_pinv_ray_trafo(
+                        sinogram))[None, None, None]
+    dataset = torch.utils.data.TensorDataset(
+                torch.from_numpy(sinogram[None, None, None]), torch.from_numpy(fbp))
+    return dataset, matrix_ray_trafo_mod

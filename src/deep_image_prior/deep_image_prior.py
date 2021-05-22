@@ -1,4 +1,5 @@
 import os
+import odl
 import torch
 import numpy as np
 import torch.nn as nn
@@ -26,40 +27,44 @@ class DeepImagePriorReconstructor():
            https://doi.org/10.1088/1361-6420/aba415
     """
 
-    def __init__(self, ray_trafo, reco_space, observation_space, arch_cfg):
+    def __init__(self, ray_trafo, reco_space, observation_space, cfg):
 
         self.ray_trafo = ray_trafo
         self.reco_space = reco_space
         self.observation_space = observation_space
-        self.arch_cfg = arch_cfg
-        self.ray_trafo_module = OperatorModule(self.ray_trafo)
+        self.cfg = cfg
         self.device = torch.device(('cuda:0' if torch.cuda.is_available() else 'cpu'))
+        self.ray_trafo_module = \
+                OperatorModule(self.ray_trafo) if isinstance(self.ray_trafo, odl.tomo.RayTransform) \
+                    else self.ray_trafo.to(self.device)
         self.init_model()
 
     def init_model(self):
 
-        input_depth = 1
+        input_depth = 1 if not self.cfg.add_init_reco else 2
         output_depth = 1
 
         self.model = UNet(
             input_depth,
             output_depth,
-            channels=self.arch_cfg.channels[:self.arch_cfg.scales],
-            skip_channels=self.arch_cfg.skip_channels[:self.arch_cfg.scales],
-            use_sigmoid=self.arch_cfg.use_sigmoid,
-            use_norm=self.arch_cfg.use_norm,
+            channels=self.cfg.arch.channels[:self.cfg.arch.scales],
+            skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
+            use_sigmoid=self.cfg.arch.use_sigmoid,
+            use_norm=self.cfg.arch.use_norm,
             ).to(self.device)
         self.writer = tensorboardX.SummaryWriter(comment='DIP+TV')
 
-    def reconstruct(self, cfg, noisy_observation, fbp=None, ground_truth=None):
+    def reconstruct(self, noisy_observation, fbp=None, ground_truth=None):
 
-        if cfg.torch_manual_seed:
-            torch.random.manual_seed(cfg.torch_manual_seed)
+        if self.cfg.torch_manual_seed:
+            torch.random.manual_seed(self.cfg.torch_manual_seed)
 
         self.init_model()
 
-        if cfg.load_pretain_model:
-            path = cfg.learned_params_path if cfg.learned_params_path.endswith('.pt') else cfg.learned_params_path + '.pt'
+        if self.cfg.load_pretain_model:
+            path = \
+                self.cfg.learned_params_path if self.cfg.learned_params_path.endswith('.pt') \
+                    else self.cfg.learned_params_path + '.pt'
             path = os.path.join(os.getcwd(), path)
             self.model.load_state_dict(torch.load(path, map_location=self.device))
         else:
@@ -67,36 +72,36 @@ class DeepImagePriorReconstructor():
 
         self.model.train()
 
-        if cfg.recon_from_randn:
-            input_depth = 1
+        if self.cfg.recon_from_randn:
             self.net_input = 0.1 * \
-                torch.randn(input_depth, *self.reco_space.shape)[None].to(self.device)
+                torch.randn(1, *self.reco_space.shape)[None].to(self.device)
+            if self.cfg.add_init_reco:
+                self.net_input = \
+                    torch.cat([self.net_input, fbp.to(self.device)], dim=1)
         else:
             self.net_input = fbp.to(self.device)
 
-        self.optimizer = Adam(self.model.parameters(), lr=cfg.loss.lr)
+        self.optimizer = Adam(self.model.parameters(), lr=self.cfg.loss.lr)
         y_delta = noisy_observation.to(self.device)
 
-        if cfg.loss.loss_function == 'mse':
+        if self.cfg.loss.loss_function == 'mse':
             criterion = MSELoss()
-        elif cfg.loss.loss_function == 'poisson':
+        elif self.cfg.loss.loss_function == 'poisson':
             criterion = partial(poisson_loss,
-                                photons_per_pixel=cfg.loss.photons_per_pixel,
-                                mu_water=cfg.loss.mu_water)
+                                photons_per_pixel=self.cfg.loss.photons_per_pixel,
+                                mu_water=self.cfg.loss.mu_water)
         else:
             warn('Unknown loss function, falling back to MSE')
             criterion = MSELoss()
 
         best_loss = np.inf
         best_output = self.model(self.net_input).detach()
-        # saving ground_truth and filter-backprojection
-        self.writer.add_image('ground_truth', ground_truth[0, ...].cpu().clone().numpy(), 0)
-        self.writer.add_image('initial_guess', fbp[0, ...].cpu().clone().numpy(), 0)
-        with tqdm(range(cfg.loss.iterations), desc='DIP', disable= not cfg.show_pbar) as pbar:
+
+        with tqdm(range(self.cfg.loss.iterations), desc='DIP', disable= not self.cfg.show_pbar) as pbar:
             for i in pbar:
                 self.optimizer.zero_grad()
                 output = self.model(self.net_input)
-                loss = criterion(self.ray_trafo_module(output), y_delta) + cfg.loss.gamma * tv_loss(output)
+                loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.loss.gamma * tv_loss(output)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
                 self.optimizer.step()
@@ -110,8 +115,8 @@ class DeepImagePriorReconstructor():
 
                 self.writer.add_scalar('loss', loss.item(),  i)
 
-                if ground_truth is not None:
-                    psnr = PSNR(best_output.detach().cpu(), ground_truth)
+                if ground_truth:
+                    psnr = PSNR(best_output.detach().cpu(), ground_truth[0])
                     pbar.set_postfix({"psnr": psnr})
                     self.writer.add_scalar('psnr', psnr,i)
 

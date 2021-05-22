@@ -1,0 +1,12 @@
+# @package _group_
+epochs: 20
+batch_size: 32
+lr: 0.001
+lr_min: 0.0001
+weight_decay: 1e-5
+scheduler: cosine
+torch_manual_seed: 1
+num_data_loader_workers: 0
+show_pbar: True
+save_best_learned_params_path: './params/model'
+add_randn_mask: False

@@ -1,0 +1,20 @@
+# @package _group_
+arch:
+  scales: 6
+  channels: [128, 128, 128, 128, 128, 128]
+  skip_channels: [0, 0, 0, 0, 4, 4]
+  use_norm: True
+  use_sigmoid: True
+loss:
+  lr: 1e-3
+  iterations: 50000
+  loss_function: poisson
+  mu_water: 0.02
+  photons_per_pixel: 8000
+  gamma: 10
+show_pbar: True
+torch_manual_seed: 10
+load_pretain_model: False
+learned_params_path: 'params/model'
+recon_from_randn: False
+add_init_reco: False

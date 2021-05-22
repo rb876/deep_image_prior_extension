@@ -1,0 +1,17 @@
+# @package _group_
+name: ellipses
+im_shape: 128
+train_len: 32000
+validation_len: 3200
+test_len: 3200
+seed: 1
+geometry_specs:
+  src_radius: 500
+  det_radius: 500
+  num_angles: 600
+  impl: astra_cuda
+noise_specs:
+  noise_type: white
+  stddev: 0.05
+fbp_filter_type: 'Hann'
+fbp_frequency_scaling: 0.6
