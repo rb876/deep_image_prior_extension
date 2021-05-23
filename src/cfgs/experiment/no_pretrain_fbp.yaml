@@ -1,0 +1,8 @@
+# @package _global_
+pretraining: False
+
+mld:
+  load_pretrain_model: ${pretraining}
+  learned_params_path: None
+  recon_from_randn: False
+  add_init_reco: False

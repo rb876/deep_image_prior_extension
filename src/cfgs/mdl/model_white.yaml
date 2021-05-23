@@ -12,7 +12,3 @@ loss:
   gamma: 1e-4
 show_pbar: True
 torch_manual_seed: 10
-load_pretain_model: False
-learned_params_path: 'params/model'
-recon_from_randn: False
-add_init_reco: False

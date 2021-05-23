@@ -8,5 +8,3 @@ scheduler: cosine
 torch_manual_seed: 1
 num_data_loader_workers: 0
 show_pbar: True
-save_best_learned_params_path: './params/model'
-add_randn_mask: False

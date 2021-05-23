@@ -1,0 +1,6 @@
+defaults:
+  - data: standard_ellipses_lotus
+  - mdl:  model_poisson
+  - trn:  trainer
+
+pretraining: ???

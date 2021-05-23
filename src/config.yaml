@@ -1,6 +1,0 @@
-defaults:
-  - data: standard_ellipses
-  - mdl:  model_white
-  - trn:  trainer
-
-pretraining: True

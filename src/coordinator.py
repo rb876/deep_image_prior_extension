@@ -7,7 +7,7 @@ from deep_image_prior import DeepImagePriorReconstructor
 from pre_training import Trainer
 from copy import deepcopy
 
-@hydra.main(config_name='config')
+@hydra.main(config_path='cfgs', config_name='config')
 def coordinator(cfg : DictConfig) -> None:
 
     dataset, ray_trafo = get_standard_dataset(cfg.data.name, cfg.data)
@@ -31,8 +31,8 @@ def coordinator(cfg : DictConfig) -> None:
 
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
     model = deepcopy(reconstructor.model)
-    # if cfg.pretraining:
-    #     Trainer(model=model, cfg=cfg.trn).train(dataset)
+    if cfg.pretraining:
+        Trainer(model=model, cfg=cfg.trn).train(dataset)
 
     for noisy_obs, fbp, *gt in dataloader:
         reco = reconstructor.reconstruct(noisy_obs.float(), fbp, gt)

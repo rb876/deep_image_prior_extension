@@ -61,7 +61,7 @@ class DeepImagePriorReconstructor():
 
         self.init_model()
 
-        if self.cfg.load_pretain_model:
+        if self.cfg.load_pretrain_model:
             path = \
                 self.cfg.learned_params_path if self.cfg.learned_params_path.endswith('.pt') \
                     else self.cfg.learned_params_path + '.pt'
