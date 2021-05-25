@@ -2,7 +2,7 @@ import odl
 import torch
 import numpy as np
 from .ellipses import EllipsesDataset
-from .lotus import get_ray_trafo_matrix, get_domain128, get_proj_space128, get_sinogram
+from .lotus import get_ray_trafo_matrix, get_domain128, get_proj_space128, get_sinogram, get_ground_truth
 from util.matrix_ray_trafo import MatrixRayTrafo
 from util.matrix_ray_trafo_torch import get_matrix_ray_trafo_module
 from util.fbp import FBP
@@ -107,6 +107,14 @@ def get_lotus_data(cfg):
                     cfg.geometry_specs.ray_trafo_filename))
     fbp = np.asarray(smooth_pinv_ray_trafo(
                         sinogram))[None, None, None]
-    dataset = torch.utils.data.TensorDataset(
-                torch.from_numpy(sinogram[None, None, None]), torch.from_numpy(fbp))
+
+    if cfg.ground_truth_filename is not None:
+        ground_truth = get_ground_truth(cfg.ground_truth_filename)
+        dataset = torch.utils.data.TensorDataset(
+                    torch.from_numpy(sinogram[None, None, None]), torch.from_numpy(fbp),
+                    torch.from_numpy(ground_truth[None, None, None]))
+    else:
+        dataset = torch.utils.data.TensorDataset(
+                    torch.from_numpy(sinogram[None, None, None]), torch.from_numpy(fbp))
+
     return dataset, matrix_ray_trafo_mod

@@ -48,6 +48,23 @@ def get_ray_trafo_matrix(filename, normalize=False):
         matrix /= get_norm_ray_trafo(filename)
     return matrix
 
+def get_ground_truth(filename):
+    """
+    Return the virtual ground truth `recon`. 
+
+    Parameters
+    ----------
+    filename : str
+        Filename (including path) of the Matlab file containing virtual ground truth
+        https://arxiv.org/abs/1609.07299).
+
+    Returns
+    -------
+    recon : array
+
+    """
+    ground_truth = loadmat(filename, variable_names=['recon'])['recon'].astype('float32')
+    return ground_truth
 
 def get_domain128():
     """
