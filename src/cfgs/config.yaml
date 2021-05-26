@@ -1,6 +1,7 @@
 defaults:
   - data: standard_ellipses_lotus
-  - mdl:  model_poisson
+  - mdl:  model_white
   - trn:  trainer
 
 pretraining: ???
+save_reconstruction_path: './results/'

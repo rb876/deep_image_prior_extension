@@ -50,7 +50,7 @@ def get_ray_trafo_matrix(filename, normalize=False):
 
 def get_ground_truth(filename):
     """
-    Return the virtual ground truth `recon`. 
+    Return the virtual ground truth `recon`.
 
     Parameters
     ----------

@@ -12,7 +12,7 @@ from functools import partial
 from tqdm import tqdm
 
 from .network import UNet
-from .utils import poisson_loss, tv_loss, PSNR
+from .utils import poisson_loss, tv_loss, PSNR, normalize
 
 class DeepImagePriorReconstructor():
     """
@@ -113,15 +113,14 @@ class DeepImagePriorReconstructor():
                     best_loss = loss.item()
                     best_output = output.detach()
 
-                self.writer.add_scalar('loss', loss.item(),  i)
-
                 if ground_truth:
                     psnr = PSNR(best_output.detach().cpu(), ground_truth[0])
                     pbar.set_postfix({"psnr": psnr})
-                    self.writer.add_scalar('psnr', psnr,i)
+                    self.writer.add_scalar('psnr', psnr, i)
 
-                if i % 100:
-                    self.writer.add_image('reco', best_output[0, ...].cpu().numpy(), i)
+                self.writer.add_scalar('loss', loss.item(),  i)
+                if i % 1000 == 0:
+                    self.writer.add_image('reco', normalize(best_output[0, ...]).cpu().numpy(), i)
 
         self.writer.close()
 

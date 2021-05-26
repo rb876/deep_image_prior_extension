@@ -1,5 +1,6 @@
 import hydra
 import os
+import h5py
 from omegaconf import DictConfig
 from dataset import get_standard_dataset, get_lotus_data
 from torch.utils.data import DataLoader
@@ -34,8 +35,17 @@ def coordinator(cfg : DictConfig) -> None:
     if cfg.pretraining:
         Trainer(model=model, cfg=cfg.trn).train(dataset)
 
-    for noisy_obs, fbp, *gt in dataloader:
+    if not os.path.exists(cfg.save_reconstruction_path):
+        os.makedirs(cfg.save_reconstruction_path)
+
+    filename = os.path.join(cfg.save_reconstruction_path,'recos.hdf5')
+    file = h5py.File(filename, 'w')
+    dataset = file.create_dataset('recos', shape=(1, )
+        + (128, 128), maxshape=(1, ) + (128, 128), dtype=np.float32, chunks=True)
+
+    for i, (noisy_obs, fbp, *gt) in enumerate(dataloader):
         reco = reconstructor.reconstruct(noisy_obs.float(), fbp, gt)
+        dataset[i] = reco
 
 if __name__ == '__main__':
     coordinator()

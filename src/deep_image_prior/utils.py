@@ -17,7 +17,7 @@ def poisson_loss(y_pred, y_true, photons_per_pixel, mu_water):
     ----------
     .. [2] https://en.wikipedia.org/wiki/Poisson_regression
     """
-    
+
     def get_photons(y):
         y = torch.exp(-y * mu_water) * photons_per_pixel
         return y
@@ -50,3 +50,8 @@ def SSIM(reconstruction, ground_truth, data_range=None):
     else:
         data_range = np.max(gt) - np.min(gt)
         return structural_similarity(reconstruction, gt, data_range=data_range)
+
+def normalize(x):
+    x -= x.min()
+    x /= x.max()
+    return x
