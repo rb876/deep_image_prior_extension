@@ -4,4 +4,4 @@ defaults:
   - trn:  trainer
 
 pretraining: ???
-save_reconstruction_path: './results/'
+save_reconstruction_path: ???

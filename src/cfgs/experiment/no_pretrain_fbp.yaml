@@ -1,5 +1,6 @@
 # @package _global_
 pretraining: False
+save_reconstruction_path: './results/nopretrainingfbp/'
 
 mdl:
   load_pretrain_model: ${pretraining}

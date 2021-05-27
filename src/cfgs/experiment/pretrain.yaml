@@ -1,10 +1,11 @@
 # @package _global_
 pretraining: True
+save_reconstruction_path: './results/pretraining/'
 
 mdl:
   load_pretrain_model: ${pretraining}
   learned_params_path: 'params/model_${data.name}'
-  recon_from_randn: True 
+  recon_from_randn: True
   add_init_reco: False
 
 trn:

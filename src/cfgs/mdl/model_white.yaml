@@ -9,6 +9,6 @@ loss:
   lr: 1e-3
   iterations: 50000
   loss_function: mse
-  gamma: 1e-4
+  gamma: 1e-6
 show_pbar: True
 torch_manual_seed: 10
