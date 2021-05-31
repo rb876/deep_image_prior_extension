@@ -60,12 +60,11 @@ class DeepImagePriorReconstructor():
             torch.random.manual_seed(self.cfg.torch_manual_seed)
 
         self.init_model()
-
         if self.cfg.load_pretrain_model:
             path = \
                 self.cfg.learned_params_path if self.cfg.learned_params_path.endswith('.pt') \
                     else self.cfg.learned_params_path + '.pt'
-            path = os.path.join(os.getcwd(), path)
+            path = os.path.join(os.getcwd().partition('src')[0], path)
             self.model.load_state_dict(torch.load(path, map_location=self.device))
         else:
             self.model.to(self.device)
@@ -77,7 +76,7 @@ class DeepImagePriorReconstructor():
                 torch.randn(1, *self.reco_space.shape)[None].to(self.device)
             if self.cfg.add_init_reco:
                 self.net_input = \
-                    torch.cat([self.net_input, fbp.to(self.device)], dim=1)
+                    torch.cat([fbp.to(self.device), self.net_input], dim=1)
         else:
             self.net_input = fbp.to(self.device)
 

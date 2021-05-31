@@ -147,7 +147,10 @@ class Trainer():
         """
         Initialize the optimizer.
         """
-        self._optimizer = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr, weight_decay=self.cfg.weight_decay)
+        self._optimizer = torch.optim.Adam(
+                self.model.parameters(),
+                lr=self.cfg.lr,
+                weight_decay=self.cfg.weight_decay)
 
     @property
     def optimizer(self):
@@ -168,8 +171,14 @@ class Trainer():
                 self.optimizer,
                 T_max=self.cfg.epochs,
                 eta_min=self.cfg.lr_min)
+        elif self.cfg.scheduler.lower() == 'onecyclelr':
+            self._scheduler = OneCycleLR(
+                self.optimizer,
+                steps_per_epoch=self.cfg.train_len,
+                max_lr=self.cfg.max_lr,
+                epochs=self.cfg.epochs)
         else:
-            raise NotImplementedError
+            raise KeyError
 
     @property
     def scheduler(self):
@@ -189,7 +198,7 @@ class Trainer():
         Save learned parameters from file.
         """
         path = path if path.endswith('.pt') else path + '.pt'
-        path = os.path.abspath(path)
+        path = os.path.join(os.getcwd().partition('src')[0], path)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self.model.state_dict(), path)
 

@@ -1,13 +1,13 @@
 # @package _global_
 pretraining: True
-save_reconstruction_path: './results/pretraining2inputs/'
+save_reconstruction_path: ./results/pretraining2inputs/
 
 mdl:
   load_pretrain_model: ${pretraining}
-  learned_params_path: 'params/model_with_noise_${data.name}'
+  learned_params_path: src/reference_params/model_with_noise_${data.name}
   recon_from_randn: True
   add_init_reco: True
 
 trn:
-  save_best_learned_params_path: './params/model_with_noise_${data.name}'
+  save_best_learned_params_path: src/reference_params/model_with_noise_${data.name}
   add_randn_mask: ${mdl.add_init_reco}
