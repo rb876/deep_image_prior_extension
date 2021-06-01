@@ -21,6 +21,14 @@ NUM_DET_PIXELS_FULL = 2221
 NUM_ANGLES_FULL_UNCROPPED = 366
 NUM_DET_PIXELS_FULL_UNCROPPED = 2240
 
+SCALE_TO_FBP_MAX_1_FACTOR = 21.4543004236
+"""
+Factor by which image and sinogram can be multiplied to reach a range of
+approximately ``[0, 1]``.
+It is computed as ``1./np.max(fbp_reco)``, where `fbp_reco` is the Ram-Lak
+filtered back-projection computed as in the script ``examples/lotus_fbp.py``.
+"""
+
 def get_ray_trafo_matrix(filename, normalize=False):
     """
     Return the matrix `A` implementing the ray transform.
@@ -48,22 +56,30 @@ def get_ray_trafo_matrix(filename, normalize=False):
         matrix /= get_norm_ray_trafo(filename)
     return matrix
 
-def get_ground_truth(filename):
+def get_ground_truth(filename, scale_to_fbp_max_1=True):
     """
     Return the virtual ground truth `recon`.
 
     Parameters
     ----------
     filename : str
-        Filename (including path) of the Matlab file containing virtual ground truth
-        https://arxiv.org/abs/1609.07299).
+        Filename (including path) of a Matlab file containing virtual ground
+        truth.
+    scale_to_fbp_max_1 : bool, optional
+        Whether to scale by `SCALE_TO_FBP_MAX_1_FACTOR`.
+        The default is `True`.
 
     Returns
     -------
     recon : array
-
+        Numpy array with a shape depending on `filename`.
+        It is the transposed of the Matlab array and converted to
+        ``dtype='float32'``.
     """
-    ground_truth = loadmat(filename, variable_names=['recon'])['recon'].astype('float32')
+    ground_truth = loadmat(
+            filename, variable_names=['recon'])['recon'].astype('float32').T
+    if scale_to_fbp_max_1:
+        ground_truth *= SCALE_TO_FBP_MAX_1_FACTOR
     return ground_truth
 
 def get_domain128():
@@ -132,6 +148,7 @@ def get_sinogram_full(filename, crop=True):
     sinogram : array
         Numpy array of shape ``(360, 2221)``, or ``(366, 2240)`` if
         ``crop=False``.
+        It is the transposed of the Matlab array.
     """
     sinogram = loadmat(filename, variable_names=['sinogram'])['sinogram'].T
     if crop:
@@ -139,7 +156,7 @@ def get_sinogram_full(filename, crop=True):
     return sinogram
 
 
-def get_sinogram(filename, normalize=False):
+def get_sinogram(filename, normalize=False, scale_to_fbp_max_1=True):
     """
     Return the down-sampled measured sinogram `m`.
 
@@ -153,15 +170,23 @@ def get_sinogram(filename, normalize=False):
     normalize : bool, optional
         Whether to divide by the scalar `normA` included in the Matlab file.
         The default is `False`.
+    scale_to_fbp_max_1 : bool, optional
+        Whether to scale by `SCALE_TO_FBP_MAX_1_FACTOR`.
+        The default is `True`.
 
     Returns
     -------
     m : array
         Numpy array of shape ``(120, 429)``.
+        It is the transposed of the Matlab array.
     """
     sinogram = loadmat(filename, variable_names=['m'])['m'].T
+    factor = 1.
     if normalize:
-        sinogram /= get_norm_ray_trafo(filename)
+        factor /= get_norm_ray_trafo(filename)
+    if scale_to_fbp_max_1:
+        factor *= SCALE_TO_FBP_MAX_1_FACTOR
+    sinogram *= factor
     return sinogram
 
 

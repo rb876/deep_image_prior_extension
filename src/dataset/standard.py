@@ -104,7 +104,8 @@ def get_lotus_data(cfg):
             cfg.geometry_specs.num_det_pixels), sparse=True)
 
     sinogram = np.asarray(get_sinogram(
-                    cfg.geometry_specs.ray_trafo_filename))
+                    cfg.geometry_specs.ray_trafo_filename,
+                    scale_to_fbp_max_1=cfg.test_data_scale_to_fbp_max_1))
     fbp = np.asarray(smooth_pinv_ray_trafo(
                         sinogram))[None, None, None]
 
