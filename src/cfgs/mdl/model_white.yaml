@@ -1,4 +1,5 @@
 # @package _group_
+type: unet
 arch:
   scales: 6
   channels: [128, 128, 128, 128, 128, 128]

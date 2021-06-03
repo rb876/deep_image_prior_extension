@@ -11,7 +11,7 @@ from warnings import warn
 from functools import partial
 from tqdm import tqdm
 
-from .network import UNet
+from .network import UNet, MSDNet
 from .utils import poisson_loss, tv_loss, PSNR, normalize
 
 class DeepImagePriorReconstructor():
@@ -27,7 +27,8 @@ class DeepImagePriorReconstructor():
            https://doi.org/10.1088/1361-6420/aba415
     """
 
-    def __init__(self, ray_trafo, reco_space, observation_space, cfg):
+    def __init__(self, ray_trafo, reco_space, observation_space, cfg,
+                 data_cfg=None):
 
         self.ray_trafo = ray_trafo
         self.reco_space = reco_space
@@ -38,21 +39,44 @@ class DeepImagePriorReconstructor():
                 OperatorModule(self.ray_trafo) if isinstance(self.ray_trafo, odl.tomo.RayTransform) \
                     else self.ray_trafo.to(self.device)
         self.init_model()
+        if data_cfg is not None:
+            self.init_for_data(data_cfg)
 
     def init_model(self):
 
         input_depth = 1 if not self.cfg.add_init_reco else 2
         output_depth = 1
 
-        self.model = UNet(
-            input_depth,
-            output_depth,
-            channels=self.cfg.arch.channels[:self.cfg.arch.scales],
-            skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
-            use_sigmoid=self.cfg.arch.use_sigmoid,
-            use_norm=self.cfg.arch.use_norm,
-            ).to(self.device)
+        if self.cfg.type == 'unet':
+            self.model = UNet(
+                    input_depth,
+                    output_depth,
+                    channels=self.cfg.arch.channels[:self.cfg.arch.scales],
+                    skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
+                    use_sigmoid=self.cfg.arch.use_sigmoid,
+                    use_norm=self.cfg.arch.use_norm,
+                    ).to(self.device)
+        elif self.cfg.type == 'msdnet':
+            self.model = MSDNet(
+                    input_depth,
+                    output_depth,
+                    depth=self.cfg.arch.depth,
+                    width=self.cfg.arch.width,
+                    dilations=self.cfg.arch.dilations,
+                    ).to(self.device)
+        else:
+            raise ValueError('unknown model architecture type \'{}\''.format(
+                    self.cfg.arch.type))
         self.writer = tensorboardX.SummaryWriter(comment='DIP+TV')
+
+    def init_for_data(self, data_cfg):
+
+        if self.cfg.type == 'msdnet':
+            self.model.set_normalization(
+                    mean_in=data_cfg.stats.mean_fbp,
+                    mean_out=data_cfg.stats.mean_gt,
+                    std_in=data_cfg.stats.std_fbp,
+                    std_out=data_cfg.stats.std_gt)
 
     def reconstruct(self, noisy_observation, fbp=None, ground_truth=None):
 

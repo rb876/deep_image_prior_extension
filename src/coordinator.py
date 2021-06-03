@@ -31,7 +31,8 @@ def coordinator(cfg : DictConfig) -> None:
                  'observation_space': dataset.space[0]
                  }
 
-    reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
+    reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl,
+                                                data_cfg=cfg.data)
     model = deepcopy(reconstructor.model)
     if cfg.pretraining:
         Trainer(model=model, cfg=cfg.trn).train(dataset)

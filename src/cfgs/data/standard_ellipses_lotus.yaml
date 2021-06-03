@@ -11,10 +11,15 @@ geometry_specs:
   num_angles: 120
   num_det_pixels: 429
   impl: 'matrix'
-  ray_trafo_filename: null
+  ray_trafo_filename: '/localdata/jleuschn/data/FIPS_Lotus/LotusData128.mat'
 noise_specs:
   noise_type: white
   stddev: 0.05
+stats:
+  mean_fbp: 0.22592432946932967
+  mean_gt: 0.22401905693265145
+  std_fbp: 0.211400366273678
+  std_gt: 0.22258047788033836
 test_data_scale_to_fbp_max_1: true
 fbp_scaling_factor: 0.003206774358456126
 fbp_filter_type: 'Hann'

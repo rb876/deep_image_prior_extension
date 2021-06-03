@@ -1,0 +1,23 @@
+# @package _group_
+type: msdnet
+arch:
+  depth: 100
+  width: 1
+  dilations:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+loss:
+  lr: 1e-3
+  iterations: 50000
+  loss_function: mse
+  gamma: 1e-6
+show_pbar: True
+torch_manual_seed: 10

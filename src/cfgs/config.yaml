@@ -1,6 +1,6 @@
 defaults:
   - data: standard_ellipses_lotus
-  - mdl:  model_white
+  - mdl:  model_white_msdnet
   - trn:  trainer
 
 pretraining: ???
