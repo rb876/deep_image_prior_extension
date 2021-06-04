@@ -1,4 +1,6 @@
 import os
+import socket
+import datetime
 import torch
 import numpy as np
 import tensorboardX
@@ -46,7 +48,12 @@ class DeepImagePriorReconstructor():
             use_sigmoid=self.cfg.arch.use_sigmoid,
             use_norm=self.cfg.arch.use_norm,
             ).to(self.device)
-        self.writer = tensorboardX.SummaryWriter(comment='DIP+TV')
+        current_time = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
+        comment = 'DIP+TV'
+        logdir = os.path.join(
+            self.cfg.log_path,
+            current_time + '_' + socket.gethostname() + comment)
+        self.writer = tensorboardX.SummaryWriter(logdir=logdir)
 
     def reconstruct(self, noisy_observation, fbp=None, ground_truth=None):
 

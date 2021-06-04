@@ -1,5 +1,7 @@
 import os
 import json
+import socket
+import datetime
 import odl
 import h5py
 import torch
@@ -24,7 +26,12 @@ class Trainer():
         self.model = model
         self.cfg = cfg
         self.device = torch.device(('cuda:0' if torch.cuda.is_available() else 'cpu'))
-        self.writer = tensorboardX.SummaryWriter(comment='trainer.train')
+        current_time = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
+        comment = 'trainer.train'
+        logdir = os.path.join(
+            cfg.log_path,
+            current_time + '_' + socket.gethostname() + comment)
+        self.writer = tensorboardX.SummaryWriter(logdir=logdir)
 
     def train(self, dataset):
         if self.cfg.torch_manual_seed:
