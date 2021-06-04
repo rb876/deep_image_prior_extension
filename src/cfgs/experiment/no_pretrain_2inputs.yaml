@@ -7,3 +7,4 @@ mdl:
   learned_params_path: None
   recon_from_randn: True
   add_init_reco: True
+  log_path: ./runs/nopretraining2inputs/

@@ -1,12 +1,9 @@
 import os
-import odl
 import torch
 import numpy as np
-import torch.nn as nn
 import tensorboardX
 from torch.optim import Adam
 from torch.nn import MSELoss
-from odl.contrib.torch import OperatorModule
 from warnings import warn
 from functools import partial
 from tqdm import tqdm
@@ -27,16 +24,13 @@ class DeepImagePriorReconstructor():
            https://doi.org/10.1088/1361-6420/aba415
     """
 
-    def __init__(self, ray_trafo, reco_space, observation_space, cfg):
+    def __init__(self, ray_trafo_module, reco_space, observation_space, cfg):
 
-        self.ray_trafo = ray_trafo
         self.reco_space = reco_space
         self.observation_space = observation_space
         self.cfg = cfg
         self.device = torch.device(('cuda:0' if torch.cuda.is_available() else 'cpu'))
-        self.ray_trafo_module = \
-                OperatorModule(self.ray_trafo) if isinstance(self.ray_trafo, odl.tomo.RayTransform) \
-                    else self.ray_trafo.to(self.device)
+        self.ray_trafo_module = ray_trafo_module.to(self.device)
         self.init_model()
 
     def init_model(self):

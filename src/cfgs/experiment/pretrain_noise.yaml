@@ -7,7 +7,9 @@ mdl:
   learned_params_path: src/reference_params/model_with_noise_${data.name}
   recon_from_randn: True
   add_init_reco: True
+  log_path: ./runs/pretraining2inputs/
 
 trn:
   save_best_learned_params_path: src/reference_params/model_with_noise_${data.name}
   add_randn_mask: ${mdl.add_init_reco}
+  log_path: ./runs/pretraining2inputs/
