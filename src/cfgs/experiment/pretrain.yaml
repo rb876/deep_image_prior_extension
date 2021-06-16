@@ -8,6 +8,8 @@ mdl:
   recon_from_randn: True
   add_init_reco: False
   log_path: ./runs/pretraining/
+  scaling: ${pretraining}
+  stats: ${data.stats}
 
 trn:
   save_best_learned_params_path: src/reference_params/model_${data.name}

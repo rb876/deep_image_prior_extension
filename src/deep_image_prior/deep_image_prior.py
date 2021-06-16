@@ -39,6 +39,11 @@ class DeepImagePriorReconstructor():
 
         input_depth = 1 if not self.cfg.add_init_reco else 2
         output_depth = 1
+        scaling_kwards = {
+            'mean_in': self.cfg.stats.mean_fbp,
+            'mean_out': self.cfg.stats.mean_gt,
+            'std_in': self.cfg.stats.std_fbp,
+            'std_out': self.cfg.stats.std_gt } if self.cfg.scaling else {}
 
         self.model = UNet(
             input_depth,
@@ -47,7 +52,10 @@ class DeepImagePriorReconstructor():
             skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
             use_sigmoid=self.cfg.arch.use_sigmoid,
             use_norm=self.cfg.arch.use_norm,
+            use_scale_layer = self.cfg.scaling,
+            scaling_kwards = scaling_kwards
             ).to(self.device)
+
         current_time = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
         comment = 'DIP+TV'
         logdir = os.path.join(
