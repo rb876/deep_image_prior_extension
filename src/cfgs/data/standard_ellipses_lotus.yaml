@@ -12,7 +12,7 @@ geometry_specs:
   num_angles: 120
   num_det_pixels: 429
   impl: 'matrix'
-  ray_trafo_filename: \Users\ricca\Desktop\deep_image_prior_extension\src\FIPS_Lotus\LotusData128.mat
+  ray_trafo_filename: null
 noise_specs:
   noise_type: white
   stddev: 0.05
