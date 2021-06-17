@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from .scale_module import ScaleModule
+from .scale_module import get_scale_modules
 
 def get_unet_model(in_ch=1, out_ch=1, scales=5, skip=4,
                    channels=(32, 32, 64, 64, 128, 128), use_sigmoid=True,
@@ -15,7 +15,7 @@ def get_unet_model(in_ch=1, out_ch=1, scales=5, skip=4,
 
 class UNet(nn.Module):
     def __init__(self, in_ch, out_ch, channels, skip_channels,
-                 use_sigmoid=True, use_norm=True, use_scale_layer=False, scaling_kwards=None):
+                 use_sigmoid=True, use_norm=True, use_scale_layer=False, scaling_kwargs=None):
         super(UNet, self).__init__()
         assert (len(channels) == len(skip_channels))
         self.scales = len(channels)
@@ -36,14 +36,15 @@ class UNet(nn.Module):
                              out_ch=out_ch)
         self.use_scale_layer = use_scale_layer
         if self.use_scale_layer:
-            self.scale_module = ScaleModule(ch_in=1, ch_out=1, **scaling_kwards)
+            self.scale_in, self.scale_out = get_scale_modules(1, out_ch,
+                                                              **scaling_kwargs)
 
     def forward(self, x0):
         if self.use_scale_layer:
             if x0.shape[1] == 1:
-                x0 = self.scale_module(x0)
+                x0 = self.scale_in(x0)
             elif x0.shape[1] == 2:
-                x0 = torch.cat((self.scale_module(x0[:, 0].unsqueeze(dim=1)), x0[:, 1].unsqueeze(dim=1)), dim=1)
+                x0 = torch.cat((self.scale_in(x0[:, 0].unsqueeze(dim=1)), x0[:, 1].unsqueeze(dim=1)), dim=1)
             else:
                 raise KeyError
         xs = [self.inc(x0), ]
@@ -54,7 +55,7 @@ class UNet(nn.Module):
             x = self.up[i](x, xs[-2 - i])
 
         if self.use_scale_layer:
-            return self.scale_module.inverse(torch.sigmoid(self.outc(x)) if self.use_sigmoid else self.outc(x))
+            return self.scale_out(torch.sigmoid(self.outc(x)) if self.use_sigmoid else self.outc(x))
         else:
             return torch.sigmoid(self.outc(x)) if self.use_sigmoid else self.outc(x)
 

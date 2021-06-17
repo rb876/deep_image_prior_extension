@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class ScaleLayer(nn.Module):
+class ScaleModule(nn.Module):
 
     """
     This class provides methods for normalizing the input data.
@@ -41,7 +41,7 @@ class ScaleLayer(nn.Module):
 
     def _scaling_module_set_scale(self, scale):
 
-        self.scale_layer.bias.requires_grad = False
+        self.scale_layer.weight.requires_grad = False
         c_out, c_in = self.scale_layer.weight.shape[:2]
         assert c_out == c_in
         self.scale_layer.weight.data.zero_()
@@ -49,21 +49,14 @@ class ScaleLayer(nn.Module):
             self.scale_layer.weight.data[i, i] = scale
 
     def _scaling_module_set_bias(self, bias):
-        self.scale_layer.weight.requires_grad = False
+        self.scale_layer.bias.requires_grad = False
         self.scale_layer.bias.data.fill_(bias)
 
     def forward(self, x):
         return self.scale_layer(x)
 
-class ScaleModule(nn.Module):
-    def __init__(self, ch_in, ch_out, mean_in=0.,
-        mean_out=0., std_in=1., std_out=1., conv3d=False):
-        super().__init__()
-        self.scale_in = ScaleLayer(ch_in, mean_in, std_in, conv3d)
-        self.scale_out = ScaleLayer(ch_out, mean_out, std_out, conv3d)
-
-    def forward(self, x):
-        return self.scale_in(x)
-
-    def inverse(self, x):
-        return self.scale_out(x)
+def get_scale_modules(ch_in, ch_out, mean_in=0., mean_out=0., std_in=1.,
+                     std_out=1., conv3d=False):
+    scale_in = ScaleModule(ch_in, mean_in, std_in, conv3d)
+    scale_out = ScaleModule(ch_out, mean_out, std_out, conv3d)
+    return scale_in, scale_out

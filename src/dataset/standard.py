@@ -227,8 +227,7 @@ def get_lotus_data(name, cfg):
     smooth_pinv_ray_trafo = ray_trafos['smooth_pinv_ray_trafo']
 
     sinogram = np.asarray(lotus.get_sinogram(
-                    cfg.geometry_specs.ray_trafo_filename,
-                    scale_to_fbp_max_1=cfg.test_data_scale_to_fbp_max_1))
+                    cfg.geometry_specs.ray_trafo_filename))
     if 'angles_subsampling' in cfg.geometry_specs:
         sinogram = sinogram[cfg.geometry_specs.angles_subsampling.start:
                             cfg.geometry_specs.angles_subsampling.stop:

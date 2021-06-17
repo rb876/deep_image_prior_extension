@@ -8,4 +8,6 @@ mdl:
   recon_from_randn: False
   add_init_reco: False
   log_path: ./runs/nopretrainingfbp/
-  scaling: ${pretraining}
+  normalize_by_stats: True
+  stats: ${data.stats}
+  implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}

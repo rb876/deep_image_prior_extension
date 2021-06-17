@@ -39,11 +39,12 @@ class DeepImagePriorReconstructor():
 
         input_depth = 1 if not self.cfg.add_init_reco else 2
         output_depth = 1
-        scaling_kwards = {
+        scaling_kwargs = {
             'mean_in': self.cfg.stats.mean_fbp,
             'mean_out': self.cfg.stats.mean_gt,
             'std_in': self.cfg.stats.std_fbp,
-            'std_out': self.cfg.stats.std_gt } if self.cfg.scaling else {}
+            'std_out': self.cfg.stats.std_gt
+            } if self.cfg.normalize_by_stats else {}
 
         self.model = UNet(
             input_depth,
@@ -52,8 +53,8 @@ class DeepImagePriorReconstructor():
             skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
             use_sigmoid=self.cfg.arch.use_sigmoid,
             use_norm=self.cfg.arch.use_norm,
-            use_scale_layer = self.cfg.scaling,
-            scaling_kwards = scaling_kwards
+            use_scale_layer = self.cfg.normalize_by_stats,
+            scaling_kwargs = scaling_kwargs
             ).to(self.device)
 
         current_time = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
@@ -62,6 +63,15 @@ class DeepImagePriorReconstructor():
             self.cfg.log_path,
             current_time + '_' + socket.gethostname() + comment)
         self.writer = tensorboardX.SummaryWriter(logdir=logdir)
+
+    def apply_model_on_test_data(self, net_input):
+        test_scaling = self.cfg.get('implicit_scaling_except_for_test_data')
+        if test_scaling is not None and test_scaling != 1.:
+            output = self.model(test_scaling * net_input) / test_scaling
+        else:
+            output = self.model(net_input)
+
+        return output
 
     def reconstruct(self, noisy_observation, fbp=None, ground_truth=None):
 
@@ -103,12 +113,12 @@ class DeepImagePriorReconstructor():
             criterion = MSELoss()
 
         best_loss = np.inf
-        best_output = self.model(self.net_input).detach()
+        best_output = self.apply_model_on_test_data(self.net_input).detach()
 
         with tqdm(range(self.cfg.loss.iterations), desc='DIP', disable= not self.cfg.show_pbar) as pbar:
             for i in pbar:
                 self.optimizer.zero_grad()
-                output = self.model(self.net_input)
+                output = self.apply_model_on_test_data(self.net_input)
                 loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.loss.gamma * tv_loss(output)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)

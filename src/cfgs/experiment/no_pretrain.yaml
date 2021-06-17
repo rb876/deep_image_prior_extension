@@ -8,4 +8,6 @@ mdl:
   recon_from_randn: True
   add_init_reco: False
   log_path: ./runs/nopretrainingnoise/
-  scaling: ${pretraining}
+  normalize_by_stats: True
+  stats: ${data.stats}
+  implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
