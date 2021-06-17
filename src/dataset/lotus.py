@@ -56,7 +56,7 @@ def get_ray_trafo_matrix(filename, normalize=False):
         matrix /= get_norm_ray_trafo(filename)
     return matrix
 
-def get_ground_truth(filename, scale_to_fbp_max_1=True):
+def get_ground_truth(filename, scale_to_fbp_max_1=False):
     """
     Return the virtual ground truth `recon`.
 
@@ -67,7 +67,7 @@ def get_ground_truth(filename, scale_to_fbp_max_1=True):
         truth.
     scale_to_fbp_max_1 : bool, optional
         Whether to scale by `SCALE_TO_FBP_MAX_1_FACTOR`.
-        The default is `True`.
+        The default is `False`.
 
     Returns
     -------
@@ -97,7 +97,7 @@ def get_domain128():
     return domain
 
 
-def get_proj_space128():
+def get_proj_space128(det_extent=None, det_shift=0.):
     """
     Return an :class:`odl.DiscretizedSpace` describing the projection space
     corresponding to the ray transform `A` from ``LotusData128.mat``.
@@ -106,20 +106,21 @@ def get_proj_space128():
     space seems to match approximately.
     """
     angle_step = 2.*np.pi / NUM_ANGLES
-    det_extent = 132.41564427  # detector size in mm computed by:
-    # det_extent = odl.tomo.cone_beam_geometry(get_domain128(),
-    #         src_radius=SRC_RADIUS,
-    #         det_radius=DET_RADIUS,
-    #         num_angles=NUM_ANGLES,
-    #         det_shape=NUM_DET_PIXELS128).detector.partition.extent
-    # In https://arxiv.org/abs/1609.07299 the detector is reported to have
-    # extent 120 mm, however the sinogram m in LotusData128.mat seems to
-    # include some more space at both ends. Above ODL geometry with
-    # autocomputed detector extent of 132.42 mm seems to match the provided
-    # operator A approximately.
+    if det_extent is None:
+        det_extent = 132.41564427  # detector size in mm computed by:
+        # det_extent = odl.tomo.cone_beam_geometry(get_domain128(),
+        #         src_radius=SRC_RADIUS,
+        #         det_radius=DET_RADIUS,
+        #         num_angles=NUM_ANGLES,
+        #         det_shape=NUM_DET_PIXELS128).detector.partition.extent
+        # In https://arxiv.org/abs/1609.07299 the detector is reported to have
+        # extent 120 mm, however the sinogram m in LotusData128.mat seems to
+        # include some more space at both ends. Above ODL geometry with
+        # autocomputed detector extent of 132.42 mm seems to match the provided
+        # operator A approximately.
     domain = odl.uniform_discr(
-            [-0.5*angle_step, -0.5*det_extent],
-            [2.*np.pi - 0.5*angle_step, 0.5*det_extent],
+            [-0.5*angle_step, -0.5*det_extent + det_shift],
+            [2.*np.pi - 0.5*angle_step, 0.5*det_extent + det_shift],
             [NUM_ANGLES, NUM_DET_PIXELS128],
             dtype='float32')
     return domain
@@ -156,7 +157,7 @@ def get_sinogram_full(filename, crop=True):
     return sinogram
 
 
-def get_sinogram(filename, normalize=False, scale_to_fbp_max_1=True):
+def get_sinogram(filename, normalize=False, scale_to_fbp_max_1=False):
     """
     Return the down-sampled measured sinogram `m`.
 
@@ -172,7 +173,7 @@ def get_sinogram(filename, normalize=False, scale_to_fbp_max_1=True):
         The default is `False`.
     scale_to_fbp_max_1 : bool, optional
         Whether to scale by `SCALE_TO_FBP_MAX_1_FACTOR`.
-        The default is `True`.
+        The default is `False`.
 
     Returns
     -------
