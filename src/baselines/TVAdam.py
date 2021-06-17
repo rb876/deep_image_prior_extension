@@ -1,5 +1,4 @@
 import torch
-import cv2
 import numpy as np
 import torch.nn as nn
 from torch.optim import Adam
@@ -14,13 +13,6 @@ def tv_loss(x):
     dh = torch.abs(x[..., :, 1:] - x[..., :, :-1])
     dw = torch.abs(x[..., 1:, :] - x[..., :-1, :])
     return torch.sum(dh[..., :-1, :] + dw[..., :, :-1])
-
-def show_imageHU(window_name, data, cmin = 0.01, cmax = 0.45):
-    data = (np.minimum(np.maximum(data, cmin), cmax) - cmin)/(cmax-cmin)
-    data = np.array(np.ceil(data/np.max(data)*255), dtype = np.uint8)
-    cv2.imshow(window_name, data)
-    cv2.waitKey(0)
-    cv2.imwrite(window_name+'.png', data)
 
 def show_image(outputname, data, cmap, clim=None):
     import matplotlib.pyplot as plt

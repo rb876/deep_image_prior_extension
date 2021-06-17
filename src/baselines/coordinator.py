@@ -1,6 +1,3 @@
-import sys
-sys.path.append("..") # Adds higher directory to python modules path.
-
 import os
 import h5py
 import hydra
