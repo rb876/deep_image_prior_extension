@@ -51,7 +51,11 @@ def SSIM(reconstruction, ground_truth, data_range=None):
         data_range = np.max(gt) - np.min(gt)
         return structural_similarity(reconstruction, gt, data_range=data_range)
 
-def normalize(x):
-    x -= x.min()
-    x /= x.max()
+def normalize(x, inplace=False):
+    if inplace:
+        x -= x.min()
+        x /= x.max()
+    else:
+        x = x - x.min()
+        x = x / x.max()
     return x
