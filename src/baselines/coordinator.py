@@ -36,7 +36,7 @@ def coordinator(cfg : DictConfig) -> None:
         reco = reconstructor.reconstruct(noisy_obs.float(), fbp)
         dataset[i] = reco
 
-    filename_mat = os.path.join(cfg.save_reconstruction_path,'GroundTruthLotus.mat')
+    filename_mat = os.path.join(cfg.save_reconstruction_path,'TVGroundTruthLotus128.mat')
     dict_mat = {'recon': reco.T, 'label': 'ground_truth'}
     savemat(filename_mat, dict_mat)
 if __name__ == '__main__':
