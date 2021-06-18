@@ -2,7 +2,7 @@ defaults:
   - cfgs/data: standard_ellipses_lotus
 
 lr: 0.001
-gamma: 0.001
+gamma: 5e-5
 show_pbar: True
 iterations: 1000
 loss_function: mse

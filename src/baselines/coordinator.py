@@ -8,6 +8,7 @@ from TVAdam import TVAdamReconstructor
 from torch.utils.data import DataLoader
 from pre_training import Trainer
 from copy import deepcopy
+from scipy.io import savemat
 
 @hydra.main(config_path='../', config_name='baselines/tvadamconfg')
 def coordinator(cfg : DictConfig) -> None:
@@ -35,5 +36,8 @@ def coordinator(cfg : DictConfig) -> None:
         reco = reconstructor.reconstruct(noisy_obs.float(), fbp)
         dataset[i] = reco
 
+    filename_mat = os.path.join(cfg.save_reconstruction_path,'GroundTruthLotus.mat')
+    dict_mat = {'recon': reco.T, 'label': 'ground_truth'}
+    savemat(filename_mat, dict_mat)
 if __name__ == '__main__':
     coordinator()
