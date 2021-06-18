@@ -21,7 +21,13 @@ geometry_specs:
 noise_specs:
   noise_type: white
   stddev: 0.05
-fbp_scaling_factor: 0.003206774358456126  # TODO
+stats:
+  mean_fbp: 0.22491531595145353
+  std_fbp: 0.24280505434305219
+  mean_gt: 0.22401905693265145
+  std_gt: 0.22258047788033836
+implicit_scaling_except_for_test_data: 41.
+fbp_scaling_factor: 0.019221008882481495
 fbp_filter_type: 'Hann'
 fbp_frequency_scaling: 0.6
 ground_truth_filename: null
