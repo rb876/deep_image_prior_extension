@@ -136,8 +136,8 @@ class DeepImagePriorReconstructor():
                     best_loss = loss.item()
                     best_output = output.detach()
 
-                if ground_truth:
-                    psnr = PSNR(best_output.detach().cpu(), ground_truth[0])
+                if ground_truth is not None:
+                    psnr = PSNR(best_output.detach().cpu(), ground_truth.cpu())
                     pbar.set_postfix({"psnr": psnr})
                     self.writer.add_scalar('psnr', psnr, i)
 

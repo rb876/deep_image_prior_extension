@@ -44,6 +44,7 @@ def coordinator(cfg : DictConfig) -> None:
                             shuffle=True, pin_memory=True)
 
     for i, (noisy_obs, fbp, *gt) in enumerate(dataloader):
+        gt = gt[0] if gt else None
         reco = reconstructor.reconstruct(noisy_obs.float(), fbp, gt)
         dataset[i] = reco
 
