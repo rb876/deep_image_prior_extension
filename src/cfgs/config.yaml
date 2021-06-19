@@ -1,5 +1,5 @@
 defaults:
-  - data: standard_ellipses_lotus
+  - data: standard_ellipses_lotus_20
   - mdl:  model_white
   - trn:  trainer
 
