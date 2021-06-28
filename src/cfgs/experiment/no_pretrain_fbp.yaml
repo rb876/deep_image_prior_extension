@@ -11,3 +11,11 @@ mdl:
   normalize_by_stats: True
   stats: ${data.stats}
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
+  use_different_lr: False
+  freeze: False
+  loss:
+    lr:
+      encoder: 1e-3
+      decoder: 1e-3
+      coupled: 1e-3
+    num_warmup_iter: 1500

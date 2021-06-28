@@ -59,3 +59,15 @@ def normalize(x, inplace=False):
         x = x - x.min()
         x = x / x.max()
     return x
+
+def is_name_in_set(name, adms_params_set):
+    for el in adms_params_set:
+        if el in name:
+            return True
+    return False
+
+def get_learnable_params(model, adms_params_set):
+    params_list = [param for (name, param) in model.named_parameters()
+                   if is_name_in_set(name, adms_params_set)]
+
+    return params_list

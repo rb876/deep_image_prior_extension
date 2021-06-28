@@ -11,7 +11,7 @@ from functools import partial
 from tqdm import tqdm
 
 from .network import UNet
-from .utils import poisson_loss, tv_loss, PSNR, normalize
+from .utils import poisson_loss, tv_loss, PSNR, normalize, get_learnable_params
 
 class DeepImagePriorReconstructor():
     """
@@ -104,7 +104,7 @@ class DeepImagePriorReconstructor():
         else:
             self.net_input = fbp.to(self.device)
 
-        self.optimizer = Adam(self.model.parameters(), lr=self.cfg.loss.lr)
+        self.init_optimizer()
         y_delta = noisy_observation.to(self.device)
 
         if self.cfg.loss.loss_function == 'mse':
@@ -132,6 +132,9 @@ class DeepImagePriorReconstructor():
                 for p in self.model.parameters():
                     p.data.clamp_(-1000, 1000) # MIN,MAX
 
+                if self.cfg.freeze and i == self.cfg.loss.num_warmup_iter:
+                    self.add_params_group(['down', 'inc'])
+                    
                 if loss.item() < best_loss:
                     best_loss = loss.item()
                     best_output = output.detach()
@@ -148,3 +151,52 @@ class DeepImagePriorReconstructor():
         self.writer.close()
 
         return best_output[0, 0, ...].cpu().numpy()
+
+    def init_optimizer(self):
+        """
+        Initialize the optimizer.
+        """
+
+        encoder_params = get_learnable_params(self.model, ['down', 'inc'])
+        decoder_params = get_learnable_params(self.model, ['up', 'scale',
+                'outc'])
+        import pdb; pdb.set_trace()
+        if self.cfg.use_different_lr:
+            if self.cfg.freeze:
+                self._optimizer = \
+                    torch.optim.Adam([{'params': decoder_params,
+                                     'lr': self.cfg.loss.lr.decoder}])
+            else:
+                self._optimizer = \
+                    torch.optim.Adam([{'params': encoder_params,
+                                     'lr': self.cfg.loss.lr.encoder},
+                                     {'params': decoder_params,
+                                     'lr': self.cfg.loss.lr.decoder}])
+        else:
+            self._optimizer = torch.optim.Adam(self.model.parameters(),
+                    lr=self.cfg.loss.lr.coupled)
+
+    def add_params_group(self, add_params_list):
+
+        encoder_params = get_learnable_params(self.model, add_params_list)
+        self._optimizer.param_groups.append({
+            'params': encoder_params,
+            'lr': self.cfg.loss.lr.encoder,
+            'betas': (0.9, 0.999),
+            'eps': 1e-08,
+            'weight_decay': 0,
+            'amsgrad': False,
+            })
+
+    @property
+    def optimizer(self):
+        """
+        :class:`torch.optim.Optimizer` :
+        The optimizer, usually set by :meth:`init_optimizer`, which gets called
+        in :meth:`train`.
+        """
+        return self._optimizer
+
+    @optimizer.setter
+    def optimizer(self, value):
+        self._optimizer = value
