@@ -134,7 +134,7 @@ class DeepImagePriorReconstructor():
 
                 if self.cfg.freeze and i == self.cfg.loss.num_warmup_iter:
                     self.add_params_group(['down', 'inc'])
-                    
+
                 if loss.item() < best_loss:
                     best_loss = loss.item()
                     best_output = output.detach()
@@ -160,7 +160,7 @@ class DeepImagePriorReconstructor():
         encoder_params = get_learnable_params(self.model, ['down', 'inc'])
         decoder_params = get_learnable_params(self.model, ['up', 'scale',
                 'outc'])
-        import pdb; pdb.set_trace()
+                
         if self.cfg.use_different_lr:
             if self.cfg.freeze:
                 self._optimizer = \
