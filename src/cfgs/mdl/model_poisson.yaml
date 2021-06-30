@@ -5,7 +5,7 @@ arch:
   skip_channels: [0, 0, 0, 0, 4, 4]
   use_norm: True
   use_sigmoid: True
-loss:
+optim:
   lr: 1e-3
   iterations: 50000
   loss_function: poisson

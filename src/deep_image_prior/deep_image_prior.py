@@ -107,12 +107,12 @@ class DeepImagePriorReconstructor():
         self.init_optimizer()
         y_delta = noisy_observation.to(self.device)
 
-        if self.cfg.loss.loss_function == 'mse':
+        if self.cfg.optim.loss_function == 'mse':
             criterion = MSELoss()
-        elif self.cfg.loss.loss_function == 'poisson':
+        elif self.cfg.optim.loss_function == 'poisson':
             criterion = partial(poisson_loss,
-                                photons_per_pixel=self.cfg.loss.photons_per_pixel,
-                                mu_water=self.cfg.loss.mu_water)
+                                photons_per_pixel=self.cfg.optim.photons_per_pixel,
+                                mu_water=self.cfg.optim.mu_water)
         else:
             warn('Unknown loss function, falling back to MSE')
             criterion = MSELoss()
@@ -120,11 +120,11 @@ class DeepImagePriorReconstructor():
         best_loss = np.inf
         best_output = self.apply_model_on_test_data(self.net_input).detach()
 
-        with tqdm(range(self.cfg.loss.iterations), desc='DIP', disable= not self.cfg.show_pbar) as pbar:
+        with tqdm(range(self.cfg.optim.iterations), desc='DIP', disable= not self.cfg.show_pbar) as pbar:
             for i in pbar:
                 self.optimizer.zero_grad()
                 output = self.apply_model_on_test_data(self.net_input)
-                loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.loss.gamma * tv_loss(output)
+                loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.optim.gamma * tv_loss(output)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
                 self.optimizer.step()
@@ -132,8 +132,12 @@ class DeepImagePriorReconstructor():
                 for p in self.model.parameters():
                     p.data.clamp_(-1000, 1000) # MIN,MAX
 
-                if self.cfg.freeze and i == self.cfg.loss.num_warmup_iter:
-                    self.add_params_group(['down', 'inc'])
+                if i == self.cfg.optim.num_warmup_iter:
+                    if self.cfg.freeze_params:
+                        self.add_params_group(['down', 'inc'])
+                    if self.cfg.optim.lr != self.cfg.optim.encoder_lr:
+                        for pg in self.optimizer.param_groups:
+                            pg['lr'] = self.cfg.optim.lr
 
                 if loss.item() < best_loss:
                     best_loss = loss.item()
@@ -160,28 +164,24 @@ class DeepImagePriorReconstructor():
         encoder_params = get_learnable_params(self.model, ['down', 'inc'])
         decoder_params = get_learnable_params(self.model, ['up', 'scale',
                 'outc'])
-                
-        if self.cfg.use_different_lr:
-            if self.cfg.freeze:
-                self._optimizer = \
-                    torch.optim.Adam([{'params': decoder_params,
-                                     'lr': self.cfg.loss.lr.decoder}])
-            else:
-                self._optimizer = \
-                    torch.optim.Adam([{'params': encoder_params,
-                                     'lr': self.cfg.loss.lr.encoder},
-                                     {'params': decoder_params,
-                                     'lr': self.cfg.loss.lr.decoder}])
+
+        if self.cfg.freeze_params:
+            self._optimizer = \
+                torch.optim.Adam([{'params': decoder_params,
+                                 'lr': self.cfg.optim.lr}])
         else:
-            self._optimizer = torch.optim.Adam(self.model.parameters(),
-                    lr=self.cfg.loss.lr.coupled)
+            self._optimizer = \
+                torch.optim.Adam([{'params': encoder_params,
+                                 'lr': self.cfg.optim.encoder_lr},
+                                 {'params': decoder_params,
+                                 'lr': self.cfg.optim.lr}])
 
     def add_params_group(self, add_params_list):
 
         encoder_params = get_learnable_params(self.model, add_params_list)
         self._optimizer.param_groups.append({
             'params': encoder_params,
-            'lr': self.cfg.loss.lr.encoder,
+            'lr': self.cfg.optim.lr,
             'betas': (0.9, 0.999),
             'eps': 1e-08,
             'weight_decay': 0,
