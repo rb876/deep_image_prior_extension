@@ -66,7 +66,7 @@ def is_name_in_set(name, adms_params_set):
             return True
     return False
 
-def get_learnable_params(model, adms_params_set):
+def extract_learnable_params(model, adms_params_set):
     params_list = [param for (name, param) in model.named_parameters()
                    if is_name_in_set(name, adms_params_set)]
 

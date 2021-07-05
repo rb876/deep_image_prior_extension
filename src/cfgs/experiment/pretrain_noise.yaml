@@ -3,7 +3,7 @@ pretraining: True
 save_reconstruction_path: ./results/pretraining2inputs/
 
 mdl:
-  load_pretrain_model: ${pretraining}
+  load_pretrain_model: True
   learned_params_path: src/reference_params/model_with_noise_${data.name}
   recon_from_randn: True
   add_init_reco: True
@@ -11,11 +11,16 @@ mdl:
   normalize_by_stats: True
   stats: ${data.stats}
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
-  freeze_params: False
   optim:
-    lr: 1e-3
-    encoder_lr: 1e-3
-    num_warmup_iter: 1500
+    use_scheduler: True
+    encoder:
+      lr: 1e-3
+      init_lr: 1e-6
+      num_warmup_iter: 1500
+    decoder:
+      lr: 1e-3
+      init_lr: 1e-6
+      num_warmup_iter: 1500
 
 trn:
   save_best_learned_params_path: src/reference_params/model_with_noise_${data.name}

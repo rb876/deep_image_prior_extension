@@ -11,7 +11,7 @@ from functools import partial
 from tqdm import tqdm
 
 from .network import UNet
-from .utils import poisson_loss, tv_loss, PSNR, normalize, get_learnable_params
+from .utils import poisson_loss, tv_loss, PSNR, normalize, extract_learnable_params
 
 class DeepImagePriorReconstructor():
     """
@@ -105,6 +105,8 @@ class DeepImagePriorReconstructor():
             self.net_input = fbp.to(self.device)
 
         self.init_optimizer()
+        if self.cfg.optim.use_scheduler:
+            self.init_scheduler()
         y_delta = noisy_observation.to(self.device)
 
         if self.cfg.optim.loss_function == 'mse':
@@ -129,15 +131,10 @@ class DeepImagePriorReconstructor():
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
                 self.optimizer.step()
 
+                if self.cfg.optim.use_scheduler:
+                    self.scheduler.step()
                 for p in self.model.parameters():
                     p.data.clamp_(-1000, 1000) # MIN,MAX
-
-                if i == self.cfg.optim.num_warmup_iter:
-                    if self.cfg.freeze_params:
-                        self.add_params_group(['down', 'inc'])
-                    if self.cfg.optim.lr != self.cfg.optim.encoder_lr:
-                        for pg in self.optimizer.param_groups:
-                            pg['lr'] = self.cfg.optim.lr
 
                 if loss.item() < best_loss:
                     best_loss = loss.item()
@@ -161,32 +158,13 @@ class DeepImagePriorReconstructor():
         Initialize the optimizer.
         """
 
-        encoder_params = get_learnable_params(self.model, ['down', 'inc'])
-        decoder_params = get_learnable_params(self.model, ['up', 'scale',
-                'outc'])
-
-        if self.cfg.freeze_params:
-            self._optimizer = \
-                torch.optim.Adam([{'params': decoder_params,
-                                 'lr': self.cfg.optim.lr}])
-        else:
-            self._optimizer = \
-                torch.optim.Adam([{'params': encoder_params,
-                                 'lr': self.cfg.optim.encoder_lr},
-                                 {'params': decoder_params,
-                                 'lr': self.cfg.optim.lr}])
-
-    def add_params_group(self, add_params_list):
-
-        encoder_params = get_learnable_params(self.model, add_params_list)
-        self._optimizer.param_groups.append({
-            'params': encoder_params,
-            'lr': self.cfg.optim.lr,
-            'betas': (0.9, 0.999),
-            'eps': 1e-08,
-            'weight_decay': 0,
-            'amsgrad': False,
-            })
+        self._optimizer = \
+            torch.optim.Adam([{'params': extract_learnable_params(self.model,
+                             ['down', 'inc']),
+                             'lr': self.cfg.optim.encoder.lr},
+                             {'params': extract_learnable_params(self.model,
+                             ['up', 'scale', 'outc']),
+                             'lr': self.cfg.optim.decoder.lr}])
 
     @property
     def optimizer(self):
@@ -200,3 +178,39 @@ class DeepImagePriorReconstructor():
     @optimizer.setter
     def optimizer(self, value):
         self._optimizer = value
+
+    def init_scheduler(self):
+
+        class LRPolicy(object):
+            def __init__(self, init_lr, lr, num_warmup_iter, num_iterations):
+                self.init = init_lr/lr
+                self.num_warmup_iter = num_warmup_iter
+                self.num_iterations = num_iterations
+
+            def __call__(self, epoch):
+                values = np.linspace(self.init, 1, self.num_warmup_iter).tolist()
+                values = values + [1] * (self.num_iterations - self.num_warmup_iter)
+                return values[epoch]
+
+        self._scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer,
+                lr_lambda=[LRPolicy(init_lr=self.cfg.optim.encoder.init_lr,
+                lr=self.cfg.optim.encoder.lr,
+                num_warmup_iter=self.cfg.optim.encoder.num_warmup_iter,
+                num_iterations=self.cfg.optim.iterations),
+                LRPolicy(init_lr=self.cfg.optim.decoder.init_lr,
+                lr=self.cfg.optim.decoder.lr,
+                num_warmup_iter=self.cfg.optim.decoder.num_warmup_iter,
+                num_iterations=self.cfg.optim.iterations)])
+
+    @property
+    def scheduler(self):
+        """
+        torch learning rate scheduler :
+        The scheduler, usually set by :meth:`init_scheduler`, which gets called
+        in :meth:`train`.
+        """
+        return self._scheduler
+
+    @scheduler.setter
+    def scheduler(self, value):
+        self._scheduler = value

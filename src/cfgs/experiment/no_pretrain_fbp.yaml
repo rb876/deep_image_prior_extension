@@ -11,8 +11,13 @@ mdl:
   normalize_by_stats: True
   stats: ${data.stats}
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
-  freeze_params: False
   optim:
-    lr: 1e-3
-    encoder_lr: 1e-3
-    num_warmup_iter: null
+    use_scheduler: False
+    encoder:
+      lr: 1e-3
+      init_lr: 1e-6
+      num_warmup_iter: null
+    decoder:
+      lr: 1e-3
+      init_lr: 1e-6
+      num_warmup_iter: null
