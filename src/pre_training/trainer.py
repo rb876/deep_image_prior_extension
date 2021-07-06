@@ -16,6 +16,8 @@ from warnings import warn
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CyclicLR, OneCycleLR
 from deep_image_prior import PSNR, SSIM
+from util.transforms import random_brightness_contrast
+from functools import partial
 
 class Trainer():
 
@@ -49,6 +51,24 @@ class Trainer():
 
         criterion = torch.nn.MSELoss()
         self.init_optimizer()
+
+        transforms = []
+        for transform in self.cfg.get('transforms', []):
+            if transform.name == 'random_brightness_contrast':
+                transforms.append(
+                        partial(
+                            random_brightness_contrast,
+                            brightness_shift_range=(
+                                transform.brightness_shift_min,
+                                transform.brightness_shift_max),
+                            contrast_factor_range=(
+                                transform.contrast_factor_min,
+                                transform.contrast_factor_max),
+                            clip_range=(transform.clip_min, transform.clip_max)
+                        ))
+            else:
+                raise ValueError(
+                        'Unknown transform \'{}\''.format(transform.name))
 
         # create PyTorch dataloaders
         data_loaders = {'train': DataLoader(dataset_train, batch_size=self.cfg.batch_size,
@@ -87,6 +107,10 @@ class Trainer():
                           desc='epoch {:d}'.format(epoch + 1),
                           disable=not self.cfg.show_pbar) as pbar:
                     for _, fbp, gt in pbar:
+
+                        if phase == 'train':
+                            for transform in transforms:
+                                fbp, gt = transform([fbp, gt])
 
                         fbp = fbp.to(self.device)
                         gt = gt.to(self.device)
