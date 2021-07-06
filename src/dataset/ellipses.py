@@ -8,6 +8,7 @@ from odl import uniform_discr
 from functools import partial
 from odl.phantom import ellipsoid_phantom
 from .dataset import Dataset
+from util.transforms_np import deform_random_grid
 
 class ObservationGroundTruthPairDataset(Dataset):
     """
@@ -131,7 +132,7 @@ class EllipsesDataset(GroundTruthDataset):
     """
     def __init__(self, image_size=128, min_pt=None, max_pt=None,
                  train_len=32000, validation_len=3200, test_len=3200,
-                 fixed_seeds=True):
+                 fixed_seeds=True, deform=False, deform_kwargs=None):
 
         self.shape = (image_size, image_size)
         # defining discretization space ODL
@@ -145,11 +146,16 @@ class EllipsesDataset(GroundTruthDataset):
         self.test_len = test_len
         if isinstance(fixed_seeds, bool):
             if fixed_seeds:
-                self.fixed_seeds = {'train': 1, 'validation': 2, 'test': 3}
+                self.fixed_seeds = {'train': 1, 'validation': 2, 'test': 3,
+                                    'train_deform': 11,
+                                    'validation_deform': 12,
+                                    'test_deform': 13}
             else:
                 self.fixed_seeds = {}
         else:
             self.fixed_seeds = fixed_seeds.copy()
+        self.deform = deform
+        self.deform_kwargs = deform_kwargs or {}
         super().__init__(space=space)
 
     def generator(self, fold='train'):
@@ -159,6 +165,9 @@ class EllipsesDataset(GroundTruthDataset):
         """
         seed = self.fixed_seeds.get(fold)
         r = np.random.RandomState(seed)
+        if self.deform:
+            seed_deform = self.fixed_seeds.get(fold + '_deform')
+            r_deform = np.random.RandomState(seed_deform)
         max_n_ellipse = 70
         ellipsoids = np.empty((max_n_ellipse, 6))
         n = self.get_len(fold=fold)
@@ -177,4 +186,8 @@ class EllipsesDataset(GroundTruthDataset):
             # normalize the foreground (all non-zero pixels) to [0., 1.]
             image[np.array(image) != 0.] -= np.min(image)
             image /= np.max(image)
+            if self.deform:
+                image[:] = deform_random_grid(np.asarray(image),
+                                              **self.deform_kwargs,
+                                              random_gen=r_deform)
             yield image

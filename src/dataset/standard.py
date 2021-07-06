@@ -133,7 +133,8 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
 
     if name == 'ellipses':
         dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
-                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
+                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len,
+                         'deform': 'deform' in cfg, 'deform_kwargs': cfg.get('deform', {})}
         ellipses_dataset = EllipsesDataset(**dataset_specs)
         dataset = ellipses_dataset.create_pair_dataset(ray_trafo=ray_trafo,
                 pinv_ray_trafo=smooth_pinv_ray_trafo, noise_type=cfg.noise_specs.noise_type,
@@ -142,7 +143,8 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
                 'test': cfg.seed + 2})
     elif name == 'ellipses_lotus':
         dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
-                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
+                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len,
+                         'deform': 'deform' in cfg, 'deform_kwargs': cfg.get('deform', {})}
         ellipses_dataset = EllipsesDataset(**dataset_specs)
         space = lotus.get_domain128()
         proj_space = lotus.get_proj_space128()
@@ -155,7 +157,8 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
                 'test': cfg.seed + 2})
     elif name == 'ellipses_lotus_20':
         dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
-                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
+                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len,
+                         'deform': 'deform' in cfg, 'deform_kwargs': cfg.get('deform', {})}
         ellipses_dataset = EllipsesDataset(**dataset_specs)
         space = lotus.get_domain128()
         proj_space_orig = lotus.get_proj_space128()

@@ -5,6 +5,10 @@ im_shape: 128
 train_len: 32000
 validation_len: 3200
 test_len: 3200
+deform:
+  sigma: 25
+  points: 3
+  order: 3
 seed: 1
 geometry_specs:
   src_radius: 540
