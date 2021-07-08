@@ -13,11 +13,3 @@ mdl:
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
   optim:
     use_scheduler: False
-    encoder:
-      lr: 1e-3
-      init_lr: 1e-6
-      num_warmup_iter: null
-    decoder:
-      lr: 1e-3
-      init_lr: 1e-6
-      num_warmup_iter: null

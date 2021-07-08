@@ -141,9 +141,11 @@ class DeepImagePriorReconstructor():
                     best_output = output.detach()
 
                 if ground_truth is not None:
-                    psnr = PSNR(best_output.detach().cpu(), ground_truth.cpu())
-                    pbar.set_postfix({"psnr": psnr})
-                    self.writer.add_scalar('psnr', psnr, i)
+                    best_output_psnr = PSNR(best_output.detach().cpu(), ground_truth.cpu())
+                    output_psnr = PSNR(output.detach().cpu(), ground_truth.cpu())
+                    pbar.set_postfix({'output_psnr': output_psnr})
+                    self.writer.add_scalar('best_output_psnr', best_output_psnr, i)
+                    self.writer.add_scalar('output_psnr', output_psnr, i)
 
                 self.writer.add_scalar('loss', loss.item(),  i)
                 if i % 1000 == 0:
@@ -186,11 +188,11 @@ class DeepImagePriorReconstructor():
                 self.init = init_lr/lr
                 self.num_warmup_iter = num_warmup_iter
                 self.num_iterations = num_iterations
+                values = np.linspace(self.init, 1, self.num_warmup_iter).tolist()
+                self.lambda_fct = values + [1] * (self.num_iterations - self.num_warmup_iter)
 
             def __call__(self, epoch):
-                values = np.linspace(self.init, 1, self.num_warmup_iter).tolist()
-                values = values + [1] * (self.num_iterations - self.num_warmup_iter)
-                return values[epoch]
+                return self.lambda_fct[epoch]
 
         self._scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer,
                 lr_lambda=[LRPolicy(init_lr=self.cfg.optim.encoder.init_lr,

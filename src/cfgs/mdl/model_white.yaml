@@ -6,8 +6,15 @@ arch:
   use_norm: True
   use_sigmoid: True
 optim:
-  lr: 1e-3
-  iterations: 50000
+  encoder:
+    lr: 1e-3
+    init_lr: 1e-6
+    num_warmup_iter: null
+  decoder:
+    lr: 1e-3
+    init_lr: 1e-6
+    num_warmup_iter: null
+  iterations: 20000
   loss_function: mse
   gamma: 1e-4
 show_pbar: True

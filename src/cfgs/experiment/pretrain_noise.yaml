@@ -16,11 +16,11 @@ mdl:
     encoder:
       lr: 1e-3
       init_lr: 1e-6
-      num_warmup_iter: 1500
+      num_warmup_iter: 250
     decoder:
       lr: 1e-3
       init_lr: 1e-6
-      num_warmup_iter: 1500
+      num_warmup_iter: 500
 
 trn:
   save_best_learned_params_path: src/reference_params/model_with_noise_${data.name}
