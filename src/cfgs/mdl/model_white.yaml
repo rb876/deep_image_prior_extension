@@ -6,6 +6,7 @@ arch:
   use_norm: True
   use_sigmoid: True
 optim:
+  use_scheduler: False
   encoder:
     lr: 1e-3
     init_lr: 1e-6
