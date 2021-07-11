@@ -8,10 +8,50 @@ from torch.optim import Adam
 from torch.nn import MSELoss
 from warnings import warn
 from functools import partial
+from copy import deepcopy
 from tqdm import tqdm
 
 from .network import UNet
 from .utils import poisson_loss, tv_loss, PSNR, normalize, extract_learnable_params
+
+
+class LRPolicy():
+    """
+    Learning rate policy implementing linear warmup phase(s), for use with
+    the `LambdaLR` scheduler.
+    """
+    def __init__(self, init_lr, lr, num_warmup_iter, num_iterations):
+        self.init_lr = init_lr
+        self.lr = lr
+        self.num_warmup_iter = num_warmup_iter
+        self.num_iterations = num_iterations
+        self.lambda_fct = np.ones(self.num_iterations + 1)
+        self.restart(0, init_lr, lr, preserve_initial_warmup=False)
+
+    def restart(self, epoch, init_lr, lr, preserve_initial_warmup=True):
+        """
+        Add a linear warmup phase starting at `epoch`, linearly increasing
+        from `init_lr` to `lr`. After the warmup, `lr` is used. Optionally, the
+        initial warmup phase is respected by taking the pointwise minimum of
+        both rates.
+        Note: `epoch` specifies the iteration.
+        """
+        n = min(self.num_warmup_iter, max(0, self.num_iterations + 1 - epoch))
+
+        self.lambda_fct[epoch:epoch+n] = np.linspace(
+                init_lr/self.lr, lr/self.lr, self.num_warmup_iter)[:n]
+
+        self.lambda_fct[epoch+n:] = lr/self.lr
+
+        if preserve_initial_warmup:
+            self.lambda_fct[epoch:self.num_warmup_iter] = np.minimum(
+                    self.lambda_fct[epoch:self.num_warmup_iter],
+                    np.linspace(self.init_lr/self.lr, 1., self.num_warmup_iter)[epoch:])
+
+    def __call__(self, epoch):
+        """Note: `epoch` specifies the iteration."""
+        return self.lambda_fct[epoch]
+
 
 class DeepImagePriorReconstructor():
     """
@@ -105,8 +145,7 @@ class DeepImagePriorReconstructor():
             self.net_input = fbp.to(self.device)
 
         self.init_optimizer()
-        if self.cfg.optim.use_scheduler:
-            self.init_scheduler()
+        self.init_scheduler()
         y_delta = noisy_observation.to(self.device)
 
         if self.cfg.optim.loss_function == 'mse':
@@ -122,6 +161,9 @@ class DeepImagePriorReconstructor():
         best_loss = np.inf
         best_output = self.apply_model_on_test_data(self.net_input).detach()
 
+        best_ckpt_loss = np.inf
+        best_ckpt_state_dict = deepcopy(self.model.state_dict())
+
         with tqdm(range(self.cfg.optim.iterations), desc='DIP', disable= not self.cfg.show_pbar) as pbar:
             for i in pbar:
                 self.optimizer.zero_grad()
@@ -131,14 +173,27 @@ class DeepImagePriorReconstructor():
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
                 self.optimizer.step()
 
-                if self.cfg.optim.use_scheduler:
-                    self.scheduler.step()
+                self.writer.add_scalar('lr_encoder', self.optimizer.param_groups[0]['lr'], i)
+                self.writer.add_scalar('lr_decoder', self.optimizer.param_groups[1]['lr'], i)
+
+                self.scheduler.step()
                 for p in self.model.parameters():
                     p.data.clamp_(-1000, 1000) # MIN,MAX
 
                 if loss.item() < best_loss:
                     best_loss = loss.item()
                     best_output = output.detach()
+
+                if (self.cfg.optim.use_checkpointing and
+                        i % self.cfg.optim.checkpointing.interval == 0):
+
+                    if loss.item() > best_ckpt_loss * (1. - self.cfg.optim.checkpointing.min_rel_loss_decrease):
+                        self.model.load_state_dict(best_ckpt_state_dict)
+                        self._update_scheduler_on_ckpt_return(i+1)
+
+                    elif loss.item() < best_ckpt_loss:
+                        best_ckpt_loss = loss.item()
+                        best_ckpt_state_dict = deepcopy(self.model.state_dict())
 
                 if ground_truth is not None:
                     best_output_psnr = PSNR(best_output.detach().cpu(), ground_truth.cpu())
@@ -183,26 +238,56 @@ class DeepImagePriorReconstructor():
 
     def init_scheduler(self):
 
-        class LRPolicy(object):
-            def __init__(self, init_lr, lr, num_warmup_iter, num_iterations):
-                self.init = init_lr/lr
-                self.num_warmup_iter = num_warmup_iter
-                self.num_iterations = num_iterations
-                values = np.linspace(self.init, 1, self.num_warmup_iter).tolist()
-                self.lambda_fct = values + [1] * (self.num_iterations - self.num_warmup_iter)
+        # always use `self.scheduler` to enable lr changes on checkpoint
+        # returns, but set init_lr=lr if `not self.cfg.optim.use_scheduler` to
+        # disable warmups
+        if self.cfg.optim.use_scheduler:
+            init_lr_encoder = self.cfg.optim.encoder.init_lr
+            init_lr_decoder = self.cfg.optim.decoder.init_lr
+        else:
+            init_lr_encoder = self.cfg.optim.encoder.lr
+            init_lr_decoder = self.cfg.optim.decoder.lr
 
-            def __call__(self, epoch):
-                return self.lambda_fct[epoch]
-
-        self._scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer,
-                lr_lambda=[LRPolicy(init_lr=self.cfg.optim.encoder.init_lr,
+        self._lr_policy_encoder = LRPolicy(
+                init_lr=init_lr_encoder,
                 lr=self.cfg.optim.encoder.lr,
                 num_warmup_iter=self.cfg.optim.encoder.num_warmup_iter,
-                num_iterations=self.cfg.optim.iterations),
-                LRPolicy(init_lr=self.cfg.optim.decoder.init_lr,
+                num_iterations=self.cfg.optim.iterations)
+        self._lr_policy_decoder = LRPolicy(
+                init_lr=init_lr_decoder,
                 lr=self.cfg.optim.decoder.lr,
                 num_warmup_iter=self.cfg.optim.decoder.num_warmup_iter,
-                num_iterations=self.cfg.optim.iterations)])
+                num_iterations=self.cfg.optim.iterations)
+
+        self._scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer,
+                lr_lambda=[self._lr_policy_encoder, self._lr_policy_decoder])
+
+        self.init_lr_fct_encoder = 1.
+        self.init_lr_fct_decoder = 1.
+        self.lr_fct_encoder = 1.
+        self.lr_fct_decoder = 1.
+
+    def _update_scheduler_on_ckpt_return(self, iteration):
+
+        self.init_lr_fct_encoder *= self.cfg.optim.encoder.on_ckpt_return.get('multiply_init_lr_by', 1.)
+        self.init_lr_fct_decoder *= self.cfg.optim.decoder.on_ckpt_return.get('multiply_init_lr_by', 1.)
+        self.lr_fct_encoder *= self.cfg.optim.encoder.on_ckpt_return.get('multiply_lr_by', 1.)
+        self.lr_fct_decoder *= self.cfg.optim.decoder.on_ckpt_return.get('multiply_lr_by', 1.)
+
+        lr_encoder = self.cfg.optim.encoder.lr * self.lr_fct_encoder
+        lr_decoder = self.cfg.optim.decoder.lr * self.lr_fct_decoder
+        if (self.cfg.optim.use_scheduler and
+                self.cfg.optim.encoder.on_ckpt_return.restart_scheduler):
+            init_lr_encoder = self.cfg.optim.encoder.init_lr * self.init_lr_fct_encoder
+            init_lr_decoder = self.cfg.optim.decoder.init_lr * self.init_lr_fct_decoder
+        else:
+            init_lr_encoder = lr_encoder
+            init_lr_decoder = lr_decoder
+
+        self._lr_policy_encoder.restart(iteration, init_lr_encoder, lr_encoder,
+                preserve_initial_warmup=not self.cfg.optim.encoder.on_ckpt_return.restart_scheduler)
+        self._lr_policy_decoder.restart(iteration, init_lr_decoder, lr_decoder,
+                preserve_initial_warmup=not self.cfg.optim.decoder.on_ckpt_return.restart_scheduler)
 
     @property
     def scheduler(self):

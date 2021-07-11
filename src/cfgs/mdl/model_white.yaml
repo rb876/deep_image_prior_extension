@@ -7,15 +7,27 @@ arch:
   use_sigmoid: True
 optim:
   use_scheduler: False
+  use_checkpointing: False
   encoder:
     lr: 1e-3
     init_lr: 1e-6
     num_warmup_iter: null
+    on_ckpt_return:
+      restart_scheduler: True
+      multiply_lr_by: 1.
+      multiply_init_lr_by: 1.
   decoder:
     lr: 1e-3
     init_lr: 1e-6
     num_warmup_iter: null
+    on_ckpt_return:
+      restart_scheduler: True
+      multiply_lr_by: 1.
+      multiply_init_lr_by: 1.
   iterations: 20000
+  checkpointing:
+    interval: 100
+    min_rel_loss_decrease: 0.
   loss_function: mse
   gamma: 1e-4
 show_pbar: True
