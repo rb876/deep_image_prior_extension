@@ -238,24 +238,28 @@ class DeepImagePriorReconstructor():
     def init_scheduler(self):
 
         # always use `self.scheduler` to enable lr changes on checkpoint
-        # returns, but set init_lr=lr if `not self.cfg.optim.use_scheduler` to
-        # disable warmups
+        # returns, but set init_lr=lr and num_warmup_iter=0 if
+        # `not self.cfg.optim.use_scheduler`, effectively disabling warmups
         if self.cfg.optim.use_scheduler:
             init_lr_encoder = self.cfg.optim.encoder.init_lr
             init_lr_decoder = self.cfg.optim.decoder.init_lr
+            num_warmup_iter_encoder = self.cfg.optim.encoder.num_warmup_iter
+            num_warmup_iter_decoder = self.cfg.optim.decoder.num_warmup_iter
         else:
             init_lr_encoder = self.cfg.optim.encoder.lr
             init_lr_decoder = self.cfg.optim.decoder.lr
+            num_warmup_iter_encoder = 0
+            num_warmup_iter_decoder = 0
 
         self._lr_policy_encoder = LRPolicy(
                 init_lr=init_lr_encoder,
                 lr=self.cfg.optim.encoder.lr,
-                num_warmup_iter=self.cfg.optim.encoder.num_warmup_iter,
+                num_warmup_iter=num_warmup_iter_encoder,
                 num_iterations=self.cfg.optim.iterations)
         self._lr_policy_decoder = LRPolicy(
                 init_lr=init_lr_decoder,
                 lr=self.cfg.optim.decoder.lr,
-                num_warmup_iter=self.cfg.optim.decoder.num_warmup_iter,
+                num_warmup_iter=num_warmup_iter_decoder,
                 num_iterations=self.cfg.optim.iterations)
 
         self._scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer,
