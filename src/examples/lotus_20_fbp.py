@@ -41,7 +41,9 @@ proj_space = odl.uniform_discr_frompartition(
         odl.uniform_partition_fromgrid(
                 odl.RectGrid(angles_coord_vector,
                              proj_space_orig.grid.coord_vectors[1])))
-scaling_factor = 1.11351589764 / 57.9322294916  # empirical factor, replace by
+# scaling_factor = 1.
+scaling_factor = 1.11351589764 / 57.9322294916  # = 0.019221008882481495
+                                                # empirical factor, replace by
                                                 # correct one if known
 
 filter_op = get_fbp_filter_op(proj_space, scaling_factor=scaling_factor,

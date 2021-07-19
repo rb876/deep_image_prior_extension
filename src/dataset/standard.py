@@ -25,7 +25,8 @@ def subsample_angles_ray_trafo_matrix(matrix, cfg, proj_shape, order='C'):
 
 def load_ray_trafo_matrix(name, cfg):
 
-    if name in ['ellipses_lotus', 'ellipses_lotus_20']:
+    if name in ['ellipses_lotus', 'ellipses_lotus_20', 'ellipses_lotus_40',
+                'ellipses_lotus_limited_30']:
         matrix = lotus.get_ray_trafo_matrix(cfg.ray_trafo_filename)
     else:
         raise NotImplementedError
@@ -153,7 +154,9 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
                 specs_kwargs=specs_kwargs,
                 noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
                 'test': cfg.seed + 2})
-    elif name == 'ellipses_lotus_20':
+    elif (name == 'ellipses_lotus_20' or
+          name == 'ellipses_lotus_40' or
+          name == 'ellipses_lotus_limited_30'):
         dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                          'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
         ellipses_dataset = EllipsesDataset(**dataset_specs)
