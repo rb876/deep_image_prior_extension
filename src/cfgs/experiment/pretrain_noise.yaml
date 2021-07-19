@@ -13,14 +13,21 @@ mdl:
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
   optim:
     use_scheduler: False
+    use_adaptive_lr: True
     encoder:
-      lr: 1e-3
-      init_lr: 1e-6
-      num_warmup_iter: 250
-    decoder:
-      lr: 1e-3
-      init_lr: 1e-6
+      lr: 1e-4
+      init_lr: 1e-7
       num_warmup_iter: 500
+    decoder:
+      lr: 1e-4
+      init_lr: 1e-7
+      num_warmup_iter: 750
+    adaptive_lr:
+      num_avg_iter: 25
+      min_rel_loss_decrease: -2.
+      restart_scheduler: True
+      multiply_lr_by: 1.
+      multiply_init_lr_by: 1.
 
 trn:
   save_best_learned_params_path: src/reference_params/model_with_noise_${data.name}
