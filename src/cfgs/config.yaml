@@ -1,7 +1,7 @@
 defaults:
   - data: standard_ellipses_lotus_20
   - mdl:  model_white
-  - trn:  trainer
+  - trn:  trainer_brightness_contrast_augmentation
 
 pretraining: ???
 save_reconstruction_path: ???
