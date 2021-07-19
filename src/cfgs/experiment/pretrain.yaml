@@ -13,6 +13,7 @@ mdl:
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
   optim:
     use_scheduler: False
+    use_adaptive_lr: False
 
 trn:
   save_best_learned_params_path: src/reference_params/model_${data.name}

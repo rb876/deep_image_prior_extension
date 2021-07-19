@@ -13,7 +13,7 @@ mdl:
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
   optim:
     use_scheduler: False
-    use_adaptive_lr: True
+    use_adaptive_lr: False
     encoder:
       lr: 1e-4
       init_lr: 1e-7
