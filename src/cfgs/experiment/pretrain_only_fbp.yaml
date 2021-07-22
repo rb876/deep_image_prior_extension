@@ -7,7 +7,7 @@ mdl:
   learned_params_path: src/reference_params/model_${data.name}
   recon_from_randn: False
   add_init_reco: False
-  log_path: ./runs/pretraining/
+  log_path: ./runs/pretrainingonlyfbp/
   normalize_by_stats: True
   stats: ${data.stats}
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
@@ -18,4 +18,4 @@ mdl:
 trn:
   save_best_learned_params_path: src/reference_params/model_${data.name}
   add_randn_mask: False
-  log_path: ./runs/pretraining/
+  log_path: ./runs/pretrainingonlyfbp/
