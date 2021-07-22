@@ -106,10 +106,13 @@ class DeepImagePriorReconstructor():
     def apply_model_on_test_data(self, net_input):
         test_scaling = self.cfg.get('implicit_scaling_except_for_test_data')
         if test_scaling is not None and test_scaling != 1.:
-            if self.cfg.add_init_reco:
-                net_input = torch.cat(
-                        (test_scaling * net_input[:, 0].unsqueeze(dim=1),
-                         net_input[:, 1].unsqueeze(dim=1)), dim=1)
+            if self.cfg.recon_from_randn:
+                if self.cfg.add_init_reco:
+                    net_input = torch.cat(
+                            (test_scaling * net_input[:, 0].unsqueeze(dim=1),
+                             net_input[:, 1].unsqueeze(dim=1)), dim=1)
+            else:
+                net_input = test_scaling * net_input
             output = self.model(net_input)
             output = output / test_scaling
         else:
