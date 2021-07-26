@@ -4,7 +4,7 @@ save_reconstruction_path: ./results/pretrainingonlyfbp/
 
 mdl:
   load_pretrain_model: True
-  learned_params_path: src/reference_params/model_${data.name}
+  learned_params_path: src/reference_params/model_${data.name}_swa
   recon_from_randn: False
   add_init_reco: False
   log_path: ./runs/pretrainingonlyfbp/
@@ -17,5 +17,6 @@ mdl:
 
 trn:
   save_best_learned_params_path: src/reference_params/model_${data.name}
+  save_swa_learned_params_path: src/reference_params/model_${data.name}_swa
   add_randn_mask: False
   log_path: ./runs/pretrainingonlyfbp/

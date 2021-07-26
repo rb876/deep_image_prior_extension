@@ -15,6 +15,7 @@ from inspect import signature, Parameter
 from warnings import warn
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CyclicLR, OneCycleLR
+from torch.optim.swa_utils import AveragedModel, SWALR
 from deep_image_prior import PSNR, SSIM
 from util.transforms import random_brightness_contrast
 from functools import partial
@@ -85,11 +86,21 @@ class Trainer():
             schedule_every_batch = isinstance(
                 self._scheduler, (CyclicLR, OneCycleLR))
 
+        if self.cfg.perform_swa:
+            self.swa_scheduler = SWALR(
+                    self._optimizer,
+                    anneal_strategy=self.cfg.swa.anneal_strategy,
+                    anneal_epochs=self.cfg.swa.anneal_epochs,
+                    swa_lr=self.cfg.swa.swa_lr)
+
         best_model_wts = deepcopy(self.model.state_dict())
         best_psnr = 0
 
         self.model.to(self.device)
         self.model.train()
+
+        if self.cfg.perform_swa:
+            self.swa_model = AveragedModel(self.model)
 
         num_iter = 0
         for epoch in range(self.cfg.epochs):
@@ -134,7 +145,9 @@ class Trainer():
                                     self.model.parameters(), max_norm=1)
                                 self._optimizer.step()
                                 if (self._scheduler is not None and
-                                        schedule_every_batch):
+                                        schedule_every_batch and
+                                        not (self.cfg.perform_swa and
+                                             epoch >= self.cfg.swa.start_epoch)):
                                     self._scheduler.step()
 
                         for i in range(outputs.shape[0]):
@@ -155,9 +168,14 @@ class Trainer():
                             self.writer.add_scalar('loss', running_loss/running_size, num_iter)
                             self.writer.add_scalar('psnr', running_psnr/running_size, num_iter)
 
-                    if (self._scheduler is not None
-                            and not schedule_every_batch):
-                        self._scheduler.step()
+                    if phase == 'train':
+                        if (self.cfg.perform_swa
+                                and epoch >= self.cfg.swa.start_epoch):
+                            self.swa_model.update_parameters(self.model)
+                            self.swa_scheduler.step()
+                        elif (self._scheduler is not None
+                                and not schedule_every_batch):
+                            self._scheduler.step()
 
                     epoch_loss = running_loss / dataset_sizes[phase]
                     epoch_psnr = running_psnr / dataset_sizes[phase]
@@ -171,7 +189,16 @@ class Trainer():
                                 self.cfg.save_best_learned_params_path)
 
         print('Best val psnr: {:4f}'.format(best_psnr))
-        self.model.load_state_dict(best_model_wts)
+        if self.cfg.perform_swa:
+            self.best_model = deepcopy(self.model)
+            self.best_model.load_state_dict(best_model_wts)
+            self.model.load_state_dict(
+                    deepcopy(self.swa_model.module.state_dict()))
+            if self.cfg.save_swa_learned_params_path is not None:
+                self.save_learned_params(
+                    self.cfg.save_swa_learned_params_path)
+        else:
+            self.model.load_state_dict(best_model_wts)
         self.writer.close()
 
     def init_optimizer(self):
