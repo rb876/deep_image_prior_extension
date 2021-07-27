@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 from omegaconf import DictConfig
 from dataset import get_standard_dataset, get_test_data
+import torch
 from torch.utils.data import DataLoader
 from deep_image_prior import DeepImagePriorReconstructor
 from pre_training import Trainer
@@ -26,6 +27,9 @@ def coordinator(cfg : DictConfig) -> None:
                  'reco_space': dataset.space[1],
                  'observation_space': dataset.space[0]
                  }
+
+    if cfg.torch_manual_seed_pretrain_init_model:
+        torch.random.manual_seed(cfg.torch_manual_seed_pretrain_init_model)
 
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
     model = deepcopy(reconstructor.model)

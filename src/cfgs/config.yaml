@@ -5,3 +5,4 @@ defaults:
 
 pretraining: ???
 save_reconstruction_path: ???
+torch_manual_seed_pretrain_init_model: 20
