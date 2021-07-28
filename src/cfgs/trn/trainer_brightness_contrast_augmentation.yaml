@@ -1,5 +1,5 @@
 # @package _group_
-epochs: 20
+epochs: 60
 batch_size: 32
 train_len: ${data.train_len}
 lr: 0.001
@@ -9,10 +9,10 @@ weight_decay: 1e-5
 scheduler: onecyclelr
 perform_swa: True
 swa:
-    start_epoch: 15
+    start_epoch: 40
     anneal_strategy: 'cos'
-    anneal_epochs: 0
-    swa_lr: 0.05
+    anneal_epochs: 5
+    swa_lr: 0.001
 transforms:
   -
     name: random_brightness_contrast
