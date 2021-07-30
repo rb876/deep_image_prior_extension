@@ -3,7 +3,7 @@ import os
 import h5py
 import numpy as np
 from omegaconf import DictConfig
-from dataset import get_standard_dataset, get_test_data
+from dataset import get_standard_dataset, get_test_data, get_validation_data
 from torch.utils.data import DataLoader
 from deep_image_prior import DeepImagePriorReconstructor
 from pre_training import Trainer
@@ -14,13 +14,22 @@ def coordinator(cfg : DictConfig) -> None:
 
     dataset, ray_trafos = get_standard_dataset(cfg.data.name, cfg.data)
 
-    if cfg.data.test_data:
-        dataset_test = get_test_data(cfg.data.name, cfg.data)
+    if cfg.validation_run:
+        if cfg.data.test_data:
+            dataset_test = get_test_data(cfg.data.name, cfg.data)
+        else:
+            dataset_test = dataset.create_torch_dataset(
+                fold='test', reshape=((1,) + dataset.space[0].shape,
+                                      (1,) + dataset.space[1].shape,
+                                      (1,) + dataset.space[1].shape))
     else:
-        dataset_test = dataset.create_torch_dataset(
-            fold='test', reshape=((1,) + dataset.space[0].shape,
-                                  (1,) + dataset.space[1].shape,
-                                  (1,) + dataset.space[1].shape))
+        if cfg.data.validation_data:
+            dataset_test = get_validation_data(cfg.data.name, cfg.data)
+        else:
+            dataset_test = dataset.create_torch_dataset(
+                fold='validation', reshape=((1,) + dataset.space[0].shape,
+                                            (1,) + dataset.space[1].shape,
+                                            (1,) + dataset.space[1].shape))
 
     ray_trafo = {'ray_trafo_module': ray_trafos['ray_trafo_module'],
                  'reco_space': dataset.space[1],

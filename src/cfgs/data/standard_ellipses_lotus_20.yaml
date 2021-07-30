@@ -1,5 +1,6 @@
 # @package _group_
 name: ellipses_lotus_20
+validation_data: shepp_logan
 test_data: lotus
 im_shape: 128
 train_len: 32000

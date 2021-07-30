@@ -4,4 +4,5 @@ defaults:
   - trn:  trainer_brightness_contrast_augmentation
 
 pretraining: ???
+validation_run: False
 save_reconstruction_path: ???
