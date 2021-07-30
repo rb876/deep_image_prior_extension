@@ -291,14 +291,12 @@ def get_shepp_logan_data(name, cfg, modified=True, seed=30):
             name, cfg, return_ray_trafo_torch_module=False)
     smooth_pinv_ray_trafo = ray_trafos['smooth_pinv_ray_trafo']
 
-    ground_truth = odl.phantom.shepp_logan(dataset.space[1], modified=modified)
+    ground_truth = (
+            odl.phantom.shepp_logan(dataset.space[1], modified=modified)
+            / cfg.get('implicit_scaling_except_for_test_data', 1.))
 
     random_gen = np.random.default_rng(seed)
     sinogram = dataset.ground_truth_to_obs(ground_truth, random_gen=random_gen)
-    if 'angles_subsampling' in cfg.geometry_specs:
-        sinogram = sinogram[cfg.geometry_specs.angles_subsampling.start:
-                            cfg.geometry_specs.angles_subsampling.stop:
-                            cfg.geometry_specs.angles_subsampling.step, :]
 
     fbp = np.asarray(smooth_pinv_ray_trafo(sinogram))
 
