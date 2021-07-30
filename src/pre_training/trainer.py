@@ -167,6 +167,7 @@ class Trainer():
                             num_iter += 1
                             self.writer.add_scalar('loss', running_loss/running_size, num_iter)
                             self.writer.add_scalar('psnr', running_psnr/running_size, num_iter)
+                            self.writer.add_scalar('lr', self.optimizer.param_groups[0]['lr'], num_iter)
 
                     if phase == 'train':
                         if (self.cfg.perform_swa
@@ -179,6 +180,10 @@ class Trainer():
 
                     epoch_loss = running_loss / dataset_sizes[phase]
                     epoch_psnr = running_psnr / dataset_sizes[phase]
+
+                    if phase == 'validation':
+                        self.writer.add_scalar('val_loss', epoch_loss, num_iter)
+                        self.writer.add_scalar('val_psnr', epoch_psnr, num_iter)
 
                     # deep copy the model (if it is the best one seen so far)
                     if phase == 'validation' and epoch_psnr > best_psnr:
@@ -232,7 +237,7 @@ class Trainer():
         elif self.cfg.scheduler.lower() == 'onecyclelr':
             self._scheduler = OneCycleLR(
                 self.optimizer,
-                steps_per_epoch=self.cfg.train_len,
+                steps_per_epoch=ceil(self.cfg.train_len / self.cfg.batch_size),
                 max_lr=self.cfg.max_lr,
                 epochs=self.cfg.epochs)
         else:
