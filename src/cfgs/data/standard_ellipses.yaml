@@ -1,5 +1,6 @@
 # @package _group_
 name: ellipses
+validation_data: null
 test_data: null
 im_shape: 128
 train_len: 32000

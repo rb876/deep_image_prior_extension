@@ -223,6 +223,46 @@ def get_test_data(name, cfg, return_torch_dataset=True):
         return sinogram_array, fbp_array, ground_truth_array
 
 
+def get_validation_data(name, cfg, return_torch_dataset=True):
+    """
+    Return external validation data.
+
+    E.g., for `'ellipses_lotus'` data of the Shepp-Logan phantom is returned
+    for validating a model trained on the `'ellipses_lotus'` standard dataset.
+
+    Sinograms, FBPs and potentially ground truth images are returned, by
+    default combined as a torch `TensorDataset` of two or three tensors.
+
+    If `return_torch_dataset=False` is passed, numpy arrays
+    ``sinogram_array, fbp_array, ground_truth_array`` are returned, where
+    `ground_truth_array` can be `None` and all arrays have shape ``(N, W, H)``.
+    """
+
+    if cfg.test_data == 'lotus':
+        sinogram, fbp, ground_truth = get_shepp_logan_data(name, cfg)
+        sinogram_array = sinogram[None]
+        fbp_array = fbp[None]
+        ground_truth_array = (ground_truth[None] if ground_truth is not None
+                              else None)
+    else:
+        raise NotImplementedError
+
+    if return_torch_dataset:
+        if ground_truth_array is not None:
+            dataset = torch.utils.data.TensorDataset(
+                        torch.from_numpy(sinogram_array[:, None]),
+                        torch.from_numpy(fbp_array[:, None]),
+                        torch.from_numpy(ground_truth_array[:, None]))
+        else:
+            dataset = torch.utils.data.TensorDataset(
+                        torch.from_numpy(sinogram_array[:, None]),
+                        torch.from_numpy(fbp_array[:, None]))
+
+        return dataset
+    else:
+        return sinogram_array, fbp_array, ground_truth_array
+
+
 def get_lotus_data(name, cfg):
 
     ray_trafos = get_ray_trafos(name, cfg,
@@ -231,6 +271,30 @@ def get_lotus_data(name, cfg):
 
     sinogram = np.asarray(lotus.get_sinogram(
                     cfg.geometry_specs.ray_trafo_filename))
+    if 'angles_subsampling' in cfg.geometry_specs:
+        sinogram = sinogram[cfg.geometry_specs.angles_subsampling.start:
+                            cfg.geometry_specs.angles_subsampling.stop:
+                            cfg.geometry_specs.angles_subsampling.step, :]
+
+    fbp = np.asarray(smooth_pinv_ray_trafo(sinogram))
+
+    ground_truth = None
+    if cfg.ground_truth_filename is not None:
+        ground_truth = lotus.get_ground_truth(cfg.ground_truth_filename)
+
+    return sinogram, fbp, ground_truth
+
+
+def get_shepp_logan_data(name, cfg, modified=True, seed=30):
+
+    dataset, ray_trafos = get_standard_dataset(
+            name, cfg, return_ray_trafo_torch_module=False)
+    smooth_pinv_ray_trafo = ray_trafos['smooth_pinv_ray_trafo']
+
+    ground_truth = odl.phantom.shepp_logan(dataset.space[1], modified=modified)
+
+    random_gen = np.random.default_rng(seed)
+    sinogram = dataset.ground_truth_to_obs(ground_truth, random_gen=random_gen)
     if 'angles_subsampling' in cfg.geometry_specs:
         sinogram = sinogram[cfg.geometry_specs.angles_subsampling.start:
                             cfg.geometry_specs.angles_subsampling.stop:
