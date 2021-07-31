@@ -1,6 +1,7 @@
 # @package _global_
 pretraining: True
 save_reconstruction_path: ./results/pretrainingonlyfbp/
+save_histories_path: ./results/pretrainingonlyfbp/
 
 mdl:
   load_pretrain_model: True

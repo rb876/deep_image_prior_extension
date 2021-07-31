@@ -45,8 +45,9 @@ def coordinator(cfg : DictConfig) -> None:
     if cfg.pretraining:
         Trainer(model=model, cfg=cfg.trn).train(dataset)
 
-    if not os.path.exists(cfg.save_reconstruction_path):
-        os.makedirs(cfg.save_reconstruction_path)
+    os.makedirs(cfg.save_reconstruction_path, exist_ok=True)
+    if cfg.save_histories_path is not None:
+        os.makedirs(cfg.save_histories_path, exist_ok=True)
 
     filename = os.path.join(cfg.save_reconstruction_path,'recos.hdf5')
     file = h5py.File(filename, 'w')
@@ -58,8 +59,16 @@ def coordinator(cfg : DictConfig) -> None:
 
     for i, (noisy_obs, fbp, *gt) in enumerate(dataloader):
         gt = gt[0] if gt else None
-        reco = reconstructor.reconstruct(noisy_obs.float(), fbp, gt)
+        reco, *optional_out = reconstructor.reconstruct(
+                noisy_obs.float(), fbp, gt,
+                return_histories=cfg.save_histories_path is not None)
         dataset[i] = reco
+        if cfg.save_histories_path is not None:
+            histories = optional_out[0]
+            histories = {k: np.array(v, dtype=np.float32)
+                         for k, v in histories.items()}
+            np.savez(os.path.join(cfg.save_histories_path, 'histories.npz'),
+                     **histories)
 
 if __name__ == '__main__':
     coordinator()

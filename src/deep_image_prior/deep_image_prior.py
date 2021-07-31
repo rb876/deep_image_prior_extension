@@ -120,7 +120,8 @@ class DeepImagePriorReconstructor():
 
         return output
 
-    def reconstruct(self, noisy_observation, fbp=None, ground_truth=None):
+    def reconstruct(self, noisy_observation, fbp=None, ground_truth=None,
+                    return_histories=False, return_iterates=None):
 
         if self.cfg.torch_manual_seed:
             torch.random.manual_seed(self.cfg.torch_manual_seed)
@@ -160,10 +161,20 @@ class DeepImagePriorReconstructor():
             warn('Unknown loss function, falling back to MSE')
             criterion = MSELoss()
 
+        if return_iterates is None:
+            return_iterates = []
+        elif isinstance(return_iterates, slice):
+            return_iterates = range(self.cfg.optim.iterations)[return_iterates]
+
+        iterates = []
+
         best_loss = np.inf
         best_output = self.apply_model_on_test_data(self.net_input).detach()
 
         loss_history = []
+        psnr_history = []
+        lr_encoder_history = []
+        lr_decoder_history = []
         loss_avg_history = []
         last_lr_adaptation_iter = 0
 
@@ -176,6 +187,9 @@ class DeepImagePriorReconstructor():
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
                 self.optimizer.step()
 
+                if return_histories:
+                    lr_encoder_history.append(self.optimizer.param_groups[0]['lr'])
+                    lr_decoder_history.append(self.optimizer.param_groups[1]['lr'])
                 self.writer.add_scalar('lr_encoder', self.optimizer.param_groups[0]['lr'], i)
                 self.writer.add_scalar('lr_decoder', self.optimizer.param_groups[1]['lr'], i)
 
@@ -187,8 +201,10 @@ class DeepImagePriorReconstructor():
                     best_loss = loss.item()
                     best_output = output.detach()
 
-                if self.cfg.optim.use_adaptive_lr:
+                if self.cfg.optim.use_adaptive_lr or return_histories:
                     loss_history.append(loss.item())
+
+                if self.cfg.optim.use_adaptive_lr:
                     loss_avg_history.append(np.inf if i+1 < self.cfg.optim.adaptive_lr.num_avg_iter else
                                             np.mean(loss_history[-self.cfg.optim.adaptive_lr.num_avg_iter:]))
 
@@ -200,17 +216,33 @@ class DeepImagePriorReconstructor():
                 if ground_truth is not None:
                     best_output_psnr = PSNR(best_output.detach().cpu(), ground_truth.cpu())
                     output_psnr = PSNR(output.detach().cpu(), ground_truth.cpu())
+                    if return_histories:
+                        psnr_history.append(output_psnr)
                     pbar.set_postfix({'output_psnr': output_psnr})
                     self.writer.add_scalar('best_output_psnr', best_output_psnr, i)
                     self.writer.add_scalar('output_psnr', output_psnr, i)
 
                 self.writer.add_scalar('loss', loss.item(),  i)
+                if i in return_iterates:
+                    iterates.append(output[0, ...].detach().cpu().numpy())
                 if i % 1000 == 0:
                     self.writer.add_image('reco', normalize(best_output[0, ...]).cpu().numpy(), i)
 
         self.writer.close()
 
-        return best_output[0, 0, ...].cpu().numpy()
+        out = best_output[0, 0, ...].cpu().numpy()
+
+        optional_out = []
+        if return_histories:
+            histories = {'loss': loss_history,
+                         'psnr': psnr_history,
+                         'lr_encoder': lr_encoder_history,
+                         'lr_decoder': lr_decoder_history}
+            optional_out.append(histories)
+        if return_iterates:
+            optional_out.append(iterates)
+
+        return (out, *optional_out) if optional_out else out
 
     def init_optimizer(self):
         """

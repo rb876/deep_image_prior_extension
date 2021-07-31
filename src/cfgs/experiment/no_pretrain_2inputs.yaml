@@ -1,6 +1,7 @@
 # @package _global_
 pretraining: False
 save_reconstruction_path: ./results/nopretraining2inputs/
+save_histories_path: ./results/nopretraining2inputs/
 
 mdl:
   load_pretrain_model: ${pretraining}
