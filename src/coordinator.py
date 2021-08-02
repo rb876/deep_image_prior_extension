@@ -48,6 +48,8 @@ def coordinator(cfg : DictConfig) -> None:
     os.makedirs(cfg.save_reconstruction_path, exist_ok=True)
     if cfg.save_histories_path is not None:
         os.makedirs(cfg.save_histories_path, exist_ok=True)
+    if cfg.save_iterates_path is not None:
+        os.makedirs(cfg.save_iterates_path, exist_ok=True)
 
     filename = os.path.join(cfg.save_reconstruction_path,'recos.hdf5')
     file = h5py.File(filename, 'w')
@@ -61,14 +63,22 @@ def coordinator(cfg : DictConfig) -> None:
         gt = gt[0] if gt else None
         reco, *optional_out = reconstructor.reconstruct(
                 noisy_obs.float(), fbp, gt,
-                return_histories=cfg.save_histories_path is not None)
+                return_histories=cfg.save_histories_path is not None,
+                return_iterates=cfg.save_iterates_path is not None)
         dataset[i] = reco
         if cfg.save_histories_path is not None:
-            histories = optional_out[0]
+            histories = optional_out.pop(0)
             histories = {k: np.array(v, dtype=np.float32)
                          for k, v in histories.items()}
             np.savez(os.path.join(cfg.save_histories_path, 'histories.npz'),
                      **histories)
+        if cfg.save_iterates_path is not None:
+            iterates = optional_out.pop(0)
+            iterates_iters = optional_out.pop(0)
+            np.savez_compressed(
+                    os.path.join(cfg.save_histories_path, 'iterates.npz'),
+                    iterates=np.asarray(iterates),
+                    iterates_iters=iterates_iters)
 
 if __name__ == '__main__':
     coordinator()

@@ -2,6 +2,7 @@
 pretraining: False
 save_reconstruction_path: ./results/nopretrainingnoise/
 save_histories_path: ./results/nopretrainingnoise/
+save_iterates_path: null
 
 mdl:
   load_pretrain_model: ${pretraining}

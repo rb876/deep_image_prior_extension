@@ -2,6 +2,7 @@
 pretraining: True
 save_reconstruction_path: ./results/pretrainingonlyfbp/
 save_histories_path: ./results/pretrainingonlyfbp/
+save_iterates_path: null
 
 mdl:
   load_pretrain_model: True

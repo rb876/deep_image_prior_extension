@@ -52,6 +52,30 @@ class LRPolicy():
         return self.lambda_fct[epoch]
 
 
+def get_iterates_iters(cfg, iterations):
+    s = []
+
+    if cfg.mode == 'standard_sequence':
+        s += range(100)
+        s += range(100, 250, 5)
+        s += range(250, 1000, 25)
+        s += range(1000, 5000, 100)
+        s += range(5000, 10000, 500)
+        s += range(10000, iterations, 2500)
+    elif cfg.mode == 'manual':
+        pass
+    else:
+        raise ValueError('Unknown iterates selection mode \'{}\''
+                         .format(cfg.mode))
+
+    if cfg.manual_iters is not None:
+        s += cfg.manual_iters
+
+    s = [i for i in s if i < iterations]
+    s = sorted(list(set(s)))
+
+    return s
+
 class DeepImagePriorReconstructor():
     """
     CT reconstructor applying DIP with TV regularization (see [2]_).
@@ -121,7 +145,40 @@ class DeepImagePriorReconstructor():
         return output
 
     def reconstruct(self, noisy_observation, fbp=None, ground_truth=None,
-                    return_histories=False, return_iterates=None):
+                    return_histories=False, return_iterates=False):
+        """
+        Parameters
+        ----------
+        noisy_observation : :class:`torch.Tensor`
+            Noisy observation.
+        fbp : :class:`torch.Tensor`, optional
+            Input reconstruction (e.g. filtered backprojection).
+        ground_truth : :class:`torch.Tensor`, optional
+            Ground truth image.
+        return_histories : bool, optional
+            Whether to return histories of loss, PSNR and learning rates.
+            The default is `False`.
+        return_iterates : bool, optional
+            Whether to return a selection of iterates, configured via
+            ``self.cfg.return_iterates_selection``.
+            The default is `False`.
+
+        Returns
+        -------
+        out : :class:`numpy.ndarray`
+            The reconstruction with minimum loss value reached.
+        histories : dict, optional
+            Histories, contained in a dict under the following keys:
+            `'loss'`, `'psnr'`, `'lr_encoder'`, `'lr_decoder'`.
+            Each history is a list of scalar values.
+            Only provided if ``return_histories=True``.
+        iterates : list of :class:`numpy.ndarray`, optional
+            Reconstructions at intermediate iterations.
+            Only provided if ``return_iterates=True``.
+        iterates_iters : list of int, optional
+            Iterations corresponding to `iterates`.
+            Only provided if ``return_iterates=True``.
+        """
 
         if self.cfg.torch_manual_seed:
             torch.random.manual_seed(self.cfg.torch_manual_seed)
@@ -161,10 +218,11 @@ class DeepImagePriorReconstructor():
             warn('Unknown loss function, falling back to MSE')
             criterion = MSELoss()
 
-        if return_iterates is None:
-            return_iterates = []
-        elif isinstance(return_iterates, slice):
-            return_iterates = range(self.cfg.optim.iterations)[return_iterates]
+        iterates_iters = []
+        if return_iterates:
+            iterates_iters = get_iterates_iters(
+                self.cfg.return_iterates_selection,
+                self.cfg.optim.iterations)
 
         iterates = []
 
@@ -223,7 +281,7 @@ class DeepImagePriorReconstructor():
                     self.writer.add_scalar('output_psnr', output_psnr, i)
 
                 self.writer.add_scalar('loss', loss.item(),  i)
-                if i in return_iterates:
+                if i in iterates_iters:
                     iterates.append(output[0, ...].detach().cpu().numpy())
                 if i % 1000 == 0:
                     self.writer.add_image('reco', normalize(best_output[0, ...]).cpu().numpy(), i)
@@ -241,6 +299,7 @@ class DeepImagePriorReconstructor():
             optional_out.append(histories)
         if return_iterates:
             optional_out.append(iterates)
+            optional_out.append(iterates_iters)
 
         return (out, *optional_out) if optional_out else out
 

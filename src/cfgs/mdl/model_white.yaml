@@ -17,5 +17,8 @@ optim:
   iterations: 20000
   loss_function: mse
   gamma: 1e-4
+return_iterates_selection:
+  mode: 'standard_sequence'
+  manual_iters: null
 show_pbar: True
 torch_manual_seed: 10
