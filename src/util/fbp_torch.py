@@ -54,6 +54,7 @@ class FBPFilterModule(torch.nn.Module):
         # Create ramp in the detector direction
         ramp_function = fourier_filter(
                 (None, self.fourier_mod.fourier_domain.meshgrid[1]))
+        ramp_function *= self.scaling_factor
         self.register_buffer('ramp_function',
                 torch.from_numpy(ramp_function).float()[..., None],
                 persistent=False)
