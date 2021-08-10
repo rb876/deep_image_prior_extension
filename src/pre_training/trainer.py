@@ -8,6 +8,7 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 import tensorboardX
+import matplotlib.pyplot as plt
 from copy import deepcopy
 from math import ceil
 from tqdm import tqdm, trange
@@ -38,7 +39,10 @@ class Trainer():
             current_time + '_' + socket.gethostname() + comment)
         self.writer = tensorboardX.SummaryWriter(logdir=logdir)
         if self.cfg.use_adversarial_attacks:
-            self.adversarial_attack = PGDAttack(model=model, ray_trafos=ray_trafos)
+            self.adversarial_attack = PGDAttack(model=model, ray_trafos=ray_trafos,
+                                                steps=cfg.adversarial_attacks.steps,
+                                                eps=cfg.adversarial_attacks.eps,
+                                                alpha=cfg.adversarial_attacks.alpha)
 
     def train(self, dataset):
         if self.cfg.torch_manual_seed:
@@ -126,13 +130,17 @@ class Trainer():
                         if phase == 'train':
                             for transform in transforms:
                                 fbp, gt = transform([fbp, gt])
+
                             if self.cfg.use_adversarial_attacks:
                                 tmp_fbp = fbp.clone()
                                 fbp, costs = self.adversarial_attack(obs, gt)
-                                if num_iter%500 == 0:
-                                    self.writer.add_image('original_fbp', tmp_fbp[0, ...].cpu().numpy(), num_iter)
-                                    self.writer.add_image('adversarial_fbp', fbp[0, ...].cpu().numpy(), num_iter)
-                                    self.writer.add_image('diff.', (fbp[0, ...] - tmp_fbp[0, ...]).cpu().numpy(), num_iter)
+
+                                if (self.cfg.adversarial_attacks.log_interval and
+                                            num_iter % self.cfg.adversarial_attacks.log_interval == 0):
+                                    self.log_adversarial(
+                                            num_iter=num_iter, adv_fbp=fbp,
+                                            orig_fbp=tmp_fbp, gt=gt,
+                                            costs=costs)
 
                         fbp = fbp.to(self.device)
                         gt = gt.to(self.device)
@@ -216,6 +224,54 @@ class Trainer():
         else:
             self.model.load_state_dict(best_model_wts)
         self.writer.close()
+
+    def log_adversarial(self, num_iter, adv_fbp, orig_fbp, gt, costs):
+        fig, ax = plt.subplots()
+        ax.plot(costs)
+        ax.set_xlabel('adversarial steps')
+        ax.set_ylabel('cost')
+        fig.tight_layout()
+        self.writer.add_figure('cost_convergence', fig, num_iter)
+
+        fig, ax = plt.subplots(1, 3, figsize=(13, 3.5))
+        im = ax[0].imshow(adv_fbp.cpu()[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[0])
+        ax[0].set_title('adv_fbp')
+        im = ax[1].imshow(orig_fbp.cpu()[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[1])
+        ax[1].set_title('orig_fbp')
+        im = ax[2].imshow((adv_fbp.cpu()-orig_fbp.cpu())[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[2])
+        ax[2].set_title('adv_fbp-orig_fbp')
+        fig.tight_layout()
+        self.writer.add_figure('adversarial_fbp', fig, num_iter)
+
+        mode = self.model.training
+        self.model.eval()
+        with torch.no_grad():
+            adv_outputs = self.model(adv_fbp.to(self.device))
+            orig_outputs = self.model(orig_fbp.to(self.device))
+        self.model.train(mode)
+
+        fig, ax = plt.subplots(1, 5, figsize=(21, 3.5))
+        im = ax[0].imshow(adv_outputs.cpu()[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[0])
+        ax[0].set_title('adv_output')
+        im = ax[1].imshow(orig_outputs.cpu()[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[1])
+        ax[1].set_title('orig_output')
+        im = ax[2].imshow((adv_outputs.cpu()-orig_outputs.cpu())[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[2])
+        ax[2].set_title('adv_output-orig_output')
+        im = ax[3].imshow(gt.cpu()[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[3])
+        ax[3].set_title('gt')
+        im = ax[4].imshow((adv_outputs.cpu()-gt.cpu())[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[4])
+        ax[4].set_title('adv_output-gt')
+        fig.tight_layout()
+        self.writer.add_figure('adversarial_output', fig, num_iter)
+
 
     def init_optimizer(self):
         """

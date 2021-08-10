@@ -95,5 +95,4 @@ class PGDAttack(Attack):
             delta = delta * factor.view(-1, 1, 1, 1)
             adv_obs = (obs + delta)
 
-        return torch.clamp(self.smooth_pinv_ray_trafo_module(adv_obs),
-                           min=0, max=1), costs
+        return self.smooth_pinv_ray_trafo_module(adv_obs), costs
