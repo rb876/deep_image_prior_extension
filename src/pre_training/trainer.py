@@ -253,7 +253,7 @@ class Trainer():
             orig_outputs = self.model(orig_fbp.to(self.device))
         self.model.train(mode)
 
-        fig, ax = plt.subplots(1, 5, figsize=(21, 3.5))
+        fig, ax = plt.subplots(1, 6, figsize=(24, 3.5))
         im = ax[0].imshow(adv_outputs.cpu()[0].numpy().T, cmap='gray')
         fig.colorbar(im, ax=ax[0])
         ax[0].set_title('adv_output')
@@ -269,6 +269,9 @@ class Trainer():
         im = ax[4].imshow((adv_outputs.cpu()-gt.cpu())[0].numpy().T, cmap='gray')
         fig.colorbar(im, ax=ax[4])
         ax[4].set_title('adv_output-gt')
+        im = ax[5].imshow((orig_outputs.cpu()-gt.cpu())[0].numpy().T, cmap='gray')
+        fig.colorbar(im, ax=ax[5])
+        ax[5].set_title('orig_output-gt')
         fig.tight_layout()
         self.writer.add_figure('adversarial_output', fig, num_iter)
 
