@@ -43,7 +43,9 @@ def coordinator(cfg : DictConfig) -> None:
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
     model = deepcopy(reconstructor.model)
     if cfg.pretraining:
-        Trainer(model=model, cfg=cfg.trn).train(dataset)
+        Trainer(model=model,
+        ray_trafos={'smooth_pinv_ray_trafo_module': ray_trafos['smooth_pinv_ray_trafo_module'
+        ]}, cfg=cfg.trn).train(dataset)
 
     os.makedirs(cfg.save_reconstruction_path, exist_ok=True)
     if cfg.save_histories_path is not None:

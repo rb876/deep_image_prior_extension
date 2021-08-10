@@ -6,6 +6,7 @@ from .ellipses import EllipsesDataset
 from . import lotus
 from util.matrix_ray_trafo import MatrixRayTrafo
 from util.matrix_ray_trafo_torch import get_matrix_ray_trafo_module
+from util.matrix_fbp_torch import get_matrix_fbp_module
 from util.fbp import FBP
 
 
@@ -82,6 +83,13 @@ def get_ray_trafos(name, cfg, return_torch_module=True):
             ray_trafos['ray_trafo_module'] = get_matrix_ray_trafo_module(
                     matrix, (cfg.im_shape, cfg.im_shape), proj_shape,
                     sparse=True)
+            ray_trafos['smooth_pinv_ray_trafo_module'] = get_matrix_fbp_module(
+                    get_matrix_ray_trafo_module(
+                    matrix, (cfg.im_shape, cfg.im_shape), proj_shape,
+                    sparse=True, adjoint=True), proj_shape,
+                    scaling_factor=cfg.fbp_scaling_factor,
+                    filter_type=cfg.fbp_filter_type,
+                    frequency_scaling=cfg.fbp_frequency_scaling)
     else:
         space = odl.uniform_discr([-cfg.im_shape / 2, -cfg.im_shape / 2],
                                   [cfg.im_shape / 2, cfg.im_shape / 2],
@@ -106,6 +114,7 @@ def get_ray_trafos(name, cfg, return_torch_module=True):
 
         if return_torch_module:
             ray_trafos['ray_trafo_module'] = OperatorModule(ray_trafo)
+            ray_trafos['smooth_pinv_ray_trafo_module'] = OperatorModule(smooth_pinv_ray_trafo)
 
     return ray_trafos
 

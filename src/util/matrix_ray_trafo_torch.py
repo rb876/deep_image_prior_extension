@@ -28,7 +28,7 @@ class MatrixModule(nn.Module):
     def forward(self, inp):
         """
         Apply the forward projection by (sparse) matrix multiplication.
-        
+
         Parameters
         ----------
         inp : :class:`torch.Tensor`
@@ -38,7 +38,7 @@ class MatrixModule(nn.Module):
         if self.sparse:
             inp_flat = inp_flat.transpose(1, 0)
             out_flat = torch.sparse.mm(self.matrix, inp_flat)
-            out = out_flat.transpose(1, 0)
+            out_flat = out_flat.transpose(1, 0)
         else:
             out_flat = torch.matmul(self.matrix, inp_flat)
         out = out_flat.view(inp.shape[0], inp.shape[1], *self.out_shape)

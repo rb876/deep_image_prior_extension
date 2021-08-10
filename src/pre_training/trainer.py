@@ -19,14 +19,16 @@ from torch.optim.swa_utils import AveragedModel, SWALR
 from deep_image_prior import PSNR, SSIM
 from util.transforms import random_brightness_contrast
 from functools import partial
+from .adversarial_attacks import PGDAttack
 
 class Trainer():
 
     """
     Wrapper for pre-trainig a model.
     """
-    def __init__(self, model, cfg):
+    def __init__(self, model, ray_trafos, cfg):
         self.model = model
+        self.ray_trafos = ray_trafos
         self.cfg = cfg
         self.device = torch.device(('cuda:0' if torch.cuda.is_available() else 'cpu'))
         current_time = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
@@ -35,6 +37,8 @@ class Trainer():
             cfg.log_path,
             current_time + '_' + socket.gethostname() + comment)
         self.writer = tensorboardX.SummaryWriter(logdir=logdir)
+        if self.cfg.use_adversarial_attacks:
+            self.adversarial_attack = PGDAttack(model=model, ray_trafos=ray_trafos)
 
     def train(self, dataset):
         if self.cfg.torch_manual_seed:
@@ -117,11 +121,18 @@ class Trainer():
                 with tqdm(data_loaders[phase],
                           desc='epoch {:d}'.format(epoch + 1),
                           disable=not self.cfg.show_pbar) as pbar:
-                    for _, fbp, gt in pbar:
+                    for obs, fbp, gt in pbar:
 
                         if phase == 'train':
                             for transform in transforms:
                                 fbp, gt = transform([fbp, gt])
+                            if self.cfg.use_adversarial_attacks:
+                                tmp_fbp = fbp.clone()
+                                fbp, costs = self.adversarial_attack(obs, gt)
+                                if num_iter%500 == 0:
+                                    self.writer.add_image('original_fbp', tmp_fbp[0, ...].cpu().numpy(), num_iter)
+                                    self.writer.add_image('adversarial_fbp', fbp[0, ...].cpu().numpy(), num_iter)
+                                    self.writer.add_image('diff.', (fbp[0, ...] - tmp_fbp[0, ...]).cpu().numpy(), num_iter)
 
                         fbp = fbp.to(self.device)
                         gt = gt.to(self.device)
