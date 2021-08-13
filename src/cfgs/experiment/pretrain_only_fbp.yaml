@@ -6,7 +6,7 @@ save_iterates_path: null
 
 mdl:
   load_pretrain_model: True
-  learned_params_path: src/reference_params/model_${data.name}_swa
+  learned_params_path: params/model_${data.name}
   recon_from_randn: False
   add_init_reco: False
   log_path: ./runs/pretrainingonlyfbp/
@@ -19,7 +19,7 @@ mdl:
 
 trn:
   use_adversarial_attacks: False
-  save_best_learned_params_path: src/reference_params/model_${data.name}
-  save_swa_learned_params_path: src/reference_params/model_${data.name}_swa
+  save_best_learned_params_path: params/model_${data.name}
+  save_swa_learned_params_path: params/model_${data.name}_swa
   add_randn_mask: False
   log_path: ./runs/pretrainingonlyfbp/

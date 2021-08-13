@@ -102,7 +102,7 @@ class Trainer():
                     swa_lr=self.cfg.swa.swa_lr)
 
         best_model_wts = deepcopy(self.model.state_dict())
-        best_psnr = 0
+        best_psnr = -np.inf
 
         self.model.to(self.device)
         self.model.train()
@@ -331,7 +331,6 @@ class Trainer():
         Save learned parameters from file.
         """
         path = path if path.endswith('.pt') else path + '.pt'
-        path = os.path.join(os.getcwd().partition('src')[0], path)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self.model.state_dict(), path)
 

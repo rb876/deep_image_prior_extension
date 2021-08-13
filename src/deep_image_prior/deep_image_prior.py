@@ -188,7 +188,6 @@ class DeepImagePriorReconstructor():
             path = \
                 self.cfg.learned_params_path if self.cfg.learned_params_path.endswith('.pt') \
                     else self.cfg.learned_params_path + '.pt'
-            path = os.path.join(os.getcwd().partition('src')[0], path)
             self.model.load_state_dict(torch.load(path, map_location=self.device))
         else:
             self.model.to(self.device)
