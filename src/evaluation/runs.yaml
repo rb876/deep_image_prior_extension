@@ -1,0 +1,67 @@
+reconstruction:
+  ellipses_lotus_20:
+    pretrain:
+      - run_path: null
+    pretrain_noise:
+      - run_path: null
+    pretrain_only_fbp:
+      - run_path: null
+    no_pretrain:
+      - run_path: null
+    no_pretrain_fbp:
+      - run_path: null
+    no_pretrain_2inputs:
+      - run_path: null
+  ellipses_lotus_limited_30:
+    pretrain:
+      - run_path: null
+    pretrain_noise:
+      - run_path: null
+    pretrain_only_fbp:
+      - run_path: null
+    no_pretrain:
+      - run_path: null
+    no_pretrain_fbp:
+      - run_path: null
+    no_pretrain_2inputs:
+      - run_path: null
+
+pretraining:
+  ellipses_lotus_20:
+    pretrain:
+      - run_path: null
+    pretrain_noise:
+      - run_path: null
+  ellipses_lotus_limited_30:
+    pretrain:
+      - run_path: null
+    pretrain_noise:
+      - run_path: null
+
+reconstruction_with_iterates:
+  ellipses_lotus_20:
+    pretrain:
+      - run_path: null
+    pretrain_noise:
+      - run_path: null
+    pretrain_only_fbp:
+      - run_path: null
+    no_pretrain:
+      - run_path: null
+    no_pretrain_fbp:
+      - run_path: null
+    no_pretrain_2inputs:
+      - run_path: null
+  ellipses_lotus_limited_30:
+    pretrain:
+      - run_path: null
+    pretrain_noise:
+      - run_path: null
+    pretrain_only_fbp:
+      - run_path: null
+    no_pretrain:
+      - run_path: null
+    no_pretrain_fbp:
+      - run_path: null
+    no_pretrain_2inputs:
+      - run_path: null
