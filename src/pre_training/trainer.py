@@ -211,6 +211,11 @@ class Trainer():
                         if self.cfg.save_best_learned_params_path is not None:
                             self.save_learned_params(
                                 self.cfg.save_best_learned_params_path)
+                    if (phase =='validation' and
+                            self.cfg.get('save_learned_params_base_path') is not None and
+                            (epoch + 1) % self.cfg.get('save_learned_params_interval', self.cfg.epochs) == 0):
+                        self.save_learned_params(
+                            '{}_epochs{:d}'.format(self.cfg.save_learned_params_base_path, epoch + 1))
 
         print('Best val psnr: {:4f}'.format(best_psnr))
         if self.cfg.perform_swa:
