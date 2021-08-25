@@ -2,6 +2,7 @@ defaults:
   - data: standard_ellipses_lotus_20
   - mdl:  model_white
   - trn:  trainer
+  - val:  validation
 
 pretraining: ???
 validation_run: False

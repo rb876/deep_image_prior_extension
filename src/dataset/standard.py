@@ -302,15 +302,10 @@ def get_shepp_logan_data(name, cfg, modified=True, seed=30):
 
     ground_truth = (
             odl.phantom.shepp_logan(dataset.space[1], modified=modified)
-            / cfg.get('implicit_scaling_except_for_test_data', 1.))
+            / cfg.get('implicit_scaling_except_for_test_data', 1.)).asarray()
 
     random_gen = np.random.default_rng(seed)
     sinogram = dataset.ground_truth_to_obs(ground_truth, random_gen=random_gen)
-
     fbp = np.asarray(smooth_pinv_ray_trafo(sinogram))
-
-    ground_truth = None
-    if cfg.ground_truth_filename is not None:
-        ground_truth = lotus.get_ground_truth(cfg.ground_truth_filename)
 
     return sinogram, fbp, ground_truth

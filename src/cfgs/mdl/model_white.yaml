@@ -14,7 +14,7 @@ optim:
     lr: 1e-4
     init_lr: 1e-7
     num_warmup_iter: null
-  iterations: 20000
+  iterations: 10000
   loss_function: mse
   gamma: 1e-4
 return_iterates_selection:
