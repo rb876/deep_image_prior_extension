@@ -133,3 +133,4 @@ dmypy.json
 outputs/
 FIPS_Lotus/
 reference_params/
+multirun/
