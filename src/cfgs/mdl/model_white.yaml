@@ -6,13 +6,15 @@ arch:
   use_norm: True
   use_sigmoid: True
 optim:
+  lr: 1e-4
+  init_lr: 1e-7
   encoder:
-    lr: 1e-4
-    init_lr: 1e-7
+    lr: ${mdl.optim.lr}
+    init_lr: ${mdl.optim.init_lr}
     num_warmup_iter: null
   decoder:
-    lr: 1e-4
-    init_lr: 1e-7
+    lr: ${mdl.optim.lr}
+    init_lr: ${mdl.optim.init_lr}
     num_warmup_iter: null
   iterations: 10000
   loss_function: mse
