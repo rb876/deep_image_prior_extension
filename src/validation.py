@@ -98,7 +98,7 @@ def coordinator(cfg : DictConfig) -> None:
                                 iterates=np.asarray(iterates),
                                 iterates_iters=iterates_iters)
 
-            mean_psnr_output = np.mean(psnr_histories, axis=0)
+            mean_psnr_output = np.median(psnr_histories, axis=0)
             psnr_steady = np.median(mean_psnr_output[
                     cfg.val.psnr_steady_start:cfg.val.psnr_steady_stop])
             rise_time = int(np.argwhere(
