@@ -10,3 +10,4 @@ mdl_overrides:
 psnr_steady_start: -5000
 psnr_steady_stop: null
 rise_time_remaining_psnr: 0.5
+tolerated_diff_to_max_psnr_steady: 0.25

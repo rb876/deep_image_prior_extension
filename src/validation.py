@@ -142,6 +142,19 @@ def coordinator(cfg : DictConfig) -> None:
             with open(cfg.val.results_filename, 'w') as f:
                 json.dump(infos, f, indent=1)
 
+    infos_unfiltered = infos
+    infos = {}
+    max_psnr_steady = max(v['PSNR_steady'] for v in infos_unfiltered.values())
+    for model_path, info in infos_unfiltered.items():
+        print(info['PSNR_steady'], max_psnr_steady)
+        if info['PSNR_steady'] < max_psnr_steady - cfg.val.tolerated_diff_to_max_psnr_steady:
+            print('Excluding model \'{}\' because its steady PSNR differs too '
+                  'much from the maximum steady PSNR: {:f} < {:f} - {:f}.'
+                  .format(model_path, info['PSNR_steady'], max_psnr_steady,
+                          cfg.val.tolerated_diff_to_max_psnr_steady))
+        else:
+            infos[model_path] = infos_unfiltered[model_path]
+
     def key(info):
         return info['rise_time']
 
