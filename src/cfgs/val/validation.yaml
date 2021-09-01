@@ -4,6 +4,8 @@ run_paths_filename: val_run_paths.json
 results_filename: val_results.json
 results_sorted_filename: val_results_sorted.json
 num_repeats: 5
-psnr_steady_start: -4000
+mdl_overrides:
+  optim.iterations: 15000
+psnr_steady_start: -5000
 psnr_steady_stop: null
 rise_time_remaining_psnr: 0.5

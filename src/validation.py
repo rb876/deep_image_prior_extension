@@ -4,7 +4,7 @@ import os.path
 import json
 import h5py
 import numpy as np
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from dataset import get_validation_data, get_standard_dataset
 import torch
 from torch.utils.data import DataLoader
@@ -52,16 +52,19 @@ def coordinator(cfg : DictConfig) -> None:
 
     infos = {}
     seed = cfg.mdl.torch_manual_seed
+    cfg_mdl_val = deepcopy(cfg.mdl)
+    for k, v in cfg.val.mdl_overrides.items():
+        OmegaConf.update(cfg_mdl_val, k, v, merge=False)
     for i_run, (directory_path, checkpoints_paths) in enumerate(runs.items()):
         for i_ckpt, filename in enumerate(checkpoints_paths):
             print('loading model:\n{}\nfrom path:\n{}'.format(filename, directory_path))
-            cfg.mdl.learned_params_path = os.path.join(directory_path, filename)
+            cfg_mdl_val.learned_params_path = os.path.join(directory_path, filename)
             psnr_histories = []
             for i in range(cfg.val.num_repeats):
                 for i_sample, (noisy_obs, fbp, *gt) in enumerate(val_datatset):
                     gt = gt[0] if gt else None
-                    cfg.mdl.torch_manual_seed = seed + i
-                    reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
+                    cfg_mdl_val.torch_manual_seed = seed + i
+                    reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg_mdl_val)
                     reco, *optional_out = reconstructor.reconstruct(
                             noisy_obs.float().unsqueeze(dim=0), fbp.unsqueeze(dim=0), gt.unsqueeze(dim=0),
                             return_histories=True,
