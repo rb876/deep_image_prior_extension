@@ -29,6 +29,13 @@ def collect_runs_paths(base_paths):
     paths = {k:v for k, v in sorted(paths.items()) if v}
     return paths
 
+def val_sub_path(i_run, i_ckpt, i, i_sample):
+    sub_path = os.path.join('run_{:d}'.format(i_run),
+                            'ckpt_{:d}'.format(i_ckpt),
+                            'rep_{:d}'.format(i),
+                            'sample_{:d}'.format(i_sample))
+    return sub_path
+
 @hydra.main(config_path='cfgs', config_name='config')
 def coordinator(cfg : DictConfig) -> None:
 
@@ -51,6 +58,7 @@ def coordinator(cfg : DictConfig) -> None:
     os.makedirs(os.path.dirname(os.path.abspath(cfg.val.results_filename)), exist_ok=True)
 
     infos = {}
+    log_path_base = cfg.mdl.log_path
     seed = cfg.mdl.torch_manual_seed
     cfg_mdl_val = deepcopy(cfg.mdl)
     for k, v in cfg.val.mdl_overrides.items():
@@ -64,6 +72,8 @@ def coordinator(cfg : DictConfig) -> None:
                 for i_sample, (noisy_obs, fbp, *gt) in enumerate(val_datatset):
                     gt = gt[0] if gt else None
                     cfg_mdl_val.torch_manual_seed = seed + i
+                    cfg_mdl_val.log_path = os.path.join(
+                            log_path_base, val_sub_path(i_run=i_run, i_ckpt=i_ckpt, i=i, i_sample=i_sample))
                     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg_mdl_val)
                     reco, *optional_out = reconstructor.reconstruct(
                             noisy_obs.float().unsqueeze(dim=0), fbp.unsqueeze(dim=0), gt.unsqueeze(dim=0),
@@ -76,10 +86,7 @@ def coordinator(cfg : DictConfig) -> None:
                                      for k, v in optional_out[0].items()}
                         save_histories_path = os.path.join(
                                 cfg.save_histories_path,
-                                'run_{:d}'.format(i_run),
-                                'ckpt_{:d}'.format(i_ckpt),
-                                'rep_{:d}'.format(i),
-                                'sample_{:d}'.format(i_sample))
+                                val_sub_path(i_run=i_run, i_ckpt=i_ckpt, i=i, i_sample=i_sample))
                         os.makedirs(save_histories_path, exist_ok=True)
                         np.savez(os.path.join(save_histories_path, 'histories.npz'),
                                  **histories)
@@ -88,10 +95,7 @@ def coordinator(cfg : DictConfig) -> None:
                         iterates_iters = optional_out[2]
                         save_iterates_path = os.path.join(
                                 cfg.save_iterates_path,
-                                'run_{:d}'.format(i_run),
-                                'ckpt_{:d}'.format(i_ckpt),
-                                'rep_{:d}'.format(i),
-                                'sample_{:d}'.format(i_sample))
+                                val_sub_path(i_run=i_run, i_ckpt=i_ckpt, i=i, i_sample=i_sample))
                         os.makedirs(save_iterates_path, exist_ok=True)
                         np.savez_compressed(
                                 os.path.join(save_iterates_path, 'iterates.npz'),
