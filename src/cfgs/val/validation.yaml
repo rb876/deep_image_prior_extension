@@ -1,5 +1,6 @@
 # @package _group_
 multirun_base_paths: null
+load_histories_from_run_path: null
 run_paths_filename: val_run_paths.json
 results_filename: val_results.json
 results_sorted_filename: val_results_sorted.json
