@@ -146,7 +146,6 @@ def coordinator(cfg : DictConfig) -> None:
     infos = {}
     max_psnr_steady = max(v['PSNR_steady'] for v in infos_unfiltered.values())
     for model_path, info in infos_unfiltered.items():
-        print(info['PSNR_steady'], max_psnr_steady)
         if info['PSNR_steady'] < max_psnr_steady - cfg.val.tolerated_diff_to_max_psnr_steady:
             print('Excluding model \'{}\' because its steady PSNR differs too '
                   'much from the maximum steady PSNR: {:f} < {:f} - {:f}.'
