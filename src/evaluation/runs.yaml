@@ -38,6 +38,22 @@ pretraining:
     pretrain_noise:
       - run_path: null
 
+validation:
+  ellipses_lotus_20:
+    pretrain:
+      - single_run_path: null
+    pretrain_noise:
+      - single_run_path: null
+    pretrain_only_fbp:
+      - single_run_path: null
+  ellipses_lotus_limited_30:
+    pretrain:
+      - single_run_path: null
+    pretrain_noise:
+      - single_run_path: null
+    pretrain_only_fbp:
+      - single_run_path: null
+
 reconstruction_with_iterates:
   ellipses_lotus_20:
     pretrain:
