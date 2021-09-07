@@ -11,3 +11,7 @@ psnr_steady_start: -5000
 psnr_steady_stop: null
 rise_time_remaining_psnr: 0.5
 tolerated_diff_to_max_psnr_steady: 0.25
+select_gamma_multirun_base_paths: null
+select_gamma_run_paths_filename: select_gamma_run_paths.json
+select_gamma_results_filename: select_gamma_results.json
+select_gamma_results_sorted_filename: select_gamma_results_sorted.json
