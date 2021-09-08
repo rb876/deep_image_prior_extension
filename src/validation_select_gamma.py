@@ -17,7 +17,10 @@ def collect_runs_paths_per_gamma(base_paths):
     if isinstance(base_paths, str):
         base_paths = [base_paths]
     ref_cfg = None
-    ignore_keys_in_cfg_diff = ['mdl.optim.gamma', 'mdl.torch_manual_seed']
+    ignore_keys_in_cfg_diff = [
+            'mdl.optim.gamma', 'mdl.torch_manual_seed',
+            'val.select_gamma_multirun_base_paths', 'val.select_gamma_run_paths_filename',
+            'val.select_gamma_results_filename', 'val.select_gamma_results_sorted_filename']
     for base_path in base_paths:
         path = os.path.join(os.getcwd().partition('src')[0], base_path)
         for dirpath, dirnames, filenames in os.walk(path):
@@ -34,7 +37,7 @@ def collect_runs_paths_per_gamma(base_paths):
                     cur_cfg = copy.deepcopy(cfg)
                     for k in ignore_keys_in_cfg_diff:
                         OmegaConf.update(cur_cfg, k, None)
-                    assert OmegaConf.to_yaml(cur_cfg) == OmegaConf.to_yaml(ref_cfg)
+                    assert OmegaConf.to_yaml(sorted(cur_cfg)) == OmegaConf.to_yaml(sorted(ref_cfg))
 
     paths = {k:sorted(v) for k, v in sorted(paths.items()) if v}
     return paths
