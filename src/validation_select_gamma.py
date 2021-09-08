@@ -5,6 +5,7 @@ import json
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 import copy
+import difflib
 
 def print_dct(dct):
     for (item, values) in dct.items():
@@ -12,15 +13,18 @@ def print_dct(dct):
         for value in values:
             print(value)
 
-def collect_runs_paths_per_gamma(base_paths):
+# from https://stackoverflow.com/a/47882384
+def sorted_dict(d):
+    return {k: sorted_dict(v) if isinstance(v, dict) else v
+            for k, v in sorted(d.items())}
+
+def collect_runs_paths_per_gamma(base_paths, raise_on_cfg_diff=True):
     paths = {}
     if isinstance(base_paths, str):
         base_paths = [base_paths]
     ref_cfg = None
     ignore_keys_in_cfg_diff = [
-            'mdl.optim.gamma', 'mdl.torch_manual_seed',
-            'val.select_gamma_multirun_base_paths', 'val.select_gamma_run_paths_filename',
-            'val.select_gamma_results_filename', 'val.select_gamma_results_sorted_filename']
+            'mdl.optim.gamma', 'mdl.torch_manual_seed']
     for base_path in base_paths:
         path = os.path.join(os.getcwd().partition('src')[0], base_path)
         for dirpath, dirnames, filenames in os.walk(path):
@@ -33,11 +37,24 @@ def collect_runs_paths_per_gamma(base_paths):
                     ref_cfg = copy.deepcopy(cfg)
                     for k in ignore_keys_in_cfg_diff:
                         OmegaConf.update(ref_cfg, k, None)
+                    ref_cfg_yaml = OmegaConf.to_yaml(sorted_dict(OmegaConf.to_object(ref_cfg)))
+                    ref_dirpath = dirpath
                 else:
                     cur_cfg = copy.deepcopy(cfg)
                     for k in ignore_keys_in_cfg_diff:
                         OmegaConf.update(cur_cfg, k, None)
-                    assert OmegaConf.to_yaml(sorted(cur_cfg)) == OmegaConf.to_yaml(sorted(ref_cfg))
+                    cur_cfg_yaml = OmegaConf.to_yaml(sorted_dict(OmegaConf.to_object(cur_cfg)))
+                    try:
+                        assert cur_cfg_yaml == ref_cfg_yaml
+                    except AssertionError:
+                        print('Diff between config at path {} and config at path {}'.format(ref_dirpath, dirpath))
+                        differ = difflib.Differ()
+                        diff = differ.compare(ref_cfg_yaml.splitlines(),
+                                              cur_cfg_yaml.splitlines())
+                        print('\n'.join(diff))
+                        # print('\n'.join([d for d in diff if d.startswith('-') or d.startswith('+')]))
+                        if raise_on_cfg_diff:
+                            raise
 
     paths = {k:sorted(v) for k, v in sorted(paths.items()) if v}
     return paths
@@ -53,7 +70,7 @@ def coordinator(cfg : DictConfig) -> None:
                          '`python coordinator.py --multirun +experiment=no_pretrain data=standard_ellipses_lotus_20 \'mdl.optim.gamma=1e-5,2e-5,4e-5,6.5e-5,1e-4,2e-4,4e-4,6.5e-4,1e-3\' \'mdl.torch_manual_seed=range(10,15)\'`')
 
     runs = collect_runs_paths_per_gamma(
-            cfg.val.select_gamma_multirun_base_paths)
+            cfg.val.select_gamma_multirun_base_paths)  # , raise_on_cfg_diff=False)  # -> check diff output manually
     print_dct(runs) # visualise runs and models checkpoints
 
     os.makedirs(os.path.dirname(os.path.abspath(cfg.val.select_gamma_run_paths_filename)), exist_ok=True)
