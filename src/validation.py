@@ -2,14 +2,9 @@ import hydra
 import os
 import os.path
 import json
-import h5py
-import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from dataset import get_validation_data, get_standard_dataset
-import torch
-from torch.utils.data import DataLoader
-from deep_image_prior import DeepImagePriorReconstructor
-from pre_training import Trainer
+from validation import validate_model, val_sub_sub_path
 from copy import deepcopy
 import difflib
 
@@ -30,11 +25,14 @@ def collect_runs_paths(base_paths):
     paths = {k:v for k, v in sorted(paths.items()) if v}
     return paths
 
+def val_sub_path_ckpt(i_run, i_ckpt):
+    sub_path_ckpt = os.path.join('run_{:d}'.format(i_run),
+                                 'ckpt_{:d}'.format(i_ckpt))
+    return sub_path_ckpt
+
 def val_sub_path(i_run, i_ckpt, i, i_sample):
-    sub_path = os.path.join('run_{:d}'.format(i_run),
-                            'ckpt_{:d}'.format(i_ckpt),
-                            'rep_{:d}'.format(i),
-                            'sample_{:d}'.format(i_sample))
+    sub_path = os.path.join(val_sub_path_ckpt(i_run, i_ckpt),
+                            val_sub_sub_path(i, i_sample))
     return sub_path
 
 @hydra.main(config_path='cfgs', config_name='config')
@@ -72,72 +70,43 @@ def coordinator(cfg : DictConfig) -> None:
     with open(cfg.val.run_paths_filename, 'w') as f:
         json.dump(runs, f, indent=1)
 
-    os.makedirs(os.path.dirname(os.path.abspath(cfg.val.results_filename)), exist_ok=True)
-
     infos = {}
     log_path_base = cfg.mdl.log_path
     seed = cfg.mdl.torch_manual_seed
     cfg_mdl_val = deepcopy(cfg.mdl)
+
+    # load baseline
+    baseline_cfg = OmegaConf.load(os.path.join(
+            cfg.val.baseline_run_path, '.hydra', 'config.yaml'))
+    print('Diff of config in baseline run path and current config:')
+    differ = difflib.Differ()
+    diff = differ.compare(OmegaConf.to_yaml(baseline_cfg).splitlines(),
+                          OmegaConf.to_yaml(cfg).splitlines())
+    print('\n'.join(diff))
+    with open(os.path.join(cfg.val.baseline_run_path, baseline_cfg.val.results_filename), 'r') as f:
+        infos['baseline'] = json.load(f)['baseline']
+    baseline_psnr_steady = infos['baseline']['PSNR_steady']
+
+    os.makedirs(os.path.dirname(os.path.abspath(cfg.val.results_filename)), exist_ok=True)
+
+    with open(cfg.val.results_filename, 'w') as f:
+        json.dump(infos, f, indent=1)
+
+    # validate pretrained models
     for k, v in cfg.val.mdl_overrides.items():
         OmegaConf.update(cfg_mdl_val, k, v, merge=False)
     for i_run, (directory_path, checkpoints_paths) in enumerate(runs.items()):
         for i_ckpt, filename in enumerate(checkpoints_paths):
             print('model:\n{}\nfrom path:\n{}'.format(filename, directory_path))
             cfg_mdl_val.learned_params_path = os.path.join(directory_path, filename)
-            psnr_histories = []
-            for i in range(cfg.val.num_repeats):
-                for i_sample, (noisy_obs, fbp, *gt) in enumerate(val_dataset):
-                    gt = gt[0] if gt else None
+            _, info = validate_model(
+                    val_dataset=val_dataset, ray_trafo=ray_trafo,
+                    val_sub_path_mdl=val_sub_path_ckpt(i_run=i_run, i_ckpt=i_ckpt),
+                    baseline_psnr_steady=baseline_psnr_steady, seed=seed,
+                    log_path_base=log_path_base,
+                    cfg=cfg, cfg_mdl_val=cfg_mdl_val)
 
-                    if cfg.val.load_histories_from_run_path is not None:
-                        load_histories_path = os.path.join(
-                                cfg.val.load_histories_from_run_path,
-                                cfg.save_histories_path,
-                                val_sub_path(i_run=i_run, i_ckpt=i_ckpt, i=i, i_sample=i_sample))
-                        psnr_history = np.load(os.path.join(load_histories_path, 'histories.npz'))['psnr'].tolist()
-                    else:
-                        cfg_mdl_val.torch_manual_seed = seed + i
-                        cfg_mdl_val.log_path = os.path.join(
-                                log_path_base, val_sub_path(i_run=i_run, i_ckpt=i_ckpt, i=i, i_sample=i_sample))
-                        reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg_mdl_val)
-                        reco, *optional_out = reconstructor.reconstruct(
-                                noisy_obs.float().unsqueeze(dim=0), fbp.unsqueeze(dim=0), gt.unsqueeze(dim=0),
-                                return_histories=True,
-                                return_iterates=cfg.save_iterates_path is not None)
-                        psnr_history = optional_out[0]['psnr']
-
-                        if cfg.save_histories_path is not None:
-                            histories = {k: np.array(v, dtype=np.float32)
-                                         for k, v in optional_out[0].items()}
-                            save_histories_path = os.path.join(
-                                    cfg.save_histories_path,
-                                    val_sub_path(i_run=i_run, i_ckpt=i_ckpt, i=i, i_sample=i_sample))
-                            os.makedirs(save_histories_path, exist_ok=True)
-                            np.savez(os.path.join(save_histories_path, 'histories.npz'),
-                                     **histories)
-                        if cfg.save_iterates_path is not None:
-                            iterates = optional_out[1]
-                            iterates_iters = optional_out[2]
-                            save_iterates_path = os.path.join(
-                                    cfg.save_iterates_path,
-                                    val_sub_path(i_run=i_run, i_ckpt=i_ckpt, i=i, i_sample=i_sample))
-                            os.makedirs(save_iterates_path, exist_ok=True)
-                            np.savez_compressed(
-                                    os.path.join(save_iterates_path, 'iterates.npz'),
-                                    iterates=np.asarray(iterates),
-                                    iterates_iters=iterates_iters)
-
-                    psnr_histories.append(psnr_history)
-
-            mean_psnr_output = np.median(psnr_histories, axis=0)
-            psnr_steady = np.median(mean_psnr_output[
-                    cfg.val.psnr_steady_start:cfg.val.psnr_steady_stop])
-            rise_time = int(np.argwhere(
-                mean_psnr_output > psnr_steady - cfg.val.rise_time_remaining_psnr)[0][0])
-
-            infos[os.path.join(directory_path, filename)] = {
-                    'rise_time': rise_time,
-                    'PSNR_steady': psnr_steady, 'PSNR_0': mean_psnr_output[0]}
+            infos[os.path.join(directory_path, filename)] = info
 
             with open(cfg.val.results_filename, 'w') as f:
                 json.dump(infos, f, indent=1)
@@ -155,7 +124,7 @@ def coordinator(cfg : DictConfig) -> None:
             infos[model_path] = infos_unfiltered[model_path]
 
     def key(info):
-        return info['rise_time']
+        return info['rise_time_to_baseline']
 
     infos = {k: v for k, v in sorted(infos.items(), key=lambda item: key(item[1]))}
 

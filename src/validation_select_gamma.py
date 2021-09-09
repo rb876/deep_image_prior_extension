@@ -87,15 +87,15 @@ def coordinator(cfg : DictConfig) -> None:
             psnr_history = np.load(os.path.join(dirpath, cfg.save_histories_path, 'histories.npz'))['psnr'].tolist()
             psnr_histories.append(psnr_history)
 
-        mean_psnr_output = np.median(psnr_histories, axis=0)
-        psnr_steady = np.median(mean_psnr_output[
+        median_psnr_output = np.median(psnr_histories, axis=0)
+        psnr_steady = np.median(median_psnr_output[
                 cfg.val.psnr_steady_start:cfg.val.psnr_steady_stop])
         rise_time = int(np.argwhere(
-            mean_psnr_output > psnr_steady - cfg.val.rise_time_remaining_psnr)[0][0])
+            median_psnr_output > psnr_steady - cfg.val.rise_time_remaining_psnr)[0][0])
 
         infos[gamma] = {
                 'rise_time': rise_time,
-                'PSNR_steady': psnr_steady, 'PSNR_0': mean_psnr_output[0]}
+                'PSNR_steady': psnr_steady, 'PSNR_0': median_psnr_output[0]}
 
         with open(cfg.val.select_gamma_results_filename, 'w') as f:
             json.dump(infos, f, indent=1)
