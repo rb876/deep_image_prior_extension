@@ -28,7 +28,7 @@ def coordinator(cfg : DictConfig) -> None:
     for k, v in cfg.val.mdl_overrides.items():
         OmegaConf.update(cfg_mdl_val, k, v, merge=False)
 
-    psnr_histories, info = validate_model(
+    _, info = validate_model(
             val_dataset=val_dataset, ray_trafo=ray_trafo,
             val_sub_path_mdl='baseline',
             baseline_psnr_steady='own_PSNR_steady', seed=seed,
