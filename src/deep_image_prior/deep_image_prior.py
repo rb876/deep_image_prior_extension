@@ -258,6 +258,10 @@ class DeepImagePriorReconstructor():
                 self.optimizer.zero_grad()
                 output = self.apply_model_on_test_data(self.net_input)
                 loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.optim.gamma * tv_loss(output)
+
+                if i in iterates_params_iters:
+                    iterates_params.append(deepcopy(self.model.state_dict()))
+
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
                 self.optimizer.step()
@@ -300,8 +304,6 @@ class DeepImagePriorReconstructor():
                 self.writer.add_scalar('loss', loss.item(),  i)
                 if i in iterates_iters:
                     iterates.append(output[0, ...].detach().cpu().numpy())
-                if i in iterates_params_iters:
-                    iterates_params.append(deepcopy(self.model.state_dict()))
                 if i % 1000 == 0:
                     self.writer.add_image('reco', normalize(best_output[0, ...]).cpu().numpy(), i)
 
