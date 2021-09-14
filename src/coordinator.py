@@ -52,6 +52,8 @@ def coordinator(cfg : DictConfig) -> None:
         os.makedirs(cfg.save_histories_path, exist_ok=True)
     if cfg.save_iterates_path is not None:
         os.makedirs(cfg.save_iterates_path, exist_ok=True)
+    if cfg.save_iterates_params_path is not None:
+        os.makedirs(cfg.save_iterates_params_path, exist_ok=True)
 
     filename = os.path.join(cfg.save_reconstruction_path,'recos.hdf5')
     file = h5py.File(filename, 'w')
@@ -66,7 +68,8 @@ def coordinator(cfg : DictConfig) -> None:
         reco, *optional_out = reconstructor.reconstruct(
                 noisy_obs.float(), fbp, gt,
                 return_histories=cfg.save_histories_path is not None,
-                return_iterates=cfg.save_iterates_path is not None)
+                return_iterates=cfg.save_iterates_path is not None,
+                return_iterates_params=cfg.save_iterates_params_path is not None)
         dataset[i] = reco
         if cfg.save_histories_path is not None:
             histories = optional_out.pop(0)
@@ -78,9 +81,16 @@ def coordinator(cfg : DictConfig) -> None:
             iterates = optional_out.pop(0)
             iterates_iters = optional_out.pop(0)
             np.savez_compressed(
-                    os.path.join(cfg.save_histories_path, 'iterates.npz'),
+                    os.path.join(cfg.save_iterates_path, 'iterates.npz'),
                     iterates=np.asarray(iterates),
                     iterates_iters=iterates_iters)
+        if cfg.save_iterates_params_path is not None:
+            iterates_params = optional_out.pop(0)
+            iterates_params_iters = optional_out.pop(0)
+            for params, iters in zip(iterates_params, iterates_params_iters):
+                torch.save(params,
+                           os.path.join(cfg.save_iterates_params_path,
+                                        'params_iters{:d}.pt'.format(iters)))
 
 if __name__ == '__main__':
     coordinator()

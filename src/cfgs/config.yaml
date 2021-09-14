@@ -9,4 +9,5 @@ validation_run: False
 save_reconstruction_path: ???
 save_histories_path: null
 save_iterates_path: null
+save_params_iterates_path: null
 torch_manual_seed_pretrain_init_model: 20

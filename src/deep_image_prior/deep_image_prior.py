@@ -8,6 +8,7 @@ from torch.optim import Adam
 from torch.nn import MSELoss
 from warnings import warn
 from functools import partial
+from copy import deepcopy
 from tqdm import tqdm
 
 from .network import UNet
@@ -145,7 +146,8 @@ class DeepImagePriorReconstructor():
         return output
 
     def reconstruct(self, noisy_observation, fbp=None, ground_truth=None,
-                    return_histories=False, return_iterates=False):
+                    return_histories=False, return_iterates=False,
+                    return_iterates_params=False):
         """
         Parameters
         ----------
@@ -161,6 +163,10 @@ class DeepImagePriorReconstructor():
         return_iterates : bool, optional
             Whether to return a selection of iterates, configured via
             ``self.cfg.return_iterates_selection``.
+            The default is `False`.
+        return_iterates_params : bool, optional
+            Whether to return the parameters for a selection of iterates,
+            configured via ``self.cfg.return_iterates_params_selection``.
             The default is `False`.
 
         Returns
@@ -178,6 +184,12 @@ class DeepImagePriorReconstructor():
         iterates_iters : list of int, optional
             Iterations corresponding to `iterates`.
             Only provided if ``return_iterates=True``.
+        iterates_params : list of :class:`numpy.ndarray`, optional
+            Model parameters (state dictionaries) at intermediate iterations.
+            Only provided if ``return_iterates_params=True``.
+        iterates_params_iters : list of int, optional
+            Iterations corresponding to `iterates_params`.
+            Only provided if ``return_iterates_params=True``.
         """
 
         if self.cfg.torch_manual_seed:
@@ -222,8 +234,14 @@ class DeepImagePriorReconstructor():
             iterates_iters = get_iterates_iters(
                 self.cfg.return_iterates_selection,
                 self.cfg.optim.iterations)
+        iterates_params_iters = []
+        if return_iterates_params:
+            iterates_params_iters = get_iterates_iters(
+                self.cfg.return_iterates_params_selection,
+                self.cfg.optim.iterations)
 
         iterates = []
+        iterates_params = []
 
         best_loss = np.inf
         best_output = self.apply_model_on_test_data(self.net_input).detach()
@@ -282,6 +300,8 @@ class DeepImagePriorReconstructor():
                 self.writer.add_scalar('loss', loss.item(),  i)
                 if i in iterates_iters:
                     iterates.append(output[0, ...].detach().cpu().numpy())
+                if i in iterates_params_iters:
+                    iterates_params.append(deepcopy(self.model.state_dict()))
                 if i % 1000 == 0:
                     self.writer.add_image('reco', normalize(best_output[0, ...]).cpu().numpy(), i)
 
@@ -299,6 +319,9 @@ class DeepImagePriorReconstructor():
         if return_iterates:
             optional_out.append(iterates)
             optional_out.append(iterates_iters)
+        if return_iterates_params:
+            optional_out.append(iterates_params)
+            optional_out.append(iterates_params_iters)
 
         return (out, *optional_out) if optional_out else out
 

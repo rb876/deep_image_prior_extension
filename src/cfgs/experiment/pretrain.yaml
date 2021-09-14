@@ -3,6 +3,7 @@ pretraining: True
 save_reconstruction_path: ./results/pretraining/
 save_histories_path: ./results/pretraining/
 save_iterates_path: null
+save_iterates_params_path: null
 
 mdl:
   load_pretrain_model: True

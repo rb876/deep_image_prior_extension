@@ -22,5 +22,8 @@ optim:
 return_iterates_selection:
   mode: 'standard_sequence'
   manual_iters: null
+return_iterates_params_selection:
+  mode: 'standard_sequence'
+  manual_iters: null
 show_pbar: True
 torch_manual_seed: 10
