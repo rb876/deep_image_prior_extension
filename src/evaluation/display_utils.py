@@ -17,6 +17,13 @@ data_title_dict = {
     'ellipses_lotus_limited_30': 'Ellipses/Lotus Limited 30',
 }
 
+experiment_color_dict = {
+    'pretrain_only_fbp': '#EC2215',
+    'pretrain': '#B15CD1',
+    'no_pretrain': '#000000',
+    'no_pretrain_fbp': '#3D78B2',
+}
+
 def get_title_from_run_spec(run_spec):
     experiment_title = run_spec.get('experiment_title')
     if experiment_title is None:
@@ -38,3 +45,12 @@ def get_title_from_run_spec(run_spec):
         ])
     
     return title
+
+def get_data_title_full(data, validation_run):
+    data_title_full_parts = [data_title_dict[data]]
+    data_title_full_parts.append('Validation (Shepp-Logan)' if validation_run
+                                 else 'Test (Lotus)')
+
+    data_title_full = ', '.join(data_title_full_parts)
+
+    return data_title_full
