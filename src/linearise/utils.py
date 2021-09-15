@@ -1,0 +1,85 @@
+import torch
+import numpy as np
+from copy import deepcopy
+from torch import linalg as LA
+from torch_utils import parameters_to_vector, vector_to_parameters
+
+def apply_model_on_data(net_input, model, cfg):
+    test_scaling = cfg.get('implicit_scaling_except_for_test_data')
+    if test_scaling is not None and test_scaling != 1.:
+        if not cfg.recon_from_randn:
+            net_input = test_scaling * net_input
+        output = model(net_input).view(1, -1)
+        output = output / test_scaling
+    else:
+        output = self.model(net_input).view(1, -1)
+
+    return output
+
+def compute_jacobian_single_batch(input, model, out_dim, skip_layers, cfg):
+    jac = []
+    model.eval()
+    for o in range(out_dim):
+        f = apply_model_on_data(input, model, cfg).squeeze()
+        f_o = f[o]
+        model.zero_grad()
+        f_o.backward()
+        jacs_o = agregate_flatten_weight_grad(model, skip_layers).detach()
+        jac.append(jacs_o)
+    return torch.stack(jac, dim=0)
+
+def agregate_flatten_weight_grad(model, skip_layers):
+    grads_o = []
+    for name, params in model.named_parameters():
+        if name not in skip_layers:
+            grads_o.append(params.grad.flatten())
+    return torch.cat(grads_o)
+
+def apply_perturbed_model(input, model, omega, skip_layers, cfg):
+    model = deepcopy(model)
+    params = model.named_parameters()
+    pert_params = parameters_to_vector(params, skip_layers) + omega
+    vector_to_parameters(pert_params, model.named_parameters(), skip_layers)
+    return apply_model_on_data(input, model, cfg)
+
+def set_eps_andrei(params, omega):
+    eps = np.sqrt(torch.finfo(params.dtype).eps)
+    return eps * (1 + LA.norm(params, ord=float('inf'))) \
+        / LA.norm(omega, ord=float('inf'))
+
+def get_eps(params, omega, mode='andrei'):
+    if mode == 'preset':
+        return 1e-6
+    elif mode == 'andrei':
+        return set_eps_andrei(params, omega)
+
+def central_diff_approx(input, model, store_device, skip_layers, cfg):
+    params = parameters_to_vector(model.named_parameters(), skip_layers)
+    vec_params_shape = params.size()
+    omega = torch.zeros(*vec_params_shape).normal_(0, 1).to(store_device)
+    eps = get_eps(params, omega)
+    f_add = apply_perturbed_model(input, model, eps*omega, skip_layers, cfg)
+    f_min = apply_perturbed_model(input, model, -eps*omega, skip_layers, cfg)
+    return (f_add - f_min)/2*eps
+
+def randomised_SVD_jacobian(input, model, n_rank, skip_layers, cfg):
+
+    model.eval()
+    store_device = 'cpu' if input.device == torch.device('cpu') else 'cuda:0'
+    forward_maps = []
+    for _ in range(n_rank):
+        forward_maps.append(central_diff_approx(input, model, store_device, skip_layers, cfg))
+    forward_map = torch.cat(forward_maps).transpose(-2, -1)
+    q, _ = LA.qr(forward_map, mode='reduced')
+    b_t_ = []
+    for l in range(q.size()[-1]):
+        q_l = q[:, l].detach()
+        out = apply_model_on_data(input, model, cfg)
+        model.zero_grad()
+        out.backward(q_l.view(1, -1))
+        b_l = agregate_flatten_weight_grad(model, skip_layers).detach()
+        b_t_.append(b_l)
+    b_matrix = torch.stack(b_t_, dim=0)
+    u, s, vh = torch.svd_lowrank(b_matrix, q=n_rank, niter=2, M=None)
+    v = vh.transpose(-2, -1).conj()
+    return s, v

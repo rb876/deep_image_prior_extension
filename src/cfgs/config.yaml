@@ -3,6 +3,7 @@ defaults:
   - mdl:  model_white
   - trn:  trainer
   - val:  validation
+  - lin:  linearise
 
 pretraining: ???
 validation_run: False

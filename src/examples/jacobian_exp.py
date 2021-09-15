@@ -29,10 +29,10 @@ class SimpleNet(torch.nn.Module):
         x = self.net(x)
         return x
 
-def agregate_flatten_weight_grad(model, default_device):
+def agregate_flatten_weight_grad(model):
     grads_o = []
     for name, params in model.named_parameters():
-        grads_o.append(params.grad.flatten().to(device=default_device))
+        grads_o.append(params.grad.flatten())
     return torch.cat(grads_o)
 
 def compute_jacobian_single_batch(input, model, out_dim):
@@ -43,8 +43,7 @@ def compute_jacobian_single_batch(input, model, out_dim):
         f_o = f[o]
         model.zero_grad()
         f_o.backward()
-        store_device = 'cpu' if f_o.device == torch.device('cpu') else 'cuda:0'
-        jacs_o = agregate_flatten_weight_grad(model, default_device=store_device).detach()
+        jacs_o = agregate_flatten_weight_grad(model).detach()
         jac.append(jacs_o)
     return torch.stack(jac, dim=0)
 
@@ -73,11 +72,10 @@ def randomised_SVD_jacobian(input, model, n_rank):
     b_t_ = []
     for l in range(q.size()[-1]):
         q_l = q[:, l].detach()
-        out_l = model(input) @ q_l
+        out = model(input) @ q_l
         model.zero_grad()
-        out_l.backward()
-        store_device = 'cpu' if out_l.device == torch.device('cpu') else 'cuda:0'
-        b_l = agregate_flatten_weight_grad(model, default_device=store_device).detach()
+        out.backward()
+        b_l = agregate_flatten_weight_grad(model).detach()
         b_t_.append(b_l)
     b_matrix = torch.stack(b_t_, dim=0)
     u, s, vh = torch.svd_lowrank(b_matrix, q=n_rank, niter=2, M=None)
