@@ -3,7 +3,7 @@ import torch
 from omegaconf import DictConfig
 from dataset import get_standard_dataset, get_test_data, get_validation_data
 from deep_image_prior import DeepImagePriorReconstructor
-from utils import randomised_SVD_jacobian, compute_jacobian_single_batch
+from utils import randomised_SVD_jacobian, compute_jacobian_single_batch, singular_values_comparison_plot, singular_vecors_comparison_plot
 
 @hydra.main(config_path='../cfgs', config_name='config')
 def coordinator(cfg : DictConfig) -> None:
@@ -32,29 +32,32 @@ def coordinator(cfg : DictConfig) -> None:
                  'observation_space': dataset.space[0]
                  }
 
-    if cfg.torch_manual_seed_pretrain_init_model:
-        torch.random.manual_seed(cfg.torch_manual_seed_pretrain_init_model)
+    # fix network to a small architecture
+    cfg.mdl.arch.scales = 2
+    cfg.mdl.arch.channels = [32, 32]
+    cfg.mdl.arch.skip_channels = [0, 4]
 
-    # test it with a small architecture (do not exceed 32 channel per scale and 2 scales)
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
     out_dim = 16**2
     dummy_input = torch.ones((1, 1, 16, 16)).to(reconstructor.device)
-    s_approx, v_approx = randomised_SVD_jacobian(dummy_input,
-            reconstructor.model, 100, ['scale_in.scale_layer.weight',
+
+    s_approx, v_approxh = randomised_SVD_jacobian(dummy_input,
+            reconstructor.model, 30, None, ['scale_in.scale_layer.weight',
             'scale_in.scale_layer.bias', 'scale_out.scale_layer.weight',
-            'scale_out.scale_layer.bias'], cfg.mdl)
+            'scale_out.scale_layer.bias'], cfg.mdl, return_on_cpu=True)
+    v_approx = v_approxh
     jac = compute_jacobian_single_batch(dummy_input, reconstructor.model, out_dim, ['scale_in.scale_layer.weight',
             'scale_in.scale_layer.bias', 'scale_out.scale_layer.weight',
-            'scale_out.scale_layer.bias'], cfg.mdl)
-    u, s, vh = torch.svd_lowrank(jac, q=100, niter=2, M=None)
-    v = vh.transpose(-2, -1).conj()
+            'scale_out.scale_layer.bias'], cfg.mdl, return_on_cpu=True)
+    _, s, vh = torch.svd(jac)
+    v = vh.t()
+    import numpy as np
+    for i in range(v_approx.shape[0]):
+        fct = torch.dot(v_approx[i, :], v[i, :]).sign()
+        v_approx[i, :] *= fct
 
-    import matplotlib.pyplot as plt
-    plt.plot(list(range(0, 100)), s.cpu().numpy());
-    plt.plot(list(range(0, 100)), s_approx.cpu().numpy()); plt.show()
-    print(s)
-    print(s_approx)
-    for l in range(v_approx.shape[0]):
-        print(torch.mean((v_approx[l, :] - v[l, :])**2))
+    singular_values_comparison_plot(s.numpy(), 'exact', s_approx.numpy(), 'approx')
+    singular_vecors_comparison_plot(v_approx.numpy(), v.numpy())
+
 if __name__ == '__main__':
     coordinator()
