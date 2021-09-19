@@ -14,14 +14,17 @@ DATA_PATH = '/localdata/Walnuts/'
 walnut_ray_trafo = get_single_slice_ray_trafo(
         data_path=DATA_PATH, angular_sub_sampling=ANGULAR_SUB_SAMPLING)
 
-print('vol_slice_contributing_to_masked_projs', walnut_ray_trafo.get_vol_slice_contributing_to_masked_projs())
-print('proj_slice_contributing_to_masked_vol', walnut_ray_trafo.get_proj_slice_contributing_to_masked_vol())
+print('vol_slice_contributing_to_masked_projs',
+        walnut_ray_trafo.get_vol_slice_contributing_to_masked_projs())
+print('proj_slice_contributing_to_masked_vol',
+        walnut_ray_trafo.get_proj_slice_contributing_to_masked_vol())
 
 vol_in_mask = np.ones((1,) + VOL_SZ[1:])
 vol_x = np.zeros((walnut_ray_trafo.num_slices,) + VOL_SZ[1:])
 vol_x[walnut_ray_trafo.vol_mask_slice] = vol_in_mask
 projs = walnut_ray_trafo.fp3d(vol_x)
-backprojection_mask = walnut_ray_trafo.bp3d(walnut_ray_trafo.proj_mask.astype(np.float32))
+backprojection_mask = walnut_ray_trafo.bp3d(
+        walnut_ray_trafo.proj_mask.astype(np.float32))
 
 # visualize restriction of geometry
 angle_indices = range(0, walnut_ray_trafo.num_angles,
@@ -44,15 +47,19 @@ for i, angle_index in enumerate(angle_indices):
     col = 0
     for view_proj_cols in view_proj_cols_values:
         ax[i, col].imshow(projs[:, angle_index, view_proj_cols])
-        ax[i, col].set_title('FP of vol mask\ncolumn\n{}'.format(range(PROJS_COLS)[view_proj_cols]))
+        ax[i, col].set_title('FP of vol mask\ncolumn\n{}'.format(
+                range(PROJS_COLS)[view_proj_cols]))
         col += 1
     for view_proj_cols in view_proj_cols_values:
-        ax[i, col].imshow(walnut_ray_trafo.proj_mask[:, angle_index, view_proj_cols])
-        ax[i, col].set_title('proj mask\ncolumn\n{}'.format(range(PROJS_COLS)[view_proj_cols]))
+        ax[i, col].imshow(
+                walnut_ray_trafo.proj_mask[:, angle_index, view_proj_cols])
+        ax[i, col].set_title('proj mask\ncolumn\n{}'.format(
+                range(PROJS_COLS)[view_proj_cols]))
         col += 1
     for view_vol_cols in view_vol_cols_values:
         ax[i, col].imshow(backprojection_mask[:, VOL_SZ[1] // 2, view_vol_cols])
-        ax[i, col].set_title('BP of proj mask\ncolumn\n{}'.format(range(VOL_SZ[2])[view_vol_cols]))
+        ax[i, col].set_title('BP of proj mask\ncolumn\n{}'.format(
+                range(VOL_SZ[2])[view_vol_cols]))
         col += 1
     ax[i, 0].set_ylabel('angle index {:d}'.format(angle_index))
 
