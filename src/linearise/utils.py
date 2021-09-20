@@ -37,13 +37,15 @@ def agregate_flatten_weight_grad(model, skip_layers):
     return torch.cat(grads_o)
 
 def apply_perturbed_model(input, model, omega, skip_layers, cfg):
-    model = deepcopy(model)
     model.eval()
     with torch.no_grad(): 
         params = model.named_parameters()
-        pert_params = parameters_to_vector(params, skip_layers) + omega
-        vector_to_parameters(pert_params, model.named_parameters(), skip_layers)
-    return apply_model_on_data(input, model, cfg)
+        params_vec = parameters_to_vector(params, skip_layers)
+        pert_params_vec = params_vec + omega
+        vector_to_parameters(pert_params_vec, model.named_parameters(), skip_layers)
+    out = apply_model_on_data(input, model, cfg)
+    vector_to_parameters(params_vec, model.named_parameters(), skip_layers)
+    return out 
 
 def set_eps_andrei(params, omega):
     eps = np.sqrt(torch.finfo(params.dtype).eps)

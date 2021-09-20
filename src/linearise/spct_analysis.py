@@ -68,7 +68,7 @@ def coordinator(cfg : DictConfig) -> None:
 
     spct_data = {'filename': cfg.spct.filename, 
                 'values': s.numpy(), 
-                'vectors': v.numpy(), 
+                'vectors': v.numpy(),
                 'params': params}
     
     np.savez('spct_data', **spct_data)

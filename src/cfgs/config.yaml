@@ -3,7 +3,7 @@ defaults:
   - mdl:  model_white
   - trn:  trainer
   - val:  validation
-  - lin:  linearise
+  - spct: spectral_analysis 
 
 pretraining: ???
 validation_run: False
