@@ -1,10 +1,28 @@
+import os
 import hydra
 import torch
+import numpy as np
 from omegaconf import DictConfig
 from dataset import get_standard_dataset, get_test_data, get_validation_data
 from deep_image_prior import DeepImagePriorReconstructor
-from utils import randomised_SVD_jacobian, compute_jacobian_single_batch
-from plot_spectral_data import singular_values_comparison_plot, singular_vecors_comparison_plot
+from utils import randomised_SVD_jacobian
+from torch_utils import parameters_to_vector
+
+def unpack_loader(testloader, store_device):
+
+    unpck = [el[1] for el in testloader]
+    fbp = unpck[0].unsqueeze(dim=0)
+    return fbp.to(store_device)
+
+def extract_params(reconstructor, cfg):
+
+    state_dict = torch.load(os.path.join(cfg.path_to_checkpoints,
+                    cfg.filename))
+    reconstructor.model.load_state_dict(state_dict)
+    params = \
+        parameters_to_vector(reconstructor.model.named_parameters(),
+        cfg.skip_layers)
+    return params
 
 @hydra.main(config_path='../cfgs', config_name='config')
 def coordinator(cfg : DictConfig) -> None:
@@ -31,32 +49,29 @@ def coordinator(cfg : DictConfig) -> None:
     ray_trafo = {'ray_trafo_module': ray_trafos['ray_trafo_module'],
                  'reco_space': dataset.space[1],
                  'observation_space': dataset.space[0]
-                 }
+                }
 
-    # fix network to a small architecture
-    cfg.mdl.arch.scales = 2
-    cfg.mdl.arch.channels = [32, 32]
-    cfg.mdl.arch.skip_channels = [0, 4]
-
-    torch.random.manual_seed(10)
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
-    out_dim = 16**2
-    dummy_input = torch.ones((1, 1, 16, 16)).to(reconstructor.device)
+    store_device = reconstructor.device
 
-    s_approx, v_approxh = randomised_SVD_jacobian(dummy_input,
-            reconstructor.model, None, cfg, return_on_cpu=True)
-    v_approx = v_approxh
-    jac = compute_jacobian_single_batch(dummy_input, reconstructor.model, out_dim,
-            cfg, return_on_cpu=True)
-    _, s, vh = torch.svd(jac)
-    v = vh.t()
+    if cfg.mdl.torch_manual_seed:
+        torch.random.manual_seed(cfg.mdl.torch_manual_seed)
 
-    for i in range(v_approx.shape[0]):
-        fct = torch.dot(v_approx[i, :], v[i, :]).sign()
-        v_approx[i, :] *= fct
+    input = unpack_loader(dataset_test, store_device)
+    if cfg.mdl.recon_from_randn:
+        input = 0.1 * torch.randn(*input.shape).to(store_device)
+    
+    params = extract_params(reconstructor, cfg.spct)
+    params = params.detach().cpu().numpy()
+    s, v = randomised_SVD_jacobian(input, reconstructor.model, ray_trafo['ray_trafo_module'], 
+                                    cfg, return_on_cpu=True)
 
-    singular_values_comparison_plot([s.numpy(), s_approx.numpy()], ['Exact.','Approx.'],  ['#EC2215', '#3D78B2'], ['-', '-'])
-    singular_vecors_comparison_plot(v_approx.numpy(), v.numpy(), plot_first_k=16, labels=['Exact.','Approx.'], filename='test_vectors.pdf')
-
+    spct_data = {'filename': cfg.spct.filename, 
+                'values': s.numpy(), 
+                'vectors': v.numpy(), 
+                'params': params}
+    
+    np.savez('spct_data', **spct_data)
+    
 if __name__ == '__main__':
     coordinator()

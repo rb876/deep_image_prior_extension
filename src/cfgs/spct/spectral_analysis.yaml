@@ -1,0 +1,8 @@
+# @package _group_
+n_projs: 30
+path_to_checkpoints: null
+skip_layers: ['scale_in.scale_layer.weight',
+      'scale_in.scale_layer.bias', 'scale_out.scale_layer.weight',
+      'scale_out.scale_layer.bias']
+filename: null 
+use_operator: True
