@@ -43,7 +43,7 @@ def apply_perturbed_model(input, model, omega, skip_layers, cfg):
         params_vec = parameters_to_vector(params, skip_layers)
         pert_params_vec = params_vec + omega
         vector_to_parameters(pert_params_vec, model.named_parameters(), skip_layers)
-    out = apply_model_on_data(input, model, cfg)
+        out = apply_model_on_data(input, model, cfg)
     vector_to_parameters(params_vec, model.named_parameters(), skip_layers)
     return out 
 
@@ -80,10 +80,10 @@ def randomised_SVD_jacobian(input, model, ray_trafo, cfg, return_on_cpu=False):
             diff_approx = ray_trafo(central_diff_approx(input, model, store_device, cfg.spct.skip_layers, cfg.mdl))
         else:
             diff_approx = central_diff_approx(input, model, store_device, cfg.spct.skip_layers, cfg.mdl)
-        forward_map_list.append(diff_approx.view(1, -1))
+        forward_map_list.append(diff_approx.view(1, -1).cpu())
     forward_map = torch.cat(forward_map_list).t()
 
-    q, _ = torch.qr(forward_map.cpu(), some=True)
+    q, _ = torch.qr(forward_map, some=True)
     q = q.to(store_device)
 
     b_t_ = []
@@ -97,7 +97,7 @@ def randomised_SVD_jacobian(input, model, ray_trafo, cfg, return_on_cpu=False):
         model.zero_grad()
         out.backward(q_l.view(-1))
         b_l = agregate_flatten_weight_grad(model, cfg.spct.skip_layers)
-        b_t_.append(b_l)
+        b_t_.append(b_l.cpu())
 
     b_matrix = torch.stack(b_t_, dim=0)
     _, s, vh = torch.svd_lowrank(b_matrix.cpu(), q=cfg.spct.n_projs, niter=2, M=None)
