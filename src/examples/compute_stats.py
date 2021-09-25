@@ -1,10 +1,12 @@
+import json
+from itertools import islice
 import hydra
 import numpy as np
 from tqdm import tqdm
 from omegaconf import DictConfig
 from dataset.standard import get_standard_dataset
 
-def compute_dataset_stats_fbp_gt(dataset):
+def compute_dataset_stats_fbp_gt(dataset, max_samples=None):
     """
     Compute means and standard deviations of the FBP and ground truth images
     in the ``'train'`` fold of a dataset.
@@ -15,8 +17,10 @@ def compute_dataset_stats_fbp_gt(dataset):
     square_fbp = 0.
     square_gt = 0.
     n = dataset.get_len('train')
-    for obs, fbp, gt in tqdm(dataset.generator('train'), total=n,
-                             desc='computing dataset stats'):
+    if max_samples is not None:
+        n = min(max_samples, n)
+    for obs, fbp, gt in tqdm(islice(dataset.generator('train'), max_samples),
+                             total=n, desc='computing dataset stats'):
         mean_fbp += np.mean(fbp)
         mean_gt += np.mean(gt)
         square_fbp += np.mean(np.square(fbp))
@@ -33,11 +37,13 @@ def compute_dataset_stats_fbp_gt(dataset):
              'std_gt': std_gt}
     return stats
 
-@hydra.main(config_path='../cfgs/data', config_name='standard_ellipses_lotus_20')
+@hydra.main(config_path='../cfgs', config_name='config')
 def compute_mean(cfg : DictConfig) -> None:
-    dataset, ray_trafo = get_standard_dataset(cfg.name, cfg)
+    dataset, ray_trafo = get_standard_dataset(cfg.data.name, cfg.data, return_ray_trafo_torch_module=False)
     stats = compute_dataset_stats_fbp_gt(dataset)
     print(stats)
+    with open('stats_standard_brain_walnut_120.json', 'w') as f:
+        json.dump(stats, f, indent=1)
 
 if __name__ == '__main__':
     compute_mean()
