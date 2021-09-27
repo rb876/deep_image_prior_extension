@@ -420,9 +420,28 @@ def get_shepp_logan_data(name, cfg, modified=True, seed=30):
             name, cfg, return_ray_trafo_torch_module=False)
     smooth_pinv_ray_trafo = ray_trafos['smooth_pinv_ray_trafo']
 
+    zoom = cfg.get('zoom', 1.)
+    if zoom == 1.:
+        ground_truth = odl.phantom.shepp_logan(dataset.space[1],
+                                               modified=modified)
+    else:
+        full_shape = dataset.space[1].shape
+        inner_shape = (int(zoom * dataset.space[1].shape[0]),
+                       int(zoom * dataset.space[1].shape[1]))
+        inner_space = odl.uniform_discr(
+                min_pt=[-inner_shape[0] / 2, -inner_shape[1] / 2],
+                max_pt=[inner_shape[0] / 2, inner_shape[1] / 2],
+                shape=inner_shape)
+        inner_ground_truth = odl.phantom.shepp_logan(inner_space,
+                                                     modified=modified)
+        ground_truth = dataset.space[1].zero()
+        i0_start = (full_shape[0] - inner_shape[0]) // 2
+        i1_start = (full_shape[1] - inner_shape[1]) // 2
+        ground_truth[i0_start:i0_start+inner_shape[0],
+                     i1_start:i1_start+inner_shape[1]] = inner_ground_truth
     ground_truth = (
-            odl.phantom.shepp_logan(dataset.space[1], modified=modified)
-            / cfg.get('implicit_scaling_except_for_test_data', 1.)).asarray()
+            ground_truth /
+            cfg.get('implicit_scaling_except_for_test_data', 1.)).asarray()
 
     random_gen = np.random.default_rng(seed)
     sinogram = dataset.ground_truth_to_obs(ground_truth, random_gen=random_gen)
