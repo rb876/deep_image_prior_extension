@@ -3,7 +3,7 @@ import odl
 from odl.contrib.torch import OperatorModule
 import torch
 import numpy as np
-from .ellipses import EllipsesDataset
+from .ellipses import EllipsesDataset, CircleMaskEllipsesDataset
 from .brain import ACRINFMISOBrainDataset
 from . import lotus
 from . import walnuts
@@ -252,6 +252,21 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
         proj_numel = cfg.geometry_specs.num_angles * cfg.geometry_specs.num_det_pixels
         proj_space = odl.rn(proj_numel, dtype=np.float32)
         dataset = brain_dataset.create_pair_dataset(ray_trafo=ray_trafo,
+                pinv_ray_trafo=smooth_pinv_ray_trafo,
+                domain=space, proj_space=proj_space,
+                noise_type=cfg.noise_specs.noise_type,
+                specs_kwargs=specs_kwargs,
+                noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
+                'test': cfg.seed + 2})
+    elif name == 'ellipses_walnut_120':
+        dataset_specs = {'diameter': cfg.zoom, 'image_size': cfg.im_shape,
+                         'train_len': cfg.train_len,
+                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
+        ellipses_dataset = CircleMaskEllipsesDataset(**dataset_specs)
+        space = ellipses_dataset.space
+        proj_numel = cfg.geometry_specs.num_angles * cfg.geometry_specs.num_det_pixels
+        proj_space = odl.rn(proj_numel, dtype=np.float32)
+        dataset = ellipses_dataset.create_pair_dataset(ray_trafo=ray_trafo,
                 pinv_ray_trafo=smooth_pinv_ray_trafo,
                 domain=space, proj_space=proj_space,
                 noise_type=cfg.noise_specs.noise_type,

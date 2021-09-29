@@ -64,3 +64,50 @@ class EllipsesDataset(GroundTruthDataset):
             image[np.array(image) != 0.] -= np.min(image)
             image /= np.max(image)
             yield image
+
+class CircleMaskEllipsesDataset(GroundTruthDataset):
+    """
+    Dataset with images of multiple random ellipses masked by a circle.
+    Based on :class:`EllipsesDataset`.
+    """
+    def __init__(self, diameter=1., image_size=128, min_pt=None, max_pt=None,
+                 train_len=32000, validation_len=3200, test_len=3200,
+                 fixed_seeds=True):
+
+        self.diameter = diameter
+        self.shape = (image_size, image_size)
+        # defining discretization space ODL
+        if min_pt is None:
+            min_pt = [-self.shape[0]/2, -self.shape[1]/2]
+        if max_pt is None:
+            max_pt = [self.shape[0]/2, self.shape[1]/2]
+        space = uniform_discr(min_pt, max_pt, self.shape, dtype=np.float32)
+        self.train_len = train_len
+        self.validation_len = validation_len
+        self.test_len = test_len
+
+        self.ellipses_dataset = EllipsesDataset(
+                image_size=int(self.diameter * image_size),
+                train_len=self.train_len, validation_len=self.validation_len,
+                test_len=self.test_len, fixed_seeds=fixed_seeds)
+
+        super().__init__(space=space)
+
+    def generator(self, fold='train'):
+        """
+        Yield random ellipse phantom images masked by a circle.
+        """
+        ellipses_gen = self.ellipses_dataset.generator(fold=fold)
+        image = self.space.zero()
+        inner_shape = self.ellipses_dataset.shape
+        i0_start, i1_start = (
+                (self.shape[0]-inner_shape[0])//2,
+                (self.shape[1]-inner_shape[1])//2)
+        x0, x1 = np.ogrid[-1.:1.:complex(imag=self.shape[0]),
+                          -1.:1.:complex(imag=self.shape[1])]
+        mask = x0**2 + x1**2 < self.diameter ** 2
+        for inner_image in ellipses_gen:
+            image[i0_start:i0_start+inner_shape[0],
+                  i1_start:i1_start+inner_shape[1]] = inner_image
+            image *= mask
+            yield image
