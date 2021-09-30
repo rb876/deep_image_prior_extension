@@ -31,8 +31,8 @@ noise_specs:
   noise_type: white
   stddev: 0.05
 stats:
-  mean_fbp: 0.09473994113911853  # FDK, actually
-  std_fbp: 0.37629860501512302    # FDK, actually
-  mean_gt: 0.060739740575620219
-  std_gt: 0.14634295758650837
+  mean_fbp: 0.17045093110995369  # FDK, actually
+  std_fbp: 0.47548518629868347  # FDK, actually
+  mean_gt: 0.10310009871702641
+  std_gt: 0.18841431273432685
 implicit_scaling_except_for_test_data: 14.
