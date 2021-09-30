@@ -109,7 +109,7 @@ def coordinator(cfg : DictConfig) -> None:
     with open(cfg.val.select_gamma_results_sorted_filename, 'w') as f:
         json.dump(infos, f, indent=1)
 
-    print('best gamma(s):\n{}'.format('\n'.join(['{:f}'.format(k) for k, v in infos.items() if key(v) == key(list(infos.values())[0])])))
+    print('best gamma(s):\n{}'.format('\n'.join(['{:g}'.format(k) for k, v in infos.items() if key(v) == key(list(infos.values())[0])])))
 
 if __name__ == '__main__':
     coordinator()
