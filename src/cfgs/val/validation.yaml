@@ -1,6 +1,7 @@
 # @package _group_
 baseline_run_path: null
 multirun_base_paths: null
+exclude_re: null
 load_histories_from_run_path: null
 run_paths_filename: val_run_paths.json
 results_filename: val_results.json
