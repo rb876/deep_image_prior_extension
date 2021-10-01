@@ -9,7 +9,8 @@ test_len: 3200
 data_path_test: /localdata/jleuschn/Walnuts/
 walnut_id: 1
 orbit_id: 2
-disk_diameter: 0.4745  # 0.65 * 0.73
+zoom: 0.73
+disk_diameter: 0.65
 seed: 1
 geometry_specs:
   num_angles: 120
