@@ -3,9 +3,9 @@ Utilities for displaying results (e.g. consistent titles).
 """
 
 experiment_title_dict = {
-    'pretrain': 'Pretrained DIP (switch to noise)',
-    'pretrain_only_fbp': 'Pretrained DIP (FBP)',
-    'pretrain_noise': 'Pretrained DIP (FBP & noise)',
+    'pretrain': 'EDIP (noise)',  # 'EDIP (switch to noise)'
+    'pretrain_only_fbp': 'EDIP (FBP)',
+    'pretrain_noise': 'EDIP (FBP & noise)',
     'no_pretrain': 'DIP (noise)',
     'no_pretrain_fbp': 'DIP (FBP)',
     'no_pretrain_2inputs': 'DIP (FBP & noise)',
@@ -15,6 +15,8 @@ data_title_dict = {
     'ellipses_lotus_20': 'Ellipses/Lotus Sparse 20',
     'ellipses_lotus_40': 'Ellipses/Lotus Sparse 40',
     'ellipses_lotus_limited_30': 'Ellipses/Lotus Limited 30',
+    'brain_walnut_120': 'Brain/Walnut Sparse 120',
+    'ellipses_walnut_120': 'Ellipses/Walnut Sparse 120',
 }
 
 experiment_color_dict = {
