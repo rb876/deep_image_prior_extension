@@ -42,7 +42,7 @@ def compute_mean(cfg : DictConfig) -> None:
     dataset, ray_trafo = get_standard_dataset(cfg.data.name, cfg.data, return_ray_trafo_torch_module=False)
     stats = compute_dataset_stats_fbp_gt(dataset)
     print(stats)
-    with open('stats_standard_brain_walnut_120.json', 'w') as f:
+    with open('stats_standard_{}.json'.format(cfg.data.name), 'w') as f:
         json.dump(stats, f, indent=1)
 
 if __name__ == '__main__':

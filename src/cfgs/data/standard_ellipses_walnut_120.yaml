@@ -9,7 +9,7 @@ test_len: 3200
 data_path_test: /localdata/jleuschn/Walnuts/
 walnut_id: 1
 orbit_id: 2
-zoom: 0.73
+disk_diameter: 0.4745  # 0.65 * 0.73
 seed: 1
 geometry_specs:
   num_angles: 120
@@ -31,8 +31,8 @@ noise_specs:
   noise_type: white
   stddev: 0.05
 stats:
-  mean_fbp: 0.17045093110995369  # FDK, actually
-  std_fbp: 0.47548518629868347  # FDK, actually
-  mean_gt: 0.10310009871702641
-  std_gt: 0.18841431273432685
+  mean_fbp: 0.079900281005015131  # FDK, actually
+  std_fbp: 0.28681643276996799  # FDK, actually
+  mean_gt: 0.05702284884461551
+  std_gt: 0.1458410655400523
 implicit_scaling_except_for_test_data: 14.
