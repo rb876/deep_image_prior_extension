@@ -259,7 +259,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
                 noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
                 'test': cfg.seed + 2})
     elif name == 'ellipses_walnut_120':
-        dataset_specs = {'diameter': cfg.zoom * cfg.disk_diameter,
+        dataset_specs = {'diameter': cfg.disk_diameter,
                          'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                          'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
         ellipses_dataset = DiskDistributedEllipsesDataset(**dataset_specs)
