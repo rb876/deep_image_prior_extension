@@ -1,0 +1,39 @@
+# @package _group_
+name: ellipses_walnut_120
+validation_data: shepp_logan
+test_data: walnut
+im_shape: 501
+train_len: 32000
+validation_len: 3200
+test_len: 3200
+data_path_test: /localdata/jleuschn/Walnuts/
+walnut_id: 1
+orbit_id: 2
+zoom: 0.73
+disk_diameter: 0.4745
+seed: 1
+geometry_specs:
+  num_angles: 120
+  angles_subsampling:
+    start: 0
+    stop: null
+    step: 10
+    num_angles_orig: 1200
+  num_det_pixels: 768
+  impl: 'custom'
+  ray_trafo_custom:
+    # name: walnut_single_slice
+    name: walnut_single_slice_matrix
+    matrix_path: ${data.data_path_test}
+    data_path: ${data.data_path_test}
+    walnut_id: ${data.walnut_id}
+    orbit_id: ${data.orbit_id}
+noise_specs:
+  noise_type: white
+  stddev: 0.05
+stats:
+  mean_fbp: 0.079900281005015131  # FDK, actually
+  std_fbp: 0.28681643276996799  # FDK, actually
+  mean_gt: 0.05702284884461551
+  std_gt: 0.1458410655400523
+implicit_scaling_except_for_test_data: 14.

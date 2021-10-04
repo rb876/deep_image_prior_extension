@@ -1,6 +1,7 @@
 import hydra
 import os
 import os.path
+import re
 import json
 from omegaconf import DictConfig, OmegaConf
 from dataset import get_validation_data, get_standard_dataset
@@ -14,14 +15,17 @@ def print_dct(dct):
         for value in values:
             print(value)
 
-def collect_runs_paths(base_paths):
+def collect_runs_paths(base_paths, exclude_re=None):
     paths = {}
     if isinstance(base_paths, str):
         base_paths = [base_paths]
     for base_path in base_paths:
         path = os.path.join(os.getcwd().partition('src')[0], base_path)
         for dirpath, dirnames, filenames in os.walk(path):
-            paths[dirpath] = sorted([f for f in filenames if f.endswith(".pt")])
+            paths[dirpath] = sorted(
+                    [f for f in filenames if f.endswith(".pt") and (
+                            exclude_re is None or
+                            not re.fullmatch(exclude_re, f))])
     paths = {k:v for k, v in sorted(paths.items()) if v}
     return paths
 
@@ -41,7 +45,8 @@ def coordinator(cfg : DictConfig) -> None:
     assert cfg.mdl.load_pretrain_model, \
     'load_pretrain_model is False, assertion failed'
 
-    runs = collect_runs_paths(cfg.val.multirun_base_paths)
+    runs = collect_runs_paths(cfg.val.multirun_base_paths,
+                              exclude_re=cfg.val.get('exclude_re'))
     print_dct(runs) # visualise runs and models checkpoints
 
     if cfg.val.load_histories_from_run_path is not None:

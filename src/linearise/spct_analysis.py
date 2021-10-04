@@ -69,6 +69,7 @@ def coordinator(cfg : DictConfig) -> None:
 
     input = unpack_loader(dataset_test, store_device)
     if cfg.mdl.recon_from_randn:
+        reconstructor.init_model()  # to advance the random seed like in DeepImagePriorReconstructor.reconstruct
         input = 0.1 * torch.randn(*input.shape).to(store_device)
     
     params = extract_params(reconstructor, cfg.spct)

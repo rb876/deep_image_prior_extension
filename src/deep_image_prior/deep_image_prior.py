@@ -39,14 +39,18 @@ class LRPolicy():
         n = min(self.num_warmup_iter, max(0, self.num_iterations + 1 - epoch))
 
         self.lambda_fct[epoch:epoch+n] = np.linspace(
-                init_lr/self.lr, lr/self.lr, self.num_warmup_iter)[:n]
+                init_lr/self.lr if self.lr != 0. else 1.,
+                lr/self.lr if self.lr != 0. else 1.,
+                self.num_warmup_iter)[:n]
 
-        self.lambda_fct[epoch+n:] = lr/self.lr
+        self.lambda_fct[epoch+n:] = lr/self.lr if self.lr != 0. else 1.
 
         if preserve_initial_warmup:
             self.lambda_fct[epoch:self.num_warmup_iter] = np.minimum(
                     self.lambda_fct[epoch:self.num_warmup_iter],
-                    np.linspace(self.init_lr/self.lr, 1., self.num_warmup_iter)[epoch:])
+                    np.linspace(
+                            self.init_lr/self.lr if self.lr != 0. else 1., 1.,
+                            self.num_warmup_iter)[epoch:])
 
     def __call__(self, epoch):
         """Note: `epoch` specifies the iteration."""

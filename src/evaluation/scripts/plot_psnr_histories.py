@@ -20,7 +20,8 @@ FIG_PATH = '.'
 
 save_fig = True
 
-with open('../runs.yaml', 'r') as f:
+with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
+        'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
 data = 'ellipses_lotus_20'
@@ -33,19 +34,45 @@ data = 'ellipses_lotus_20'
 runs_to_compare = [
     {
       'experiment': 'no_pretrain',
-      # 'color': '#395262',
     },
     {
       'experiment': 'no_pretrain_fbp',
-      # 'color': '#6ac5de',
     },
+    # {
+    #   'experiment': 'no_pretrain',
+    #   'name': 'fixed_encoder',
+    #   'experiment_title': 'DIP-FE (noise)',
+    #   'name_title': '',
+    #   'color': 'gray',
+    # },
+    # {
+    #   'experiment': 'no_pretrain_fbp',
+    #   'name': 'fixed_encoder',
+    #   'experiment_title': 'DIP-FE (FBP)',
+    #   'name_title': '',
+    #   'color': 'cyan',
+    # },
     {
       'experiment': 'pretrain_only_fbp',
-      # 'color': '#ff734a',
+      'color': '#A42A2E',
     },
     {
       'experiment': 'pretrain',
-      # 'color': '#9c62b4',
+      'color': '#673147',
+    },
+    {
+      'experiment': 'pretrain_only_fbp',
+      'name': 'train_run0_epochs100_fixed_encoder',
+      'experiment_title': 'EDIP-FE (FBP)',
+      'name_title': '',
+      'color': '#EC2215',
+    },
+    {
+      'experiment': 'pretrain',
+      'name': 'train_run0_epochs100_fixed_encoder',
+      'experiment_title': 'EDIP-FE (noise)',
+      'name_title': '',
+      'color': '#B15CD1',
     },
 ]
 
@@ -63,6 +90,8 @@ plot_settings_dict = {
         'psnr0_x_pos': -150,
         'psnr0_x_shift_per_run_idx': {
             0: -200,
+            2: -200,
+            3: -200,
         },
         'psnr_steady_y_pos': 32.5,
         'psnr_steady_y_shift_per_run_idx': {
@@ -220,10 +249,10 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
             psnr_histories, baseline_psnr_steady,
             remaining_psnr=eval_settings_dict[data][
                     'rise_time_to_baseline_remaining_psnr'])
-    
 
     label = get_label(run_spec, cfgs[0])
     color = get_color(run_spec, cfgs[0])
+    linestyle = run_spec.get('linestyle', 'solid')
 
     # for psnr_history in psnr_histories:
     #     ax.plot(psnr_history, color=color, alpha=0.1)
@@ -236,7 +265,7 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
                          # edgecolor=None,
                          )
         h = ax_.plot(mean_psnr_history, label=label, color=color,
-                            linewidth=2)
+                            linestyle=linestyle, linewidth=2)
         if ax_ is ax:
             run_handles += h
         h = ax_.plot(rise_time_to_baseline,
@@ -291,7 +320,7 @@ ax.add_patch(Rectangle([plot_settings_dict[data]['inset_axes_rect'][0] -
 
 run_legend = ax.legend(
         handles=run_handles, bbox_to_anchor=(0.5, -0.1), loc='upper center',
-        ncol=4, framealpha=1.)
+        ncol=len(runs_to_compare), framealpha=1.)
 ax.add_artist(run_legend)
 psnr0_handle = copy(psnr0_handles[0])
 psnr0_handle.set_markerfacecolor('gray')
@@ -328,3 +357,5 @@ if save_fig:
                  for r in runs_to_compare])
     filename = '{}_on_{}.pdf'.format(runs_filename, data)
     fig.savefig(os.path.join(FIG_PATH, filename), bbox_inches='tight')
+
+plt.show()

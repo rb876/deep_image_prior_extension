@@ -15,22 +15,25 @@ def coordinator(cfg : DictConfig) -> None:
 
     dataset, ray_trafos = get_standard_dataset(cfg.data.name, cfg.data)
 
+    obs_shape = dataset.space[0].shape
+    im_shape = dataset.space[1].shape
+
     if cfg.validation_run:
         if cfg.data.validation_data:
             dataset_test = get_validation_data(cfg.data.name, cfg.data)
         else:
             dataset_test = dataset.create_torch_dataset(
-                fold='validation', reshape=((1,) + dataset.space[0].shape,
-                                            (1,) + dataset.space[1].shape,
-                                            (1,) + dataset.space[1].shape))
+                fold='validation', reshape=((1,) + obs_shape,
+                                            (1,) + im_shape,
+                                            (1,) + im_shape))
     else:
         if cfg.data.test_data:
             dataset_test = get_test_data(cfg.data.name, cfg.data)
         else:
             dataset_test = dataset.create_torch_dataset(
-                fold='test', reshape=((1,) + dataset.space[0].shape,
-                                      (1,) + dataset.space[1].shape,
-                                      (1,) + dataset.space[1].shape))
+                fold='test', reshape=((1,) + obs_shape,
+                                      (1,) + im_shape,
+                                      (1,) + im_shape))
 
     ray_trafo = {'ray_trafo_module': ray_trafos['ray_trafo_module'],
                  'reco_space': dataset.space[1],
@@ -43,9 +46,12 @@ def coordinator(cfg : DictConfig) -> None:
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
     model = deepcopy(reconstructor.model)
     if cfg.pretraining:
+        trn_ray_trafos = ({'smooth_pinv_ray_trafo_module':
+                               ray_trafos['smooth_pinv_ray_trafo_module']}
+                          if cfg.trn.use_adversarial_attacks else {})
         Trainer(model=model,
-        ray_trafos={'smooth_pinv_ray_trafo_module': ray_trafos['smooth_pinv_ray_trafo_module'
-        ]}, cfg=cfg.trn).train(dataset)
+                ray_trafos=trn_ray_trafos,
+                cfg=cfg.trn).train(dataset)
 
     os.makedirs(cfg.save_reconstruction_path, exist_ok=True)
     if cfg.save_histories_path is not None:
@@ -57,8 +63,9 @@ def coordinator(cfg : DictConfig) -> None:
 
     filename = os.path.join(cfg.save_reconstruction_path,'recos.hdf5')
     file = h5py.File(filename, 'w')
-    dataset = file.create_dataset('recos', shape=(1, )
-        + (128, 128), maxshape=(1, ) + (128, 128), dtype=np.float32, chunks=True)
+    recos_dataset = file.create_dataset('recos',
+            shape=(1,) + im_shape, maxshape=(1,) + im_shape, dtype=np.float32,
+            chunks=True)
 
     dataloader = DataLoader(dataset_test, batch_size=1, num_workers=0,
                             shuffle=True, pin_memory=True)
@@ -70,7 +77,7 @@ def coordinator(cfg : DictConfig) -> None:
                 return_histories=cfg.save_histories_path is not None,
                 return_iterates=cfg.save_iterates_path is not None,
                 return_iterates_params=cfg.save_iterates_params_path is not None)
-        dataset[i] = reco
+        recos_dataset[i] = reco
         if cfg.save_histories_path is not None:
             histories = optional_out.pop(0)
             histories = {k: np.array(v, dtype=np.float32)

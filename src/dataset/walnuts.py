@@ -14,6 +14,9 @@ import astra
 import os
 import imageio
 from math import ceil
+import torch
+import scipy
+from tqdm import tqdm
 
 VOXEL_PER_MM = 10
 DEFAULT_ANGULAR_SUB_SAMPLING = 10
@@ -240,6 +243,8 @@ class WalnutRayTrafo:
 
         self.build_proj_mask()
 
+        self.num_projs_in_mask = np.count_nonzero(self.proj_mask)
+
         self.assert_proj_rows_suffice()
         self.assert_vol_slices_suffice()
 
@@ -362,10 +367,12 @@ class WalnutRayTrafo:
                 self.first_proj_row:self.first_proj_row+self.num_proj_rows]
         return projs
 
-    def vol_in_mask(self, vol_x, full_input=False):
+    def vol_in_mask(self, vol_x, full_input=False, squeeze=False):
         if full_input:
             vol_x = self.vol_from_full(vol_x)
         vol_in_mask = vol_x[self.vol_mask_slice]
+        if squeeze:
+            vol_in_mask = np.squeeze(vol_in_mask, axis=0)
         return vol_in_mask
 
     def flat_projs_in_mask(self, projs, full_input=False):
@@ -506,19 +513,142 @@ class WalnutRayTrafo:
         flat_projs_in_mask = self.flat_projs_in_mask(projs)
         return flat_projs_in_mask
 
-    def apply_adjoint(self, flat_projs_in_mask, padding_mode='edge'):
+    def apply_adjoint(self, flat_projs_in_mask, padding_mode='edge', squeeze=False):
         projs = self.projs_from_flat_projs_in_mask(flat_projs_in_mask,
                                                    padding_mode=padding_mode)
         vol_x = self.bp3d(projs)
-        vol_in_mask = self.vol_in_mask(vol_x)
+        vol_in_mask = self.vol_in_mask(vol_x, squeeze=squeeze)
         return vol_in_mask
 
-    def apply_fdk(self, flat_projs_in_mask, padding_mode='edge'):
+    def apply_fdk(self, flat_projs_in_mask, padding_mode='edge', squeeze=False):
         projs = self.projs_from_flat_projs_in_mask(flat_projs_in_mask,
                                                    padding_mode=padding_mode)
         vol_x = self.fdk(projs)
-        vol_in_mask = self.vol_in_mask(vol_x)
+        vol_in_mask = self.vol_in_mask(vol_x, squeeze=squeeze)
         return vol_in_mask
+
+# based on
+# https://github.com/odlgroup/odl/blob/25ec783954a85c2294ad5b76414f8c7c3cd2785d/odl/contrib/torch/operator.py#L33
+class NumpyFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, forward_fun, backward_fun):
+        ctx.forward_fun = forward_fun
+        ctx.backward_fun = backward_fun
+
+        x_np = x.detach().cpu().numpy()
+        # y_np = np.stack([ctx.forward_fun(x_np_i) for x_np_i in x_np])
+        y_np = ctx.forward_fun(x_np)
+        y = torch.from_numpy(y_np).to(x.device)
+        return y
+
+    @staticmethod
+    def backward(ctx, y):
+        y_np = y.detach().cpu().numpy()
+        # x_np = np.stack([ctx.backward_fun(y_np_i) for y_np_i in y_np])
+        x_np = ctx.backward_fun(y_np)
+        x = torch.from_numpy(x_np).to(y.device)
+        return x, None, None
+
+class WalnutRayTrafoModule(torch.nn.Module):
+    def __init__(self, walnut_ray_trafo, adjoint=False):
+        super().__init__()
+        self.walnut_ray_trafo = walnut_ray_trafo
+        self.adjoint = adjoint
+
+    def forward(self, x):
+        # x.shape: (N, C, H, W) or (N, C, D, H, W)
+        forward_fun = (self.walnut_ray_trafo.apply_adjoint if self.adjoint else
+                       self.walnut_ray_trafo.apply)
+        # note: backward_fun is only an approximation to the transposed jacobian
+        backward_fun = (self.walnut_ray_trafo.apply if self.adjoint else
+                        self.walnut_ray_trafo.apply_adjoint)
+        x_nc_flat = x.view(-1, *x.shape[2:])
+        y_nc_flat = []
+        for x_i in x_nc_flat:
+            y_i = NumpyFunction.apply(x_i, forward_fun, backward_fun)
+            y_nc_flat.append(y_i)
+        y = torch.stack(y_nc_flat)
+        y = y.view(*x.shape[:2], *y.shape[1:])
+        return y
+
+def save_ray_trafo_matrix(file_path, walnut_ray_trafo):
+    assert walnut_ray_trafo.rotation is None
+    assert walnut_ray_trafo.shift_z == 0.
+
+    vol_in_mask = np.zeros(VOL_SZ[1:])
+
+    ray_trafo_matrix = scipy.sparse.dok_matrix(
+        (walnut_ray_trafo.num_projs_in_mask, VOL_SZ[1] * VOL_SZ[2]),
+        dtype=np.float32)
+    for i in tqdm(range(VOL_SZ[1] * VOL_SZ[2])):
+        vol_in_mask[:] = 0.
+        vol_in_mask[np.unravel_index(i, VOL_SZ[1:])] = 1.
+
+        flat_projs_in_mask = walnut_ray_trafo.apply(vol_in_mask)
+        non_zero_mask = flat_projs_in_mask != 0.
+        ray_trafo_matrix[non_zero_mask, i] = flat_projs_in_mask[non_zero_mask]
+
+    # matlab appears to load garbage values if stored as float32, related issue:
+    # https://github.com/scipy/scipy/issues/4826#issuecomment-120951128
+    ray_trafo_matrix = ray_trafo_matrix.astype(np.float64)
+
+    scipy.io.savemat(
+            file_path,
+            {
+                'ray_trafo_matrix': ray_trafo_matrix,
+                'walnut_id': walnut_ray_trafo.walnut_id,
+                'orbit_id': walnut_ray_trafo.orbit_id,
+                'angular_sub_sampling': walnut_ray_trafo.angular_sub_sampling,
+                'num_slices': walnut_ray_trafo.num_slices,
+                'num_proj_rows': walnut_ray_trafo.num_proj_rows,
+                'first_proj_row': walnut_ray_trafo.first_proj_row + 1,  # matlab ind
+                'vol_mask_slice': np.array([  # matlab inds, first and last included
+                        range(walnut_ray_trafo.num_slices)[
+                                walnut_ray_trafo.vol_mask_slice][0] + 1,
+                        range(walnut_ray_trafo.num_slices)[
+                                walnut_ray_trafo.vol_mask_slice][-1] + 1]),
+                'proj_mask': walnut_ray_trafo.proj_mask,
+            })
+
+def get_ray_trafo_matrix(file_path):
+    matrix = scipy.io.loadmat(
+            file_path, variable_names=['ray_trafo_matrix'])[
+                    'ray_trafo_matrix'].astype('float32')
+    return matrix
+
+def get_single_slice_ray_trafo_matrix_filename(
+        walnut_id, orbit_id, angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING):
+    filename = (
+            'single_slice_ray_trafo_matrix_walnut{:d}_orbit{:d}_ass{:d}.mat'
+                    .format(walnut_id, orbit_id, angular_sub_sampling))
+    return filename
+
+def save_single_slice_ray_trafo_matrix(
+        output_path, data_path,
+        walnut_id=DEFAULT_SINGLE_SLICE_WALNUT_ID,
+        orbit_id=DEFAULT_SINGLE_SLICE_ORBIT_ID,
+        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING):
+
+    walnut_ray_trafo = get_single_slice_ray_trafo(
+            data_path=data_path, walnut_id=walnut_id, orbit_id=orbit_id,
+            angular_sub_sampling=angular_sub_sampling)
+
+    filename = get_single_slice_ray_trafo_matrix_filename(
+            walnut_id=walnut_id, orbit_id=orbit_id,
+            angular_sub_sampling=angular_sub_sampling)
+
+    save_ray_trafo_matrix(os.path.join(output_path, filename),
+                          walnut_ray_trafo)
+
+def get_single_slice_ray_trafo_matrix(
+        path, walnut_id, orbit_id,
+        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING):
+
+    filename = get_single_slice_ray_trafo_matrix_filename(
+            walnut_id, orbit_id, angular_sub_sampling)
+
+    matrix = get_ray_trafo_matrix(os.path.join(path, filename))
+    return matrix
 
 # def get_src_z(data_path, walnut_id, orbit_id):
 #     data_path_full = os.path.join(data_path, 'Walnut{}'.format(walnut_id),
