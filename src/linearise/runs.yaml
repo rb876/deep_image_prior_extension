@@ -1,6 +1,6 @@
-pretrain_only_fbp: 
-  path_to_data_0: /media/chen/Res/deep_image_prior_extension/src/linearise/multirun/2021-09-19/16-58-04/0/spct_data.npz
-  path_to_data_9500: /media/chen/Res/deep_image_prior_extension/src/linearise/multirun/2021-09-19/16-59-03/0/spct_data.npz 
-no_pretrain_fbp: 
-  path_to_data_0: /media/chen/Res/deep_image_prior_extension/src/linearise/multirun/2021-09-20/11-46-42/0/spct_data.npz
-  path_to_data_9500: /media/chen/Res/deep_image_prior_extension/src/linearise/multirun/2021-09-20/11-47-08/0/spct_data.npz  
+pretrain_only_fbp:
+  9500: /media/chen/Res/deep_image_prior_extension/src/linearise/multirun/2021-09-20/19-35-29/0/spct_data.npz  
+  0: /media/chen/Res/deep_image_prior_extension/src/linearise/multirun/2021-09-20/19-17-09/0/spct_data.npz
+no_pretrain_fbp:
+  9500: /media/chen/Res/deep_image_prior_extension/src/linearise/multirun/2021-09-20/19-05-10/0/spct_data.npz
+  0: /media/chen/Res/deep_image_prior_extension/src/linearise/multirun/2021-09-20/18-59-31/0/spct_data.npz

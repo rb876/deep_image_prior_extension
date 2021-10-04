@@ -58,7 +58,7 @@ def get_eps(params, omega, mode='andrei'):
     elif mode == 'andrei':
         return set_eps_andrei(params, omega)
 
-def central_diff_approx(input, model, store_device, skip_layers, cfg):
+def central_diff_Jvp_approx(input, model, store_device, skip_layers, cfg):
 
     params = parameters_to_vector(model.named_parameters(), skip_layers)
     vec_params_shape = params.size()
@@ -78,9 +78,9 @@ def randomised_SVD_jacobian(input, model, ray_trafo, cfg, return_on_cpu=False):
     for _ in range(cfg.spct.n_projs):
         with torch.no_grad():
             if ray_trafo is not None:
-                diff_approx = ray_trafo(central_diff_approx(input, model, store_device, cfg.spct.skip_layers, cfg.mdl))
+                diff_approx = ray_trafo(central_diff_Jvp_approx(input, model, store_device, cfg.spct.skip_layers, cfg.mdl))
             else:
-                diff_approx = central_diff_approx(input, model, store_device, cfg.spct.skip_layers, cfg.mdl)
+                diff_approx = central_diff_Jvp_approx(input, model, store_device, cfg.spct.skip_layers, cfg.mdl)
             forward_map_list.append(diff_approx.view(1, -1).cpu())
     forward_map = torch.cat(forward_map_list).t()
 

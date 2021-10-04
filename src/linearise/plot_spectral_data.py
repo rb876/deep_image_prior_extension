@@ -3,8 +3,7 @@ import yaml
 import matplotlib
 import matplotlib.pyplot as plt 
 
-def singular_values_comparison_plot(s, labels, colors, line):
-
+def singular_values_plot(s, labels, colors, line):
 
     fig, ax = plt.subplots(figsize=(6, 6))
     for val, lab, col, lin in zip(s, labels, colors, line):
@@ -14,23 +13,20 @@ def singular_values_comparison_plot(s, labels, colors, line):
     ax.legend()
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    ax.set_title('Singular Values Comparison', fontsize=16)
+    ax.set_title('Singular Values', fontsize=16)
     ax.set_yscale('log')
     ax.set_xlabel('# projections', fontsize=12)
     ax.set_ylabel('Magnitude', fontsize=12)
     lgd = ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=2, framealpha=1.)
     fig.savefig('singular_values_comparison_plot.pdf', bbox_extra_artists=(lgd,), bbox_inches='tight')
     
-
-
-def singular_vecors_comparison_plot(v1, v2, n_cols=4, plot_first_k=None, labels=None, filename=None):
+def singular_vectors_plot(v1, v2, n_cols=4, plot_first_k=None, labels=None, filename=None):
     from matplotlib.ticker import MaxNLocator
     from matplotlib.lines import Line2D
 
     params = {'mathtext.default': 'regular' }          
     plt.rcParams.update(params)
     matplotlib.rcParams.update({'font.size': 16})
-
     vec1_len = list(range(v1.shape[1]))
     n_proj = v1.shape[0] if plot_first_k is None else plot_first_k
     n_rows = n_proj // n_cols
@@ -39,8 +35,8 @@ def singular_vecors_comparison_plot(v1, v2, n_cols=4, plot_first_k=None, labels=
     axs = axs.flatten()
     for i in range(n_proj):
         fct = np.sign(np.dot(v1[i, :], v2[i, :]))
-        l1 = axs[i].plot(vec1_len, v1[i, :]*fct, '-', color='#EC2215', alpha=1, linewidth=2.5, label=labels[0])
-        l2 = axs[i].plot(vec1_len, v2[i, :], '-', color='#3D78B2', alpha=.75, linewidth=2.5, label=labels[1])
+        axs[i].plot(vec1_len, v1[i, :]*fct, '-', color='#EC2215', alpha=1, linewidth=2.5, label=labels[0])
+        axs[i].plot(vec1_len, v2[i, :], '-', color='#3D78B2', alpha=.75, linewidth=2.5, label=labels[1])
         axs[i].set_ylabel("$v_{%s}$" % str(i), fontsize=22)
         axs[i].spines['right'].set_visible(False)
         axs[i].spines['top'].set_visible(False)
@@ -52,33 +48,144 @@ def singular_vecors_comparison_plot(v1, v2, n_cols=4, plot_first_k=None, labels=
 
     lgd = fig.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.01), ncol=2, framealpha=1., fontsize=22)
     fig.savefig(filename, bbox_extra_artists=(lgd, title, ), bbox_inches='tight')
+
+def proj_diff_params_plot(delta_params_list, v_list, labels, colors, filename):
+
+    params = {'mathtext.default': 'regular' }          
+    plt.rcParams.update(params)
+    matplotlib.rcParams.update({'font.size': 16})
+    fig, ax = plt.subplots(figsize=(6, 6))
+    title = ax.set_title('Projected Parameters Difference')
+    for (delta_params, v, lab, col) in zip (delta_params_list, v_list, labels, colors):
+        prj_error = []
+        n_proj = v.shape[0]
+        vec_len = list(range(n_proj))
+        for i in range(n_proj):
+            tmp = (np.dot(delta_params, v[i, :]) / np.linalg.norm(delta_params, ord=2))**2
+            prj_error.append(tmp)
+        if i == 0: 
+            ax.plot(vec_len, prj_error, '-.', linewidth=2.5, color=col, label=lab)
+        else: 
+            ax2 = ax.twinx()
+            ax2.plot(vec_len, prj_error, '-.', linewidth=2.5, color=col, label=lab)
+    ax.grid()
+    lgd = fig.legend(loc='upper center', bbox_to_anchor=(0.5, -0.01), ncol=2, framealpha=1., fontsize=22)
+    fig.savefig(filename, bbox_extra_artists=(lgd, title, ), bbox_inches='tight')
+
+def singular_vectors_3D_plot(v_s, proj_idx, iters, n_rows, n_cols, colors, opacity, labels, iter_labels, filename):
+    from matplotlib.lines import Line2D
+
+    params = {'mathtext.default': 'regular' }          
+    plt.rcParams.update(params)
+    matplotlib.rcParams.update({'font.size': 12})
+
+    len_vec = np.arange(v_s[0].shape[1])
+    fig = matplotlib.pyplot.Figure(figsize=(16, 8))
+    for i, proj in enumerate(proj_idx):
+        ax = fig.add_subplot(n_rows, n_cols, i+1,  projection='3d', facecolor='w')
+        for k,  (v, it, cs, alpha) in enumerate(zip(v_s, iters, colors, opacity)):
+            fct = np.sign(np.dot(v_s[0][proj, :], v_s[k][proj, :]))
+            ax.plot(len_vec,  v[proj, :]*fct, zs=it, zdir='y', color=cs, alpha=alpha, zorder=10-k, linewidth=0.5)
+        ax.set_zlabel("$v_{%s}$" % str(proj+1), fontsize=16)
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.locator_params(axis='x', nbins=5)
+        ax.locator_params(axis='z', nbins=3)
+        ax.xaxis.set_label_text('parameters' + ' (1e6)', fontsize=14)
+        ax.xaxis.offsetText.set_visible(False)
+        ax.xaxis.set_tick_params(labelsize=12)
+        ax.yaxis.set_tick_params(labelsize=12)
+        ax.zaxis.set_tick_params(labelsize=12)        
+        ax.set_yticks([np.mean(iters[:len(iters)//2]), np.mean(iters[len(iters)//2:])])
+        ax.set_yticklabels(labels, rotation=90)
+        # make the panes transparent
+        ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        # make the grid lines transparent
+        ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+        ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+        ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+        ax.set_aspect('auto')
+        ax.grid(None)
     
+    def compute_hoyer_score(x):
+        sqrtN = np.sqrt(x.shape[0])
+        return (sqrtN - (np.abs(x).sum()/np.sqrt((x**2).sum())) ) / (sqrtN - 1)
 
-# def projected_diff_params_plot(delta_params, v):
+    def add_histogram(ax, range):
+        for v, it, cs in zip(v_s, iters, colors):
+            ave_hoyer_score = np.mean([compute_hoyer_score(el) for el in v])
+            counts, bins= np.histogram(np.abs(v[:range].flatten()), bins=1000)
+            counts = [el if el > 0 else 0 for el in np.log10(counts)]
+            ax.bar(bins[:-1], counts, zs=it, zdir='y', color=cs,  width=0.001, alpha=0.8)
+            ax.text(0.15, it, 0, '({:.2f})'.format(ave_hoyer_score), 'x', color=cs, fontsize=10)
+        
+        import matplotlib.ticker as mticker
+        def log_tick_formatter(val, pos=None):
+            return "{:2.0e}".format(10**val).replace("+0", "")
 
-#     n_proj = v.shape[0]
-#     prj_error = []
-#     for i in range(n_proj):
-#         prj_error.append(np.abs(np.dot(delta_params, v[i, :])))
+        ax.zaxis.set_major_formatter(mticker.FuncFormatter(log_tick_formatter))
+        ax.locator_params(axis='z', nbins=3)
+        ax.xaxis.set_tick_params(labelsize=12)
+        ax.yaxis.set_tick_params(labelsize=12)
+        ax.zaxis.set_tick_params(labelsize=12) 
+        ax.set_xlim(0, 0.2)
+        ax.locator_params(axis='x', nbins=5)      
+        ax.set_yticks([np.mean(iters[:len(iters)//2]), np.mean(iters[len(iters)//2:])])
+        ax.set_yticklabels(labels, rotation=90)
+        # make the panes transparent
+        ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        # make the grid lines transparent
+        ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+        ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+        ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+        ax.grid(None)
     
-#     fig, ax = plt.subplots(figsize=(6, 6))
-#     ax.plot(list(range(n_proj)), prj_error, '-.', linewidth=2.5, color='green')
-#     ax.grid()
-#     fig.savefig('projected_error_plot.pdf')
+    ax = fig.add_subplot(n_rows, n_cols, i+2, projection='3d', facecolor='w')
+    add_histogram(ax, range=30)
 
-with open('./runs.yaml', 'r') as f:
-    runs = yaml.load(f, Loader=yaml.FullLoader)
+    legend_elements = [Line2D([0], [0], color=colors[i], alpha=1, linewidth=2, label=el) for i, el in enumerate(iter_labels)]
+    lgd = fig.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.01), ncol=2, framealpha=1., fontsize=14)
+    fig.savefig(filename,  bbox_inches='tight')
+    
+def main(): 
 
-s, v, params = [], [], []
-for key in runs.keys():
-    for _, path in runs[key].items():
-        data = np.load(path)
-        s.append(data['values'])
-        v.append(data['vectors'])
-        params.append(data['params'])
+    with open('./runs.yaml', 'r') as f:
+        runs = yaml.load(f, Loader=yaml.FullLoader)
 
-singular_values_comparison_plot(s, ['Init (pretrained)', 'Finetuned (starting pretrained)', 'Init (random)', 'Finetuned (starting random)'], ['#EC2215', '#EC2215', '#3D78B2', '#3D78B2'], ['-', '--', '-', '--'])
-singular_vecors_comparison_plot(v[0], v[1], plot_first_k=16, labels=['Init (pretrained)', 'Finetuned (starting pretrained)'],  filename='singular_vectors_comparison_plot_1.pdf')
-singular_vecors_comparison_plot(v[2], v[3], plot_first_k=16, labels=['Init (random)', 'Finetuned (starting random)'], filename='singular_vectors_comparison_plot_2.pdf')
-singular_vecors_comparison_plot(v[0], v[3], plot_first_k=16, labels=['Init (pretrained)', 'Finetuned (starting random)'], filename='singular_vectors_comparison_plot_3.pdf')
-singular_vecors_comparison_plot(v[1], v[3], plot_first_k=16, labels=['Finetuned (starting pretrained)', 'Finetuned (starting random)'], filename='singular_vectors_comparison_plot_4.pdf')
+    s, v, params = [], [], []
+    for key in runs.keys():
+        for _, path in runs[key].items():
+            data = np.load(path)
+            s.append(data['values'])
+            v.append(data['vectors'])
+            params.append(data['params'])
+    
+    singular_vectors_3D_plot(
+        v,
+        proj_idx=[
+            0, 1, 2, 3, 29],
+        iters=[1, 2.5, 4, 5.5],
+        n_rows=2,
+        n_cols=3,
+        colors=['#909090', '#B4B4B4', '#909090', '#B4B4B4'],
+        opacity=[1, 1, 1, 1],
+        labels=['EDIP', 'DIP'],
+        iter_labels=['Init', 'Conv.'],
+        filename='test.pdf',
+        )
+
+    singular_values_plot(
+        s, 
+        labels=['EDIP (0)', 'EDIP (9500)', 'DIP (0)', 'DIP (9500)'],
+        colors=['#EC2215', '#EC2215', '#3D78B2', '#3D78B2'], 
+        line=['-', '-', '-', '-']
+        )
+    
+if __name__ == "__main__":
+    main()

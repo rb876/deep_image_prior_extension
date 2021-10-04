@@ -1,6 +1,18 @@
 import torch
 from typing import Iterable, Optional
 
+def list_norm_layers(model):
+    """ compute list of names of all GroupNorm (or BatchNorm2d) layers in the model """
+
+    norm_layers = []
+    for (name, module) in model.named_modules():
+        name = name.replace('module.', '')
+        if isinstance(module, torch.nn.GroupNorm) or isinstance(module,
+                torch.nn.BatchNorm2d):
+            norm_layers.append(name + '.weight')
+            norm_layers.append(name + '.bias')
+            
+    return norm_layers
 
 def parameters_to_vector(parameters: Iterable[torch.Tensor], skip_layers) -> torch.Tensor:
     r"""Convert parameters to one vector

@@ -6,7 +6,7 @@ from omegaconf import DictConfig
 from dataset import get_standard_dataset, get_test_data, get_validation_data
 from deep_image_prior import DeepImagePriorReconstructor
 from utils import randomised_SVD_jacobian
-from torch_utils import parameters_to_vector
+from torch_utils import parameters_to_vector, list_norm_layers
 
 def unpack_loader(testloader, store_device):
 
@@ -51,7 +51,17 @@ def coordinator(cfg : DictConfig) -> None:
                  'observation_space': dataset.space[0]
                 }
 
+    '''Jacobian approx. with pre-sigmoid network's output'''
+    if cfg.mdl.arch.use_sigmoid:
+        cfg.mdl.arch.use_sigmoid = False
+        cfg.mdl.normalize_by_stats = False
+
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
+    '''Exclude GroupNorm & Scale_in/_out params from spectral analsyis & their biases'''
+    skip_layers = list_norm_layers(reconstructor.model)
+    if skip_layers is not None:
+        cfg.spct.skip_layers += skip_layers # adding group norms. layers 
+
     store_device = reconstructor.device
 
     if cfg.mdl.torch_manual_seed:
@@ -65,10 +75,10 @@ def coordinator(cfg : DictConfig) -> None:
     params = params.detach().cpu().numpy()
     s, v = randomised_SVD_jacobian(input, reconstructor.model, ray_trafo['ray_trafo_module'], 
                                     cfg, return_on_cpu=True)
-
+                                    
     spct_data = {'filename': cfg.spct.filename, 
-                'values': s.numpy(), 
-                'vectors': v.numpy(),
+                'values':  s.numpy(), 
+                'vectors': v.numpy()[:cfg.spct.n_projs_to_be_stored],
                 'params': params}
     
     np.savez('spct_data', **spct_data)
