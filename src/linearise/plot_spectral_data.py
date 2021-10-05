@@ -195,7 +195,7 @@ def main():
         colors=['#084B8D', '#3A9DC7', '#96D6BA', '#084B8D', '#3A9DC7', '#96D6BA'],
         opacity=[1, 1, 1, 1, 1, 1],
         labels=['EDIP', 'DIP'],
-        iter_labels=['Converged', 'Iteration 100', 'Initial'],
+        iter_labels=['$\\theta^{\\mathrm{conv}}$', '$\\theta^{[100]}$', '$\\theta^{\\mathrm{init}}$'],
         filename='test.pdf',
         reorder_idx=reorder_idx
         )
