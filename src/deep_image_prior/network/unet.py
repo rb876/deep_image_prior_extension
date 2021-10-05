@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 from .scale_module import get_scale_modules
 
-def get_unet_model(in_ch=1, out_ch=1, scales=5, skip=4,
+def get_unet_model(in_ch=1, out_ch=1, scales=5,
                    channels=(32, 32, 64, 64, 128, 128), use_sigmoid=True,
                    use_norm=True):
     assert (1 <= scales <= 6)
