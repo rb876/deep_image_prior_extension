@@ -10,13 +10,14 @@ from evaluation.evaluation import (
 from evaluation.display_utils import (
     data_title_dict, experiment_color_dict, get_title_from_run_spec)
 from copy import copy
+from math import ceil
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 PATH = '/localdata/jleuschn/experiments/deep_image_prior_extension/'
 
-FIG_PATH = '.'
+FIG_PATH = os.path.dirname(__file__)
 
 save_fig = True
 
@@ -30,6 +31,8 @@ data = 'ellipses_lotus_20'
 # 
 #     color : str, optional
 #         Line color.
+#     skip_psnr0 : bool, optional
+#         Whether to skip the marker indicating the initial PSNR.
 
 runs_to_compare = [
     {
@@ -38,27 +41,27 @@ runs_to_compare = [
     {
       'experiment': 'no_pretrain_fbp',
     },
-    # {
-    #   'experiment': 'no_pretrain',
-    #   'name': 'fixed_encoder',
-    #   'experiment_title': 'DIP-FE (noise)',
-    #   'name_title': '',
-    #   'color': 'gray',
-    # },
+    {
+      'experiment': 'no_pretrain',
+      'name': 'fixed_encoder',
+      'experiment_title': 'DIP-FE (noise)',
+      'name_title': '',
+      'color': 'gray',
+      'skip_psnr0': True,
+    },
     # {
     #   'experiment': 'no_pretrain_fbp',
     #   'name': 'fixed_encoder',
     #   'experiment_title': 'DIP-FE (FBP)',
     #   'name_title': '',
-    #   'color': 'cyan',
+    #   'color': '#00AAFF',
+    #   'skip_psnr0': True,
     # },
     {
       'experiment': 'pretrain_only_fbp',
-      'color': '#A42A2E',
     },
     {
       'experiment': 'pretrain',
-      'color': '#673147',
     },
     {
       'experiment': 'pretrain_only_fbp',
@@ -66,14 +69,16 @@ runs_to_compare = [
       'experiment_title': 'EDIP-FE (FBP)',
       'name_title': '',
       'color': '#EC2215',
+      'skip_psnr0': True,
     },
-    {
-      'experiment': 'pretrain',
-      'name': 'train_run0_epochs100_fixed_encoder',
-      'experiment_title': 'EDIP-FE (noise)',
-      'name_title': '',
-      'color': '#B15CD1',
-    },
+    # {
+    #   'experiment': 'pretrain',
+    #   'name': 'train_run0_epochs100_fixed_encoder',
+    #   'experiment_title': 'EDIP-FE (noise)',
+    #   'name_title': '',
+    #   'color': '#B15CD1',
+    #   'skip_psnr0': True,
+    # },
 ]
 
 baseline_run_idx = 0
@@ -85,29 +90,34 @@ plot_settings_dict = {
     'ellipses_lotus_20': {
         'num_iters': 10000,
         'num_iters_inset': 6750,
-        'ylim': (None, 33.25),
+        'ylim': (None, 33.85),
         'ylim_inset': (29.25, 31.85),
         'psnr0_x_pos': -150,
         'psnr0_x_shift_per_run_idx': {
             0: -200,
-            2: -200,
-            3: -200,
         },
         'psnr_steady_y_pos': 32.5,
         'psnr_steady_y_shift_per_run_idx': {
+            3: 0.9,
+            # 4: 0.9,
         },
         'inset_axes_rect': [0.245, 0.15, 0.715, 0.525],
         'inset_axes_rect_border': [0.0625, 0.0575],
     },
     'ellipses_lotus_limited_30': {
-        'num_iters': 5000,
-        'num_iters_inset': 5000,
-        'ylim': None,
-        'ylim_inset': None,
-        'psnr0_x_shift': -75,
-        'psnr_steady_y_pos': 28.,
+        'num_iters': 8000,
+        'num_iters_inset': 6750,
+        'ylim': (None, 27.5),
+        'ylim_inset': (21.5, 26.5),
+        'psnr0_x_pos': -150,
+        'psnr0_x_shift_per_run_idx': {
+            0: -200,
+        },
+        'psnr_steady_y_pos': 27,
         'psnr_steady_y_shift_per_run_idx': {
-        }
+        },
+        'inset_axes_rect': [0.245, 0.15, 0.715, 0.525],
+        'inset_axes_rect_border': [0.0625, 0.0575],
     },
 }
 
@@ -126,7 +136,7 @@ eval_settings_dict = {
 
 data_title = data_title_dict[data]
 
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots(figsize=(10, 6), gridspec_kw={'bottom': 0.2})
 
 def get_color(run_spec, cfg):
     color = run_spec.get('color')
@@ -269,7 +279,9 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
         if ax_ is ax:
             run_handles += h
         h = ax_.plot(rise_time_to_baseline,
-                 plot_settings_dict[data]['psnr_steady_y_pos'],
+                 plot_settings_dict[data]['psnr_steady_y_pos'] +
+                          plot_settings_dict[data][
+                              'psnr_steady_y_shift_per_run_idx'].get(i, 0),
                  '*', color=color, markersize=8)
         if ax_ is ax:
             rise_time_handles += h
@@ -279,11 +291,13 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
                           plot_settings_dict[data][
                               'psnr_steady_y_shift_per_run_idx'].get(i, 0)],
                   color=color, linestyle='--', zorder=1.5)
-    
-    h = ax.plot(plot_settings_dict[data]['psnr0_x_pos'] + plot_settings_dict[data][
+
+    h = (ax.plot(
+            plot_settings_dict[data]['psnr0_x_pos'] + plot_settings_dict[data][
                     'psnr0_x_shift_per_run_idx'].get(i, 0),
             mean_psnr_history[0],
             '^', color=color, markersize=8)
+            if not run_spec.get('skip_psnr0') else [None])
     psnr0_handles += h
 
 
@@ -320,7 +334,7 @@ ax.add_patch(Rectangle([plot_settings_dict[data]['inset_axes_rect'][0] -
 
 run_legend = ax.legend(
         handles=run_handles, bbox_to_anchor=(0.5, -0.1), loc='upper center',
-        ncol=len(runs_to_compare), framealpha=1.)
+        ncol=ceil(len(runs_to_compare) / 2), framealpha=1.)
 ax.add_artist(run_legend)
 psnr0_handle = copy(psnr0_handles[0])
 psnr0_handle.set_markerfacecolor('gray')

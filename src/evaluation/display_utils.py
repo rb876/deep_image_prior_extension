@@ -12,16 +12,16 @@ experiment_title_dict = {
 }
 
 data_title_dict = {
-    'ellipses_lotus_20': 'Ellipses/Lotus Sparse 20',
-    'ellipses_lotus_40': 'Ellipses/Lotus Sparse 40',
-    'ellipses_lotus_limited_30': 'Ellipses/Lotus Limited 30',
-    'brain_walnut_120': 'Brain/Walnut Sparse 120',
-    'ellipses_walnut_120': 'Ellipses/Walnut Sparse 120',
+    'ellipses_lotus_20': 'Ellipses-Lotus (Sparse 20)',
+    'ellipses_lotus_40': 'Ellipses-Lotus (Sparse 40)',
+    'ellipses_lotus_limited_30': 'Ellipses-Lotus (Limited 30)',
+    'brain_walnut_120': 'Brain-Walnut (Sparse 120)',
+    'ellipses_walnut_120': 'Ellipses-Walnut (Sparse 120)',
 }
 
 experiment_color_dict = {
-    'pretrain_only_fbp': '#EC2215',
-    'pretrain': '#B15CD1',
+    'pretrain_only_fbp': '#A42A2E',
+    'pretrain': '#663399',
     'no_pretrain': '#000000',
     'no_pretrain_fbp': '#3D78B2',
 }
