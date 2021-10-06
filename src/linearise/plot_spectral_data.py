@@ -91,7 +91,7 @@ def singular_vectors_3D_plot(v_s, proj_idx, iters, n_rows, n_cols, colors, opaci
         for k,  (v, it, cs, alpha) in enumerate(zip(v_s, iters, colors, opacity)):
             fct = np.sign(np.dot(v_s[0][proj, :], v_s[k][proj, :]))
             ax.plot(len_vec,  v[proj, reorder_idx]*fct, zs=it, zdir='y', color=cs, alpha=alpha, zorder=10-k, linewidth=0.5)
-        ax.set_zlabel("$v_{%s}$" % str(proj+1), fontsize=16, labelpad=8. if proj+1==1000 else 4.)
+        ax.set_zlabel("$v_{%s}$" % str(proj+1), fontsize=16, labelpad=8. if proj >= 500 else 4.)
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.spines['left'].set_visible(False)
@@ -161,7 +161,7 @@ def singular_vectors_3D_plot(v_s, proj_idx, iters, n_rows, n_cols, colors, opaci
     add_histogram(ax, slice(0, 20), xlim_max=0.375)
     ax.set_title('Histogram (a)', y=0.95)
     ax = fig.add_subplot(n_rows, n_cols, i+3, projection='3d', facecolor='w')
-    add_histogram(ax, slice(980, 1000), xlim_max=0.375)
+    add_histogram(ax, slice(975, 995), xlim_max=0.375)
     ax.set_title('Histogram (b)', y=0.95)
 
     fig.subplots_adjust(top=0.95)
@@ -188,11 +188,11 @@ def main():
     singular_vectors_3D_plot(
         v,
         proj_idx=[
-            0, 1, 2, 3, 499, 999],
+            0, 1, 2, 3, 499, 994],
         iters=[1, 3, 5, 8, 10, 12],
         n_rows=2,
         n_cols=4,
-        colors=['#084B8D', '#3A9DC7', '#96D6BA', '#084B8D', '#3A9DC7', '#96D6BA'],
+        colors=['#084B8D', '#3D78B2', '#96D6BA', '#084B8D', '#3D78B2', '#96D6BA'],
         opacity=[1, 1, 1, 1, 1, 1],
         labels=['EDIP', 'DIP'],
         iter_labels=['$\\theta^{\\mathrm{conv}}$', '$\\theta^{[100]}$', '$\\theta^{\\mathrm{init}}$'],
