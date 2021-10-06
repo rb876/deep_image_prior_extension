@@ -15,7 +15,7 @@ from math import ceil
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-PATH = '/localdata/jleuschn/experiments/deep_image_prior_extension/'
+PATH = '/media/chen/Res/deep_image_prior_extension/'
 
 FIG_PATH = os.path.dirname(__file__)
 
@@ -25,7 +25,7 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-data = 'ellipses_lotus_20'
+data = 'ellipses_lotus_limited_30'
 
 # Additional `run_spec` dict fields:
 # 
@@ -65,7 +65,7 @@ runs_to_compare = [
     },
     {
       'experiment': 'pretrain_only_fbp',
-      'name': 'train_run0_epochs100_fixed_encoder',
+      'name': 'train_run2_epochs40_fixed_encoder',
       'experiment_title': 'EDIP-FE (FBP)',
       'name_title': '',
       'color': '#EC2215',
@@ -73,7 +73,7 @@ runs_to_compare = [
     },
     # {
     #   'experiment': 'pretrain',
-    #   'name': 'train_run0_epochs100_fixed_encoder',
+    #   'name': 'train_run2_epochs40_fixed_encoder',
     #   'experiment_title': 'EDIP-FE (noise)',
     #   'name_title': '',
     #   'color': '#B15CD1',
@@ -106,7 +106,7 @@ plot_settings_dict = {
     },
     'ellipses_lotus_limited_30': {
         'num_iters': 8000,
-        'num_iters_inset': 6750,
+        'num_iters_inset': 3750,
         'ylim': (None, 27.5),
         'ylim_inset': (21.5, 26.5),
         'psnr0_x_pos': -150,
@@ -115,9 +115,11 @@ plot_settings_dict = {
         },
         'psnr_steady_y_pos': 27,
         'psnr_steady_y_shift_per_run_idx': {
+            # 3: 0.9,
+            # 4: 0.9
         },
-        'inset_axes_rect': [0.245, 0.15, 0.715, 0.525],
-        'inset_axes_rect_border': [0.0625, 0.0575],
+        'inset_axes_rect': [0.245, 0.2, 0.715, 0.575],
+        'inset_axes_rect_border': [0.0625, 0.0675],
     },
 }
 
@@ -136,7 +138,7 @@ eval_settings_dict = {
 
 data_title = data_title_dict[data]
 
-fig, ax = plt.subplots(figsize=(10, 6), gridspec_kw={'bottom': 0.2})
+fig, ax = plt.subplots(figsize=(8, 5), gridspec_kw={'bottom': 0.2})
 
 def get_color(run_spec, cfg):
     color = run_spec.get('color')
@@ -333,7 +335,7 @@ ax.add_patch(Rectangle([plot_settings_dict[data]['inset_axes_rect'][0] -
 # axins_bbox = axins.get_tightbbox(fig.canvas.get_renderer())  # TODO use this?
 
 run_legend = ax.legend(
-        handles=run_handles, bbox_to_anchor=(0.5, -0.1), loc='upper center',
+        handles=run_handles, bbox_to_anchor=(0.5, -0.125), loc='upper center',
         ncol=ceil(len(runs_to_compare) / 2), framealpha=1.)
 ax.add_artist(run_legend)
 psnr0_handle = copy(psnr0_handles[0])
