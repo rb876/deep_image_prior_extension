@@ -15,7 +15,9 @@ from math import ceil
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-PATH = '/media/chen/Res/deep_image_prior_extension/'
+# PATH = '/media/chen/Res/deep_image_prior_extension/'
+# PATH = '/localdata/jleuschn/experiments/deep_image_prior_extension/'
+PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 FIG_PATH = os.path.dirname(__file__)
 
@@ -25,7 +27,7 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-data = 'ellipses_lotus_limited_30'
+data = 'ellipses_lotus_20'
 
 # Additional `run_spec` dict fields:
 # 
@@ -34,52 +36,102 @@ data = 'ellipses_lotus_limited_30'
 #     skip_psnr0 : bool, optional
 #         Whether to skip the marker indicating the initial PSNR.
 
-runs_to_compare = [
-    {
-      'experiment': 'no_pretrain',
-    },
-    {
-      'experiment': 'no_pretrain_fbp',
-    },
-    {
-      'experiment': 'no_pretrain',
-      'name': 'fixed_encoder',
-      'experiment_title': 'DIP-FE (noise)',
-      'name_title': '',
-      'color': 'gray',
-      'skip_psnr0': True,
-    },
-    # {
-    #   'experiment': 'no_pretrain_fbp',
-    #   'name': 'fixed_encoder',
-    #   'experiment_title': 'DIP-FE (FBP)',
-    #   'name_title': '',
-    #   'color': '#00AAFF',
-    #   'skip_psnr0': True,
-    # },
-    {
-      'experiment': 'pretrain_only_fbp',
-    },
-    {
-      'experiment': 'pretrain',
-    },
-    {
-      'experiment': 'pretrain_only_fbp',
-      'name': 'train_run2_epochs40_fixed_encoder',
-      'experiment_title': 'EDIP-FE (FBP)',
-      'name_title': '',
-      'color': '#EC2215',
-      'skip_psnr0': True,
-    },
-    # {
-    #   'experiment': 'pretrain',
-    #   'name': 'train_run2_epochs40_fixed_encoder',
-    #   'experiment_title': 'EDIP-FE (noise)',
-    #   'name_title': '',
-    #   'color': '#B15CD1',
-    #   'skip_psnr0': True,
-    # },
-]
+if data == 'ellipses_lotus_20':
+    runs_to_compare = [
+        {
+        'experiment': 'no_pretrain',
+        },
+        {
+        'experiment': 'no_pretrain_fbp',
+        },
+        {
+        'experiment': 'no_pretrain',
+        'name': 'fixed_encoder',
+        'experiment_title': 'DIP-FE (noise)',
+        'name_title': '',
+        'color': 'gray',
+        'skip_psnr0': True,
+        },
+        # {
+        #   'experiment': 'no_pretrain_fbp',
+        #   'name': 'fixed_encoder',
+        #   'experiment_title': 'DIP-FE (FBP)',
+        #   'name_title': '',
+        #   'color': '#00AAFF',
+        #   'skip_psnr0': True,
+        # },
+        {
+        'experiment': 'pretrain_only_fbp',
+        },
+        {
+        'experiment': 'pretrain',
+        },
+        {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'train_run0_epochs100_fixed_encoder',
+        'experiment_title': 'EDIP-FE (FBP)',
+        'name_title': '',
+        'color': '#EC2215',
+        'skip_psnr0': True,
+        },
+        # {
+        #   'experiment': 'pretrain',
+        #   'name': 'train_run0_epochs100_fixed_encoder',
+        #   'experiment_title': 'EDIP-FE (noise)',
+        #   'name_title': '',
+        #   'color': '#B15CD1',
+        #   'skip_psnr0': True,
+        # },
+    ]
+
+elif data == 'ellipses_lotus_limited_30':
+    runs_to_compare = [
+        {
+        'experiment': 'no_pretrain',
+        },
+        {
+        'experiment': 'no_pretrain_fbp',
+        },
+        {
+        'experiment': 'no_pretrain',
+        'name': 'fixed_encoder',
+        'experiment_title': 'DIP-FE (noise)',
+        'name_title': '',
+        'color': 'gray',
+        'skip_psnr0': True,
+        },
+        # {
+        #   'experiment': 'no_pretrain_fbp',
+        #   'name': 'fixed_encoder',
+        #   'experiment_title': 'DIP-FE (FBP)',
+        #   'name_title': '',
+        #   'color': '#00AAFF',
+        #   'skip_psnr0': True,
+        # },
+        {
+        'experiment': 'pretrain_only_fbp',
+        },
+        {
+        'experiment': 'pretrain',
+        },
+        {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'train_run2_epochs40_fixed_encoder',
+        'experiment_title': 'EDIP-FE (FBP)',
+        'name_title': '',
+        'color': '#EC2215',
+        'skip_psnr0': True,
+        },
+        # {
+        #   'experiment': 'pretrain',
+        #   'name': 'train_run2_epochs40_fixed_encoder',
+        #   'experiment_title': 'EDIP-FE (noise)',
+        #   'name_title': '',
+        #   'color': '#B15CD1',
+        #   'skip_psnr0': True,
+        # },
+    ]
+
 
 baseline_run_idx = 0
 
@@ -88,25 +140,25 @@ runs_filename = 'comparison'  # None -> auto from run_specs
 
 plot_settings_dict = {
     'ellipses_lotus_20': {
-        'num_iters': 10000,
-        'num_iters_inset': 6750,
-        'ylim': (None, 33.85),
+        'xlim': (-625, 10000),
+        'xlim_inset': (-200, 6750),
+        'ylim': (None, 34.05),
         'ylim_inset': (29.25, 31.85),
-        'psnr0_x_pos': -150,
+        'psnr0_x_pos': -187.5,
         'psnr0_x_shift_per_run_idx': {
-            0: -200,
+            0: -250,
         },
         'psnr_steady_y_pos': 32.5,
         'psnr_steady_y_shift_per_run_idx': {
-            3: 0.9,
-            # 4: 0.9,
+            3: 1.,
+            # 4: 1.,
         },
-        'inset_axes_rect': [0.245, 0.15, 0.715, 0.525],
-        'inset_axes_rect_border': [0.0625, 0.0575],
+        'inset_axes_rect': [0.255, 0.175, 0.725, 0.55],
+        'inset_axes_rect_border': [0.07, 0.0675],
     },
     'ellipses_lotus_limited_30': {
-        'num_iters': 8000,
-        'num_iters_inset': 3750,
+        'xlim': (-500, 8000),
+        'xlim_inset': (-200, 3750),
         'ylim': (None, 27.5),
         'ylim_inset': (21.5, 26.5),
         'psnr0_x_pos': -150,
@@ -160,20 +212,8 @@ def get_label(run_spec, cfg):
     label = ', '.join(label_parts)
     return label
 
-def get_auto_xlim_with_padding(ax, xmin, xmax):
-    hmin = ax.axvline(xmin, linestyle='')
-    hmax = ax.axvline(xmax, linestyle='')
-    xlim = ax.get_xlim()
-    hmin.remove()
-    hmax.remove()
-    del hmin
-    del hmax
-    return xlim
-
-# xlim = get_auto_xlim_with_padding(ax, -150,
-#                                   plot_settings_dict[data]['num_iters'])
-xlim = (-500, plot_settings_dict[data]['num_iters'])
-xlim_inset = (-200, plot_settings_dict[data]['num_iters_inset'])
+xlim = plot_settings_dict[data]['xlim']
+xlim_inset = plot_settings_dict[data]['xlim_inset']
 
 
 axins = ax.inset_axes(plot_settings_dict[data]['inset_axes_rect'])
