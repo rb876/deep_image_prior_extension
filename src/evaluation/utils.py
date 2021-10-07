@@ -4,6 +4,7 @@ Utility functions for accessing the results of the hydra runs.
 import os
 import yaml
 from omegaconf import OmegaConf
+import h5py
 import numpy as np
 
 def get_run_cfg(run_path):
@@ -19,6 +20,15 @@ def get_run_experiment_name(run_path):
         experiment_name = experiment_override.split('=')[1]
 
     return experiment_name
+
+def get_run_reconstruction(run_path):
+    cfg = get_run_cfg(run_path)
+
+    with h5py.File(os.path.join(
+            run_path, cfg['save_reconstruction_path'], 'recos.hdf5'), 'r') as f:
+        recos = np.asarray(f['recos'])
+
+    return recos
 
 def get_run_histories(run_path):
     cfg = get_run_cfg(run_path)
@@ -64,6 +74,19 @@ def get_multirun_experiment_names(run_path_multirun, sub_runs=None):
                         for i in sub_runs]
 
     return experiment_names
+
+def get_multirun_reconstructions(run_path_multirun, sub_runs=None):
+    if sub_runs is None:
+        sub_runs = range(get_multirun_num_runs(run_path_multirun))
+
+    cfgs = get_multirun_cfgs(run_path_multirun, sub_runs=sub_runs)
+    assert len(sub_runs) == len(cfgs)
+
+    recos_list = [get_run_reconstruction(os.path.join(run_path_multirun,
+                                                      '{:d}'.format(i)))
+                  for i in sub_runs]
+
+    return recos_list
 
 def get_multirun_histories(run_path_multirun, sub_runs=None):
     if sub_runs is None:
