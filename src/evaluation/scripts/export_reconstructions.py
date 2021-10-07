@@ -240,22 +240,22 @@ def save_as_format(filename, reco, fmt):
     else:
         raise NotImplementedError
 
+for k, (fbp, gt) in enumerate(zip(out_fbps, out_gts)):
+    fbp_filename = 'fbp_{}_sample_{:d}{}'.format(
+            data, k, SUFFIX)
+    gt_filename = 'gt_{}_sample_{:d}{}'.format(
+            data, k, SUFFIX)
+
+    for fmt in FORMATS:
+        save_as_format(os.path.join(OUTPUT_PATH, fbp_filename), fbp, fmt)
+        save_as_format(os.path.join(OUTPUT_PATH, gt_filename), gt, fmt)
+
 for run_spec, out_init_recos, out_best_recos in zip(
         runs_to_export, out_init_recos_list, out_best_recos_list):
     run_filename = (run_spec['experiment'] if run_spec.get('name') is None
             else '{}_{}'.format(run_spec['experiment'], run_spec['name']))
 
     filename_base = '{}_on_{}'.format(run_filename, data)
-
-    for k, (fbp, gt) in enumerate(zip(out_fbps, out_gts)):
-        fbp_filename = '{}_fbp_sample_{:d}{}'.format(
-                filename_base, k, SUFFIX)
-        gt_filename = '{}_gt_sample_{:d}{}'.format(
-                filename_base, k, SUFFIX)
-
-        for fmt in FORMATS:
-            save_as_format(os.path.join(OUTPUT_PATH, fbp_filename), fbp, fmt)
-            save_as_format(os.path.join(OUTPUT_PATH, gt_filename), gt, fmt)
 
     for j, (cur_init_recos, cur_best_recos) in enumerate(zip(
             out_init_recos, out_best_recos)):
