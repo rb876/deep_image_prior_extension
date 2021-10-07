@@ -28,6 +28,8 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
 data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_limited_30'
+# data = 'brain_walnut_120'
 
 # Additional `run_spec` dict fields:
 # 
@@ -132,6 +134,54 @@ elif data == 'ellipses_lotus_limited_30':
         # },
     ]
 
+elif data == 'brain_walnut_120':
+    runs_to_compare = [
+        {
+        'experiment': 'no_pretrain',
+        },
+        {
+        'experiment': 'no_pretrain_fbp',
+        },
+        {
+        'experiment': 'no_pretrain',
+        'name': 'fixed_encoder',
+        'experiment_title': 'DIP-FE (noise)',
+        'name_title': '',
+        'color': 'gray',
+        'skip_psnr0': True,
+        },
+        # {
+        #   'experiment': 'no_pretrain_fbp',
+        #   'name': 'fixed_encoder',
+        #   'experiment_title': 'DIP-FE (FBP)',
+        #   'name_title': '',
+        #   'color': '#00AAFF',
+        #   'skip_psnr0': True,
+        # },
+        {
+        'experiment': 'pretrain_only_fbp',
+        },
+        {
+        'experiment': 'pretrain',
+        },
+        {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'train_run0_fixed_encoder',
+        'experiment_title': 'EDIP-FE (FBP)',
+        'name_title': '',
+        'color': '#EC2215',
+        'skip_psnr0': True,
+        },
+        # {
+        #   'experiment': 'pretrain',
+        #   'name': 'train_run0_fixed_encoder',
+        #   'experiment_title': 'EDIP-FE (noise)',
+        #   'name_title': '',
+        #   'color': '#B15CD1',
+        #   'skip_psnr0': True,
+        # },
+    ]
+
 
 baseline_run_idx = 0
 
@@ -173,6 +223,21 @@ plot_settings_dict = {
         'inset_axes_rect': [0.245, 0.2, 0.715, 0.575],
         'inset_axes_rect_border': [0.0625, 0.0675],
     },
+    'brain_walnut_120': {
+        'xlim': (-1875, 30000),
+        'xlim_inset': (-600, 21250),
+        'ylim': (-14.5, 36.5),
+        'ylim_inset': (22.5, 33.75),
+        'psnr0_x_pos': -562.5,
+        'psnr0_x_shift_per_run_idx': {
+            0: -750,
+        },
+        'psnr_steady_y_pos': 35.,
+        'psnr_steady_y_shift_per_run_idx': {
+        },
+        'inset_axes_rect': [0.255, 0.175, 0.725, 0.525],
+        'inset_axes_rect_border': [0.0625, 0.0675],
+    },
 }
 
 eval_settings_dict = {
@@ -182,6 +247,11 @@ eval_settings_dict = {
         'rise_time_to_baseline_remaining_psnr': 0.5,
     },
     'ellipses_lotus_limited_30': {
+        'psnr_steady_start': -5000,
+        'psnr_steady_stop': None,
+        'rise_time_to_baseline_remaining_psnr': 0.5,
+    },
+    'brain_walnut_120': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
         'rise_time_to_baseline_remaining_psnr': 0.5,
@@ -297,10 +367,13 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
     std_psnr_history = np.std(psnr_histories, axis=0)
 
     median_psnr_history = get_median_psnr_history(psnr_histories)
-    rise_time_to_baseline = get_rise_time_to_baseline(
-            psnr_histories, baseline_psnr_steady,
-            remaining_psnr=eval_settings_dict[data][
-                    'rise_time_to_baseline_remaining_psnr'])
+    try:
+        rise_time_to_baseline = get_rise_time_to_baseline(
+                psnr_histories, baseline_psnr_steady,
+                remaining_psnr=eval_settings_dict[data][
+                        'rise_time_to_baseline_remaining_psnr'])
+    except IndexError:
+        rise_time_to_baseline = None
 
     label = get_label(run_spec, cfgs[0])
     color = get_color(run_spec, cfgs[0])
@@ -320,19 +393,20 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
                             linestyle=linestyle, linewidth=2)
         if ax_ is ax:
             run_handles += h
-        h = ax_.plot(rise_time_to_baseline,
-                 plot_settings_dict[data]['psnr_steady_y_pos'] +
-                          plot_settings_dict[data][
-                              'psnr_steady_y_shift_per_run_idx'].get(i, 0),
-                 '*', color=color, markersize=8)
-        if ax_ is ax:
-            rise_time_handles += h
-        ax_.plot([rise_time_to_baseline, rise_time_to_baseline],
-                 [median_psnr_history[rise_time_to_baseline],
-                  plot_settings_dict[data]['psnr_steady_y_pos'] +
-                          plot_settings_dict[data][
-                              'psnr_steady_y_shift_per_run_idx'].get(i, 0)],
-                  color=color, linestyle='--', zorder=1.5)
+        if rise_time_to_baseline is not None:
+            h = ax_.plot(rise_time_to_baseline,
+                    plot_settings_dict[data]['psnr_steady_y_pos'] +
+                            plot_settings_dict[data][
+                                'psnr_steady_y_shift_per_run_idx'].get(i, 0),
+                    '*', color=color, markersize=8)
+            if ax_ is ax:
+                rise_time_handles += h
+            ax_.plot([rise_time_to_baseline, rise_time_to_baseline],
+                    [median_psnr_history[rise_time_to_baseline],
+                    plot_settings_dict[data]['psnr_steady_y_pos'] +
+                            plot_settings_dict[data][
+                                'psnr_steady_y_shift_per_run_idx'].get(i, 0)],
+                    color=color, linestyle='--', zorder=1.5)
 
     h = (ax.plot(
             plot_settings_dict[data]['psnr0_x_pos'] + plot_settings_dict[data][
