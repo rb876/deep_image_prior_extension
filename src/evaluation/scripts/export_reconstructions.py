@@ -27,6 +27,8 @@ SUFFIX = ''
 NORMALIZATION_MODE = 'individual'
 # NORMALIZATION_MODE = 'global'
 
+TRANSPOSE = True
+
 FORMATS = ['png']
 
 data = 'ellipses_lotus_20'
@@ -215,7 +217,8 @@ for out_init_recos, out_best_recos in zip(
         all_images += cur_init_recos
         all_images += cur_best_recos
 
-# normalize in-place (elements in all_images are the original arrays)
+# normalize and transpose in-place
+# (elements in all_images are the original arrays)
 
 if NORMALIZATION_MODE == 'global':
     global_min = min(np.min(im) for im in all_images)
@@ -231,6 +234,10 @@ elif NORMALIZATION_MODE == 'individual':
 else:
     raise NotImplementedError
 
+if TRANSPOSE:
+    for im in all_images:
+        im_transposed = im.copy().T
+        im[:] = im_transposed
 
 def save_as_format(filename, reco, fmt):
     if fmt == 'png':
