@@ -2,6 +2,8 @@ import os
 import socket
 import datetime
 import torch
+import torch.nn.functional as F
+
 import numpy as np
 import tensorboardX
 from torch.optim import Adam
@@ -205,6 +207,9 @@ class DeepImagePriorReconstructor():
                 self.cfg.learned_params_path if self.cfg.learned_params_path.endswith('.pt') \
                     else self.cfg.learned_params_path + '.pt'
             self.model.load_state_dict(torch.load(path, map_location=self.device))
+
+            init_model = deepcopy(self.model)
+            self.params_init = torch.nn.utils.parameters_to_vector(init_model.parameters())
         else:
             self.model.to(self.device)
 
@@ -249,6 +254,7 @@ class DeepImagePriorReconstructor():
 
         best_loss = np.inf
         best_output = self.apply_model_on_test_data(self.net_input).detach()
+        initial_output = deepcopy(best_output) 
 
         loss_history = []
         psnr_history = []
@@ -261,7 +267,14 @@ class DeepImagePriorReconstructor():
             for i in pbar:
                 self.optimizer.zero_grad()
                 output = self.apply_model_on_test_data(self.net_input)
-                loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.optim.gamma * tv_loss(output)
+                
+                if self.cfg.load_pretrain_model:
+                    weight_regularization = F.mse_loss(self.params_init, torch.nn.utils.parameters_to_vector(self.model.parameters()))
+                    output_regularization = F.mse_loss(initial_output, output)
+                    loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.optim.gamma * tv_loss(output) + self.cfg.optim.beta*weight_regularization + self.cfg.optim.beta2*output_regularization
+                else:
+                    loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.optim.gamma * tv_loss(output)
+
 
                 if i in iterates_params_iters:
                     iterates_params.append(deepcopy(self.model.state_dict()))

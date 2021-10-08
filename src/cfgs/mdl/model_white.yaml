@@ -19,6 +19,8 @@ optim:
   iterations: 10000
   loss_function: mse
   gamma: 1e-4
+  beta: 1e-4
+  beta2: 1e-4
 return_iterates_selection:
   mode: 'standard_sequence'
   manual_iters: null
