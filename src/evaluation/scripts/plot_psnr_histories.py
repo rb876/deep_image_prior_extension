@@ -237,6 +237,7 @@ plot_settings_dict = {
         },
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.525],
         'inset_axes_rect_border': [0.0625, 0.0675],
+        'ylabel_pad': 0.,
     },
 }
 
@@ -260,7 +261,8 @@ eval_settings_dict = {
 
 data_title = data_title_dict[data]
 
-fig, ax = plt.subplots(figsize=(8, 5), gridspec_kw={'bottom': 0.2})
+fig, ax = plt.subplots(figsize=plot_settings_dict[data].get('figsize', (8, 5)),
+                       gridspec_kw={'bottom': 0.2})
 
 def get_color(run_spec, cfg):
     color = run_spec.get('color')
@@ -420,7 +422,7 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
 ax.grid(True, linestyle='-')
 ax.set_xlim(xlim)
 ax.set_xlabel('Iteration')
-ax.set_ylabel('PSNR [dB]')
+ax.set_ylabel('PSNR [dB]', labelpad=plot_settings_dict[data].get('ylabel_pad'))
 ax.set_ylim(plot_settings_dict[data]['ylim'])
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
