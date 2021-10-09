@@ -30,6 +30,7 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
 data = 'ellipses_lotus_20'
 # data = 'ellipses_lotus_limited_30'
 # data = 'brain_walnut_120'
+# data = 'ellipses_walnut_120'
 
 # Additional `run_spec` dict fields:
 # 
@@ -182,6 +183,54 @@ elif data == 'brain_walnut_120':
         # },
     ]
 
+elif data == 'ellipses_walnut_120':
+    runs_to_compare = [
+        {
+        'experiment': 'no_pretrain',
+        },
+        {
+        'experiment': 'no_pretrain_fbp',
+        },
+        {
+        'experiment': 'no_pretrain',
+        'name': 'fixed_encoder',
+        'experiment_title': 'DIP-FE (noise)',
+        'name_title': '',
+        'color': 'gray',
+        'skip_psnr0': True,
+        },
+        # {
+        #   'experiment': 'no_pretrain_fbp',
+        #   'name': 'fixed_encoder',
+        #   'experiment_title': 'DIP-FE (FBP)',
+        #   'name_title': '',
+        #   'color': '#00AAFF',
+        #   'skip_psnr0': True,
+        # },
+        {
+        'experiment': 'pretrain_only_fbp',
+        },
+        {
+        'experiment': 'pretrain',
+        },
+        {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'train_run0_fixed_encoder',
+        'experiment_title': 'EDIP-FE (FBP)',
+        'name_title': '',
+        'color': '#EC2215',
+        'skip_psnr0': True,
+        },
+        # {
+        #   'experiment': 'pretrain',
+        #   'name': 'train_run0_fixed_encoder',
+        #   'experiment_title': 'EDIP-FE (noise)',
+        #   'name_title': '',
+        #   'color': '#B15CD1',
+        #   'skip_psnr0': True,
+        # },
+    ]
+
 
 baseline_run_idx = 0
 
@@ -239,6 +288,25 @@ plot_settings_dict = {
         'inset_axes_rect_border': [0.0625, 0.0675],
         'ylabel_pad': 0.,
     },
+    'ellipses_walnut_120': {
+        'xlim': (-1875, 30000),
+        'xlim_inset': (-600, 21250),
+        'ylim': (-14.5, 37.75),
+        'ylim_inset': (22.5, 33.75),
+        'psnr0_x_pos': -562.5,
+        'psnr0_x_shift_per_run_idx': {
+            0: -750,
+        },
+        'psnr_steady_y_pos': 35.,
+        'psnr_steady_y_shift_per_run_idx': {
+            2: 1.8,
+            3: 1.8,
+            # 4: 1.8,
+        },
+        'inset_axes_rect': [0.255, 0.175, 0.725, 0.475],
+        'inset_axes_rect_border': [0.07, 0.0675],
+        'ylabel_pad': 0.,
+    },
 }
 
 eval_settings_dict = {
@@ -253,6 +321,11 @@ eval_settings_dict = {
         'rise_time_to_baseline_remaining_psnr': 0.5,
     },
     'brain_walnut_120': {
+        'psnr_steady_start': -5000,
+        'psnr_steady_stop': None,
+        'rise_time_to_baseline_remaining_psnr': 0.5,
+    },
+    'ellipses_walnut_120': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
         'rise_time_to_baseline_remaining_psnr': 0.5,
