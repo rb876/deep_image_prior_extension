@@ -162,6 +162,7 @@ out_init_reco_metrics_list = []
 out_best_reco_metrics_list = []
 out_init_reco_stds_list = []
 out_best_reco_stds_list = []
+out_mean_reco_errors_list = []
 
 for run_spec, cfgs, experiment_names, reconstructions in zip(
         runs_to_export, cfgs_list, experiment_names_list, reconstructions_list):
@@ -236,12 +237,17 @@ for run_spec, cfgs, experiment_names, reconstructions in zip(
 
     out_init_reco_stds = [
             np.std(np.stack([recos[k] for recos in out_init_recos]), axis=0)
-            for k in range(len(out_gts))]
+            for k, _ in enumerate(out_gts)]
     out_best_reco_stds = [
             np.std(np.stack([recos[k] for recos in out_best_recos]), axis=0)
-            for k in range(len(out_gts))]
+            for k, _ in enumerate(out_gts)]
+    out_mean_reco_errors = [
+            (np.mean(np.stack([recos[k] for recos in out_best_recos]), axis=0)
+                    - gt)
+            for k, gt in enumerate(out_gts)]
     out_init_reco_stds_list.append(out_init_reco_stds)
     out_best_reco_stds_list.append(out_best_reco_stds)
+    out_mean_reco_errors_list.append(out_mean_reco_errors)
 
 
 def get_run_name_for_filename(run_spec):
@@ -311,10 +317,12 @@ for k, (fbp, gt) in enumerate(zip(out_fbps, out_gts)):
 
 for (run_spec, run_median_psnr_reps,
      out_init_recos, out_best_recos,
-     out_init_reco_stds, out_best_reco_stds) in zip(
+     out_init_reco_stds, out_best_reco_stds,
+     out_mean_reco_errors) in zip(
         runs_to_export, median_psnr_reps_list,
         out_init_recos_list, out_best_recos_list,
-        out_init_reco_stds_list, out_best_reco_stds_list):
+        out_init_reco_stds_list, out_best_reco_stds_list,
+        out_mean_reco_errors_list):
     run_name_for_filename = get_run_name_for_filename(run_spec)
 
     for j, (cur_init_recos, cur_best_recos) in enumerate(zip(
@@ -333,13 +341,17 @@ for (run_spec, run_median_psnr_reps,
                 np.save(os.path.join(OUTPUT_PATH, best_reco_filename),
                         best_reco)
 
-    for k, (init_reco_std, best_reco_std) in enumerate(zip(
-            out_init_reco_stds, out_best_reco_stds)):
+    for k, (init_reco_std, best_reco_std, mean_reco_error) in enumerate(zip(
+            out_init_reco_stds, out_best_reco_stds, out_mean_reco_errors)):
         init_reco_std_filename = '{}_{}_init_std_sample_{:d}'.format(
                 data, run_name_for_filename, k)
         best_reco_std_filename = '{}_{}_std_sample_{:d}'.format(
+                data, run_name_for_filename, k)
+        mean_reco_error_filename = '{}_{}_mean_error_sample_{:d}'.format(
                 data, run_name_for_filename, k)
         np.save(os.path.join(OUTPUT_PATH, init_reco_std_filename),
                 init_reco_std)
         np.save(os.path.join(OUTPUT_PATH, best_reco_std_filename),
                 best_reco_std)
+        np.save(os.path.join(OUTPUT_PATH, mean_reco_error_filename),
+                mean_reco_error)

@@ -5,7 +5,11 @@ import numpy as np
 import imageio
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+from matplotlib.ticker import FormatStrFormatter
 from matplotlib.cm import get_cmap, ScalarMappable
+from matplotlib.axes import Axes
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import InsetPosition
 from evaluation.display_utils import experiment_title_dict
 
 IMAGES_PATH = os.path.join(os.path.dirname(__file__), 'images')
@@ -16,6 +20,9 @@ save_fig = True
 
 data = 'ellipses_lotus_20'
 
+plot_name = 'images'
+# plot_name = 'uncertainty'
+
 METRICS_PATH = os.path.join(
         IMAGES_PATH, '{}_metrics.json'.format(data))
 MEDIAN_PSNR_REPS_PATH = os.path.join(
@@ -23,61 +30,122 @@ MEDIAN_PSNR_REPS_PATH = os.path.join(
 
 SAMPLE = 0  # there is only one test sample
 
+SUBPLOT_TYPES = {
+    'gt': 'image',
+    'fbp': 'image',
+    'init_reco': 'image',
+    'best_reco': 'image',
+    'init_reco_std': 'std_image',
+    'best_reco_std': 'std_image',
+    'mean_reco_error': 'error_image',
+    'uncertainty': 'plot',
+}
+
 CMAP = 'gray'
 STD_CMAP = 'viridis'
+ERROR_CMAP = 'PiYG'
+
+runs_filename = None
 
 # possible values for 'type' are
-# 'gt', 'fbp', 'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std'
+# 'gt', 'fbp', 'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std',
+# 'mean_reco_error', 'uncertainty'
 
-# images_to_plot = [
-#     {
-#         'type': 'best_reco',
-#         'experiment': 'pretrain_only_fbp',
-#         'repetition': 'median_psnr',
-#         'show_metrics': True,
-#     },
-#     {
-#         'type': 'best_reco',
-#         'experiment': 'no_pretrain',
-#         'repetition': 'median_psnr',
-#         'show_metrics': True,
-#     },
-#     {
-#         'type': 'gt',
-#     },
-#     {
-#         'type': 'init_reco',
-#         'experiment': 'pretrain_only_fbp',
-#         'repetition': 'median_psnr',
-#     },
-#     {
-#         'type': 'init_reco',
-#         'experiment': 'no_pretrain',
-#         'repetition': 'median_psnr',
-#     },
-#     {
-#         'type': 'fbp',
-#     }
-# ]
+if data == 'ellipses_lotus_20':
 
-# nrows = 2
+    if plot_name == 'images':
+        images_to_plot = [
+            {
+                'type': 'best_reco',
+                'experiment': 'pretrain_only_fbp',
+                'repetition': 'median_psnr',
+                'show_metrics': True,
+            },
+            {
+                'type': 'best_reco',
+                'experiment': 'no_pretrain',
+                'repetition': 'median_psnr',
+                'show_metrics': True,
+            },
+            {
+                'type': 'gt',
+            },
+            {
+                'type': 'init_reco',
+                'experiment': 'pretrain_only_fbp',
+                'repetition': 'median_psnr',
+            },
+            {
+                'type': 'init_reco',
+                'experiment': 'no_pretrain',
+                'repetition': 'median_psnr',
+            },
+            {
+                'type': 'fbp',
+            }
+        ]
 
-images_to_plot = [
-    {
-        'type': 'best_reco_std',
-        'experiment': 'pretrain_only_fbp',
-        'repetition': 'median_psnr',
+    elif plot_name == 'uncertainty':
+        images_to_plot = [
+            {
+                'type': 'uncertainty',
+                'experiment': 'pretrain_only_fbp',
+            },
+            {
+                'type': 'best_reco_std',
+                'experiment': 'pretrain_only_fbp',
+            },
+            {
+                'type': 'mean_reco_error',
+                'experiment': 'pretrain_only_fbp',
+            },
+            {
+                'type': 'uncertainty',
+                'experiment': 'no_pretrain',
+            },
+            {
+                'type': 'best_reco_std',
+                'experiment': 'no_pretrain',
+            },
+            {
+                'type': 'mean_reco_error',
+                'experiment': 'no_pretrain',
+            },
+        ]
+
+
+if runs_filename is None:
+    runs_filename = 'comparison'
+
+
+plot_settings_dict = {
+    'ellipses_lotus_20': {
+        'images': {
+            'nrows': 2,
+            'norm_group_inds': 'global',
+            'norm_groups_use_vrange_from_images': {0: [2]},
+            'colorbars_mode': 'off',
+            'gridspec_kw': {'wspace': 0.},
+        },
+        'uncertainty': {
+            'nrows': 2,
+            'norm_group_inds': [None, 0, 1, None, 0, 1],
+            'colorbars_mode': 'norm_groups',
+            'skip_xlabels': [0],
+            'colorbar_location': 'bottom',
+            'use_inset_positioned_colorbar': True,
+            'scilimits': (-1, 1),
+            'titlepad': 16,
+            'figsize': (9, 7),
+            'gridspec_kw': {'hspace': 0.45, 'wspace': 0.1},
+        },
     },
-    {
-        'type': 'best_reco_std',
-        'experiment': 'no_pretrain',
-        'repetition': 'median_psnr',
-    },
-]
+    # 'ellipses_lotus_limited_30': {
+    # },
+    # 'brain_walnut_120': {
+    # },
+}
 
-nrows = 1
-
-runs_filename = 'comparison'
 
 try:
     with open(METRICS_PATH, 'r') as f:
@@ -93,7 +161,8 @@ except FileNotFoundError:
 
 def get_run_name_for_filename(image_spec):
     assert image_spec.get('type') in (
-            'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std')
+            'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std',
+            'mean_reco_error')
 
     run_name_for_filename = (
             image_spec['experiment'] if image_spec.get('name') is None
@@ -138,6 +207,10 @@ def get_filename(image_spec):
             run_name_for_filename = get_run_name_for_filename(image_spec)
             filename = '{}_{}_std_sample_{:d}'.format(
                     data, run_name_for_filename, SAMPLE)
+        elif image_type == 'mean_reco_error':
+            run_name_for_filename = get_run_name_for_filename(image_spec)
+            filename = '{}_{}_mean_error_sample_{:d}'.format(
+                    data, run_name_for_filename, SAMPLE)
         else:
             raise ValueError(
                     'Unknown "type" \'{}\' in image spec'.format(image_type))
@@ -148,51 +221,48 @@ def get_filename(image_spec):
     return filename
 
 images = [
-    np.load(os.path.join(IMAGES_PATH, get_filename(image_spec)))
+    (np.load(os.path.join(IMAGES_PATH, get_filename(image_spec)))
+     if SUBPLOT_TYPES[image_spec['type']] in (
+            'image', 'std_image', 'error_image')
+     else None)
     for image_spec in images_to_plot
 ]
 
 
-# def save_value_range(filename, vmin, vmax):
-#     with open(filename, 'w') as f:
-#         json.dump({
-#             'min': float(vmin),
-#             'max': float(vmax),
-#         }, f, indent=4)
+plot_settings = plot_settings_dict[data][plot_name]
 
-# def save_colorbar(filename, cmap, vmin, vmax):
-#     fig = plt.figure(figsize=(1, 4))
-#     cax = fig.add_axes([0.05, 0.05, 0.2, 0.9])
-#     fig.colorbar(ScalarMappable(Normalize(vmin, vmax), get_cmap(cmap)), cax=cax)
-#     fig.savefig(filename)  # , bbox_inches='tight'
+nrows = plot_settings.get('nrows', 1)
 
-# def save_image(filename, im, fmt='png', transpose=True, cmap='gray',
-#                vmin=None, vmax=None, save_vrange=True, save_cbar=True):
-#     if not filename.endswith('.{}'.format(fmt)):
-#         filename = filename + '.{}'.format(fmt)
+norm_group_inds = plot_settings.get('norm_group_inds', 'global')
+if norm_group_inds == 'global':
+    norm_group_inds = [0 if im is not None else None
+                       for im in images]
+elif norm_group_inds == 'individual':
+    norm_group_inds = [i if im is not None else None
+                       for i, im in enumerate(images)]
+else:
+    norm_group_inds = [int(ind) if ind is not None else None
+                       for ind in norm_group_inds]
 
-#     im = im.copy()
+unique_norm_group_inds = np.unique(
+        [ind for ind in norm_group_inds if ind is not None])
 
-#     vmin = np.min(im) if vmin is None else vmin
-#     vmax = np.max(im) if vmax is None else vmax
+norm_groups_use_vrange_from_images = plot_settings.get(
+        'norm_groups_use_vrange_from_images', {})
+for group_ind in unique_norm_group_inds:
+    norm_groups_use_vrange_from_images.setdefault(
+            group_ind,
+            [i for i, g_ind in enumerate(norm_group_inds)
+             if g_ind == group_ind])
 
-#     if save_vrange:
-#         filename_vrange = filename[:-len('.{}'.format(fmt))] + '_vrange.json'
-#         save_value_range(filename_vrange, vmin, vmax)
-
-#     if save_cbar:
-#         filename_cbar = filename[:-len('.{}'.format(fmt))] + '_cbar.pdf'
-#         save_colorbar(filename_cbar, cmap, vmin, vmax)
-
-#     if transpose:
-#         im = im.T
-
-#     cmap = get_cmap(cmap)
-#     normalize = Normalize(vmin=vmin, vmax=vmax)
-
-#     im = normalize(im)
-#     im_rgba = cmap(im)
-#     imageio.imwrite(filename, im_rgba, format=fmt)
+colorbars_mode = plot_settings.get('colorbars_mode', 'individual')
+colorbar_location = plot_settings.get('colorbar_location', 'right')
+use_inset_positioned_colorbar = plot_settings.get(
+        'use_inset_positioned_colorbar', False)
+scilimits = plot_settings.get('scilimits')
+titlepad = plot_settings.get('titlepad')
+figsize = plot_settings.get('figsize', (9, 6))
+gridspec_kw = plot_settings.get('gridspec_kw', {})
 
 
 def get_title(image_spec):
@@ -214,19 +284,17 @@ def get_title(image_spec):
     elif image_type == 'best_reco_std':
         experiment_title = experiment_title_dict[image_spec['experiment']]
         title = 'Std. of {}'.format(experiment_title)
+    elif image_type == 'mean_reco_error':
+        experiment_title = experiment_title_dict[image_spec['experiment']]
+        title = 'Mean error of {}'.format(experiment_title)
+    elif image_type == 'uncertainty':
+        experiment_title = experiment_title_dict[image_spec['experiment']]
+        title = 'Calibration of {}'.format(experiment_title)
     else:
         raise ValueError(
                 'Unknown "type" \'{}\' in image spec'.format(image_type))
 
     return title
-
-def is_std_type(image_type):
-    if not isinstance(image_type, str):
-        image_type = image_type['type']
-
-    is_std = image_type.endswith('_std')
-
-    return is_std
 
 def get_image_metrics(image_spec):
     run_name_for_filename = get_run_name_for_filename(image_spec)
@@ -245,24 +313,162 @@ def get_image_metrics(image_spec):
 
     return image_metrics
 
-ncols = ceil(len(images_to_plot) / nrows)
-fig, axs = plt.subplots(nrows=nrows, ncols=ncols)
+def get_uncertainty_infos(image_spec):
+    err_image_spec = {
+        'type': 'mean_reco_error',
+        'experiment': image_spec['experiment'],
+        'name': image_spec.get('name'),
+    }
+    std_image_spec = {
+        'type': 'best_reco_std',
+        'experiment': image_spec['experiment'],
+        'name': image_spec.get('name'),
+    }
+    err_image_filename = get_filename(err_image_spec)
+    std_image_filename = get_filename(std_image_spec)
+    err_image = np.load(os.path.join(IMAGES_PATH, err_image_filename))
+    std_image = np.load(os.path.join(IMAGES_PATH, std_image_filename))
 
-for image_spec, image, ax in zip(images_to_plot, images, axs.flat):
-    cmap = STD_CMAP if is_std_type(image_spec) else CMAP
-    vmin, vmax = None, None
+    squared_err = (err_image ** 2).ravel()
+    squared_std = (std_image ** 2).ravel()
+
+    return squared_err, squared_std
+
+vranges_per_norm_group = [
+    (min(np.min(images[i])
+         for i in norm_groups_use_vrange_from_images[group_ind]),
+     max(np.max(images[i])
+         for i in norm_groups_use_vrange_from_images[group_ind]))
+    for group_ind in unique_norm_group_inds
+]
+
+vranges = [vranges_per_norm_group[g_ind] if g_ind is not None else None
+           for g_ind in norm_group_inds]
+
+ncols = ceil(len(images_to_plot) / nrows)
+fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize,
+                        gridspec_kw=gridspec_kw)
+
+image_axes_list = []
+
+for i, (image_spec, image, vrange, ax) in enumerate(zip(
+        images_to_plot, images, vranges, axs.flat)):
+
+    image_type = image_spec['type']
+
+    image_axes = None
 
     title = get_title(image_spec)
-    ax.set_title(title)
-    im = ax.imshow(image.T, cmap=cmap, vmin=vmin, vmax=vmax)
-    fig.colorbar(im, ax=ax)
-    if image_spec.get('show_metrics'):
-        image_metrics = get_image_metrics(image_spec)
-        ax.set_xlabel('PSNR: ${:.2f}\,$dB\nSSIM: ${:.4f}\,$'.format(
-                image_metrics['psnr'], image_metrics['ssim']))
+    ax.set_title(title, pad=titlepad)
+
+    if SUBPLOT_TYPES[image_type] in ('image', 'std_image', 'error_image'):
+        # plot image
+        cmap = CMAP
+        if SUBPLOT_TYPES[image_type] == 'std_image':
+            cmap = STD_CMAP
+        elif SUBPLOT_TYPES[image_type] == 'error_image':
+            cmap = ERROR_CMAP
+
+        vmin, vmax = vrange
+
+        image_axes = ax.imshow(image.T, cmap=cmap, vmin=vmin, vmax=vmax)
+
+        if image_spec.get('show_metrics'):
+            image_metrics = get_image_metrics(image_spec)
+            ax.set_xlabel('PSNR: ${:.2f}\,$dB\nSSIM: ${:.4f}\,$'.format(
+                    image_metrics['psnr'], image_metrics['ssim']))
+
+        ax.axis('off')
+
+    elif SUBPLOT_TYPES[image_type] == 'plot':
+        if image_type == 'uncertainty':
+            squared_err, squared_std = get_uncertainty_infos(image_spec)
+            min_val = min([np.min(squared_std), np.min(squared_err)])
+            max_val = max([np.max(squared_std), np.max(squared_err)])
+            ax.plot([min_val, max_val], [min_val, max_val],
+                    color='gray', linestyle='dashed')
+            ax.plot(squared_std, squared_err, '.')
+            ax.set_aspect('equal')
+            if scilimits is not None:
+                ax.ticklabel_format(scilimits=scilimits)
+            # formatter = FormatStrFormatter('%.1e')
+            # ax.xaxis.set_major_formatter(formatter)
+            # ax.yaxis.set_major_formatter(formatter)
+            if not i in plot_settings.get('skip_xlabels', []):
+                ax.set_xlabel('uncertainty')
+            if not i in plot_settings.get('skip_ylabels', []):
+                ax.set_ylabel('error')
+        else:
+            raise NotImplementedError
+
+    else:
+        raise NotImplementedError
+
+    image_axes_list.append(image_axes)
+
+def add_inset_positioned_colorbar(image_axes, ax, location='right'):
+    if not isinstance(ax, Axes):
+        ax = np.asarray(ax).ravel()
+        ax = {'right': ax[-1],
+              'bottom': ax[-1],
+              'left': ax[0],
+              'top': ax[0]}[location]
+    ip = InsetPosition(
+            ax,
+            {'right': [1.05, 0., 0.05, 1.],
+             'bottom': [0., -0.1, 1., 0.05],
+             'left': [-0.1, 0., 0.05, 1.],
+             'top': [0., 1.05, 1., 0.05]}[location])
+    cax = Axes(fig, [0., 0., 1., 1.])
+    cax.set_axes_locator(ip)
+    fig.add_axes(cax)
+    orientation = {'right': 'vertical',
+                   'bottom': 'horizontal',
+                   'left': 'vertical',
+                   'top': 'horizontal'}[location]
+    cb = fig.colorbar(image_axes, orientation=orientation, cax=cax)
+    return cb
+
+if colorbars_mode == 'global':
+    assert len(unique_norm_group_inds) == 1  # only global normalization allowed
+    image_axes = next(image_axes for image_axes in image_axes_list
+                      if image_axes is not None)
+    colorbar_fun = (add_inset_positioned_colorbar
+                    if use_inset_positioned_colorbar else
+                    fig.colorbar)
+    cb = colorbar_fun(image_axes, ax=axs, location=colorbar_location)
+    cb.ax.ticklabel_format(scilimits=scilimits)
+elif colorbars_mode == 'individual':
+    for image_axes, ax in zip(image_axes_list, axs.flat):
+        if image_axes is not None:
+            colorbar_fun = (add_inset_positioned_colorbar
+                            if use_inset_positioned_colorbar else
+                            fig.colorbar)
+            cb = colorbar_fun(image_axes, ax=[ax], location=colorbar_location)
+            cb.ax.ticklabel_format(scilimits=scilimits)
+elif colorbars_mode == 'norm_groups':
+    for group_ind in unique_norm_group_inds:
+        image_axes = next(
+                image_axes for image_axes, g_ind in zip(
+                        image_axes_list, norm_group_inds)
+                if g_ind == group_ind)
+        axs_group = [
+                ax for ax, g_ind in zip(axs.flat, norm_group_inds)
+                if g_ind == group_ind]
+        colorbar_fun = (add_inset_positioned_colorbar
+                        if use_inset_positioned_colorbar else
+                        fig.colorbar)
+        cb = colorbar_fun(
+                image_axes, ax=axs_group, location=colorbar_location)
+        if scilimits is not None:
+            cb.ax.ticklabel_format(scilimits=scilimits)
+elif colorbars_mode == 'off':
+    pass
+else:
+    raise NotImplementedError
 
 if save_fig:
-    filename = '{}_images_{}.pdf'.format(data, runs_filename)
+    filename = '{}_{}_{}.pdf'.format(data, plot_name, runs_filename)
     fig.savefig(os.path.join(FIG_PATH, filename), bbox_inches='tight')
 
 plt.show()
