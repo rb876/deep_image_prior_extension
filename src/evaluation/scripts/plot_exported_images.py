@@ -387,7 +387,8 @@ for i, (image_spec, image, vrange, ax) in enumerate(zip(
 
         vmin, vmax = vrange
 
-        image_axes = ax.imshow(image.T, cmap=cmap, vmin=vmin, vmax=vmax)
+        image_axes = ax.imshow(image.T, cmap=cmap, vmin=vmin, vmax=vmax,
+                               interpolation='none')
 
         if image_spec.get('show_metrics'):
             image_metrics = get_image_metrics(image_spec)
