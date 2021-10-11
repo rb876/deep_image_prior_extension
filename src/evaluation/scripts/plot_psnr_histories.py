@@ -33,6 +33,9 @@ data = 'ellipses_lotus_20'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
+variant = ''
+# variant = 'all'
+
 # Additional `run_spec` dict fields:
 # 
 #     color : str, optional
@@ -56,14 +59,14 @@ if data == 'ellipses_lotus_20':
         'color': 'gray',
         'skip_psnr0': True,
         },
-        # {
-        #   'experiment': 'no_pretrain_fbp',
-        #   'name': 'fixed_encoder',
-        #   'experiment_title': 'DIP-FE (FBP)',
-        #   'name_title': '',
-        #   'color': '#00AAFF',
-        #   'skip_psnr0': True,
-        # },
+        *([{
+          'experiment': 'no_pretrain_fbp',
+          'name': 'fixed_encoder',
+          'experiment_title': 'DIP-FE (FBP)',
+          'name_title': '',
+          'color': '#00AAFF',
+          'skip_psnr0': True,
+        }] if variant == 'all' else []),
         {
         'experiment': 'pretrain_only_fbp',
         },
@@ -78,14 +81,14 @@ if data == 'ellipses_lotus_20':
         'color': '#EC2215',
         'skip_psnr0': True,
         },
-        # {
-        #   'experiment': 'pretrain',
-        #   'name': 'train_run0_epochs100_fixed_encoder',
-        #   'experiment_title': 'EDIP-FE (noise)',
-        #   'name_title': '',
-        #   'color': '#B15CD1',
-        #   'skip_psnr0': True,
-        # },
+        *([{
+          'experiment': 'pretrain',
+          'name': 'train_run0_epochs100_fixed_encoder',
+          'experiment_title': 'EDIP-FE (noise)',
+          'name_title': '',
+          'color': '#B15CD1',
+          'skip_psnr0': True,
+        }] if variant == 'all' else []),
     ]
 
 elif data == 'ellipses_lotus_limited_30':
@@ -104,14 +107,14 @@ elif data == 'ellipses_lotus_limited_30':
         'color': 'gray',
         'skip_psnr0': True,
         },
-        # {
-        #   'experiment': 'no_pretrain_fbp',
-        #   'name': 'fixed_encoder',
-        #   'experiment_title': 'DIP-FE (FBP)',
-        #   'name_title': '',
-        #   'color': '#00AAFF',
-        #   'skip_psnr0': True,
-        # },
+        *([{
+          'experiment': 'no_pretrain_fbp',
+          'name': 'fixed_encoder',
+          'experiment_title': 'DIP-FE (FBP)',
+          'name_title': '',
+          'color': '#00AAFF',
+          'skip_psnr0': True,
+        }] if variant == 'all' else []),
         {
         'experiment': 'pretrain_only_fbp',
         },
@@ -126,14 +129,14 @@ elif data == 'ellipses_lotus_limited_30':
         'color': '#EC2215',
         'skip_psnr0': True,
         },
-        # {
-        #   'experiment': 'pretrain',
-        #   'name': 'train_run2_epochs40_fixed_encoder',
-        #   'experiment_title': 'EDIP-FE (noise)',
-        #   'name_title': '',
-        #   'color': '#B15CD1',
-        #   'skip_psnr0': True,
-        # },
+        *([{
+          'experiment': 'pretrain',
+          'name': 'train_run2_epochs40_fixed_encoder',
+          'experiment_title': 'EDIP-FE (noise)',
+          'name_title': '',
+          'color': '#B15CD1',
+          'skip_psnr0': True,
+        }] if variant == 'all' else []),
     ]
 
 elif data == 'brain_walnut_120':
@@ -152,14 +155,14 @@ elif data == 'brain_walnut_120':
         'color': 'gray',
         'skip_psnr0': True,
         },
-        # {
-        #   'experiment': 'no_pretrain_fbp',
-        #   'name': 'fixed_encoder',
-        #   'experiment_title': 'DIP-FE (FBP)',
-        #   'name_title': '',
-        #   'color': '#00AAFF',
-        #   'skip_psnr0': True,
-        # },
+        *([{
+          'experiment': 'no_pretrain_fbp',
+          'name': 'fixed_encoder',
+          'experiment_title': 'DIP-FE (FBP)',
+          'name_title': '',
+          'color': '#00AAFF',
+          'skip_psnr0': True,
+        }] if variant == 'all' else []),
         {
         'experiment': 'pretrain_only_fbp',
         },
@@ -174,14 +177,14 @@ elif data == 'brain_walnut_120':
         'color': '#EC2215',
         'skip_psnr0': True,
         },
-        # {
-        #   'experiment': 'pretrain',
-        #   'name': 'train_run0_fixed_encoder',
-        #   'experiment_title': 'EDIP-FE (noise)',
-        #   'name_title': '',
-        #   'color': '#B15CD1',
-        #   'skip_psnr0': True,
-        # },
+        *([{
+          'experiment': 'pretrain',
+          'name': 'train_run0_fixed_encoder',
+          'experiment_title': 'EDIP-FE (noise)',
+          'name_title': '',
+          'color': '#B15CD1',
+          'skip_psnr0': True,
+        }] if variant == 'all' else []),
     ]
 
 elif data == 'ellipses_walnut_120':
@@ -200,14 +203,14 @@ elif data == 'ellipses_walnut_120':
         'color': 'gray',
         'skip_psnr0': True,
         },
-        # {
-        #   'experiment': 'no_pretrain_fbp',
-        #   'name': 'fixed_encoder',
-        #   'experiment_title': 'DIP-FE (FBP)',
-        #   'name_title': '',
-        #   'color': '#00AAFF',
-        #   'skip_psnr0': True,
-        # },
+        *([{
+          'experiment': 'no_pretrain_fbp',
+          'name': 'fixed_encoder',
+          'experiment_title': 'DIP-FE (FBP)',
+          'name_title': '',
+          'color': '#00AAFF',
+          'skip_psnr0': True,
+        }] if variant == 'all' else []),
         {
         'experiment': 'pretrain_only_fbp',
         },
@@ -222,14 +225,14 @@ elif data == 'ellipses_walnut_120':
         'color': '#EC2215',
         'skip_psnr0': True,
         },
-        # {
-        #   'experiment': 'pretrain',
-        #   'name': 'train_run0_fixed_encoder',
-        #   'experiment_title': 'EDIP-FE (noise)',
-        #   'name_title': '',
-        #   'color': '#B15CD1',
-        #   'skip_psnr0': True,
-        # },
+        *([{
+          'experiment': 'pretrain',
+          'name': 'train_run0_fixed_encoder',
+          'experiment_title': 'EDIP-FE (noise)',
+          'name_title': '',
+          'color': '#B15CD1',
+          'skip_psnr0': True,
+        }] if variant == 'all' else []),
     ]
 
 
@@ -251,7 +254,9 @@ plot_settings_dict = {
         'psnr_steady_y_pos': 32.5,
         'psnr_steady_y_shift_per_run_idx': {
             3: 1.,
-            # 4: 1.,
+            4: 1.,
+        } if variant == 'all' else {
+            3: 1.
         },
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.55],
         'inset_axes_rect_border': [0.07, 0.0675],
@@ -267,16 +272,16 @@ plot_settings_dict = {
         },
         'psnr_steady_y_pos': 27,
         'psnr_steady_y_shift_per_run_idx': {
-            # 3: 0.9,
-            # 4: 0.9
-        },
+            3: 0.9,
+            4: 0.9
+        } if variant == 'all' else {},
         'inset_axes_rect': [0.245, 0.2, 0.715, 0.575],
         'inset_axes_rect_border': [0.0625, 0.0675],
     },
     'brain_walnut_120': {
         'xlim': (-1875, 30000),
         'xlim_inset': (-600, 21250),
-        'ylim': (-14.5, 36.5),
+        'ylim': (-14.5, 37.75),
         'ylim_inset': (22.5, 33.75),
         'psnr0_x_pos': -562.5,
         'psnr0_x_shift_per_run_idx': {
@@ -284,6 +289,8 @@ plot_settings_dict = {
         },
         'psnr_steady_y_pos': 35.,
         'psnr_steady_y_shift_per_run_idx': {
+            0: 1.8,
+        } if variant == 'all' else {
         },
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.525],
         'inset_axes_rect_border': [0.0625, 0.0675],
@@ -302,7 +309,10 @@ plot_settings_dict = {
         'psnr_steady_y_shift_per_run_idx': {
             2: 1.8,
             3: 1.8,
-            # 4: 1.8,
+            4: 1.8,
+        } if variant == 'all' else {
+            2: 1.8,
+            3: 1.8,
         },
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.475],
         'inset_axes_rect_border': [0.07, 0.0675],
@@ -562,7 +572,8 @@ if save_fig:
                   else '{}_{}'.format(r['experiment'], r['name']))
                  for r in runs_to_compare])
     for fmt in formats:
-        filename = '{}_on_{}.{}'.format(runs_filename, data, fmt)
+        suffix = '_{}'.format(variant) if variant else ''
+        filename = '{}_on_{}{}.{}'.format(runs_filename, data, suffix, fmt)
         fig.savefig(os.path.join(FIG_PATH, filename), bbox_inches='tight',
                     dpi=200)
 
