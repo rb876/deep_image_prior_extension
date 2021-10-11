@@ -24,6 +24,9 @@ os.makedirs(OUTPUT_PATH, exist_ok=True)
 SAVE_ONLY_MEDIAN_REP = True
 
 data = 'ellipses_lotus_20'
+# data = 'ellipses_limited_30'
+# data = 'brain_walnut_120'
+# data = 'ellipses_walnut_120'
 
 OUTPUT_METRICS_PATH = os.path.join(
         OUTPUT_PATH, '{}_metrics.json'.format(data))
@@ -53,6 +56,38 @@ if data == 'ellipses_lotus_20':
     ]
 
 elif data == 'ellipses_lotus_limited_30':
+    runs_to_export = [
+        {
+        'experiment': 'no_pretrain',
+        },
+        {
+        'experiment': 'no_pretrain_fbp',
+        },
+        {
+        'experiment': 'pretrain_only_fbp',
+        },
+        {
+        'experiment': 'pretrain',
+        },
+    ]
+
+elif data == 'brain_walnut_120':
+    runs_to_export = [
+        {
+        'experiment': 'no_pretrain',
+        },
+        {
+        'experiment': 'no_pretrain_fbp',
+        },
+        {
+        'experiment': 'pretrain_only_fbp',
+        },
+        {
+        'experiment': 'pretrain',
+        },
+    ]
+
+elif data == 'ellipses_walnut_120':
     runs_to_export = [
         {
         'experiment': 'no_pretrain',
@@ -154,6 +189,7 @@ def get_init_reco(reconstructor, fbp):
     return output[0]
 
 out_fbps = None
+out_fbp_metrics = None
 out_gts = None
 
 out_init_recos_list = []
@@ -163,6 +199,8 @@ out_best_reco_metrics_list = []
 out_init_reco_stds_list = []
 out_best_reco_stds_list = []
 out_mean_reco_errors_list = []
+
+
 
 for run_spec, cfgs, experiment_names, reconstructions in zip(
         runs_to_export, cfgs_list, experiment_names_list, reconstructions_list):
@@ -217,6 +255,11 @@ for run_spec, cfgs, experiment_names, reconstructions in zip(
         if out_gts is None:
             out_fbps = cur_fbps
             out_gts = cur_gts
+
+            out_fbp_metrics = [
+                    {'psnr': PSNR(fbp, gt),
+                     'ssim': SSIM(fbp, gt)}
+                    for fbp, gt in zip(out_fbps, out_gts)]
         else:
             pass
             # assert len(cur_gts) == len(out_gts)
@@ -257,6 +300,9 @@ def get_run_name_for_filename(run_spec):
 
     return run_name_for_filename
 
+fbp_metrics = {
+    'sample_{:d}'.format(k): m for k, m in enumerate(out_fbp_metrics)
+}
 metrics_list = [
     {
         'rep_{:d}'.format(j): {
@@ -275,6 +321,7 @@ metrics = {
     get_run_name_for_filename(run_spec): m
     for m, run_spec in zip(metrics_list, runs_to_export)
 }
+metrics['fbp'] = fbp_metrics
 
 print('metrics:\n{}'.format(metrics))
 

@@ -19,6 +19,9 @@ FIG_PATH = os.path.dirname(__file__)
 save_fig = True
 
 data = 'ellipses_lotus_20'
+# data = 'ellipses_limited_30'
+# data = 'brain_walnut_120'
+# data = 'ellipses_walnut_120'
 
 plot_name = 'images'
 # plot_name = 'uncertainty'
@@ -51,7 +54,8 @@ runs_filename = None
 # 'gt', 'fbp', 'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std',
 # 'mean_reco_error', 'uncertainty'
 
-if data == 'ellipses_lotus_20':
+if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_30',
+            'brain_walnut_120', 'ellipses_walnut_120']:
 
     if plot_name == 'images':
         images_to_plot = [
@@ -74,6 +78,7 @@ if data == 'ellipses_lotus_20':
                 'type': 'init_reco',
                 'experiment': 'pretrain_only_fbp',
                 'repetition': 'median_psnr',
+                'show_metrics': True,
             },
             {
                 'type': 'init_reco',
@@ -82,6 +87,7 @@ if data == 'ellipses_lotus_20':
             },
             {
                 'type': 'fbp',
+                'show_metrics': True,
             }
         ]
 
@@ -119,13 +125,14 @@ if runs_filename is None:
 
 
 plot_settings_dict = {
-    'ellipses_lotus_20': {
+    'default': {
         'images': {
             'nrows': 2,
-            'norm_group_inds': 'global',
+            'norm_group_inds': [0, 0, 0, 0, 1, 0],
             'norm_groups_use_vrange_from_images': {0: [2]},
             'colorbars_mode': 'off',
-            'gridspec_kw': {'wspace': 0.},
+            'gridspec_kw': {'hspace': 0.3, 'wspace': -0.25},
+            'pad_inches': 0.,
         },
         'uncertainty': {
             'nrows': 2,
@@ -138,11 +145,16 @@ plot_settings_dict = {
             'titlepad': 16,
             'figsize': (9, 7),
             'gridspec_kw': {'hspace': 0.45, 'wspace': 0.1},
+            'pad_inches': 0.,
         },
     },
+    # 'ellipses_lotus_20': {
+    # },
     # 'ellipses_lotus_limited_30': {
     # },
     # 'brain_walnut_120': {
+    # },
+    # 'ellipses_walnut_120': {
     # },
 }
 
@@ -228,8 +240,8 @@ images = [
     for image_spec in images_to_plot
 ]
 
-
-plot_settings = plot_settings_dict[data][plot_name]
+plot_settings = plot_settings_dict['default'][plot_name]
+plot_settings.update(plot_settings_dict.get(data, {}).get(plot_name, {}))
 
 nrows = plot_settings.get('nrows', 1)
 
@@ -260,9 +272,11 @@ colorbar_location = plot_settings.get('colorbar_location', 'right')
 use_inset_positioned_colorbar = plot_settings.get(
         'use_inset_positioned_colorbar', False)
 scilimits = plot_settings.get('scilimits')
+metrics_fontsize = plot_settings.get('metrics_fontsize', 9)
 titlepad = plot_settings.get('titlepad')
 figsize = plot_settings.get('figsize', (9, 6))
 gridspec_kw = plot_settings.get('gridspec_kw', {})
+pad_inches = plot_settings.get('pad_inches', 0.1)
 
 
 def get_title(image_spec):
@@ -297,19 +311,21 @@ def get_title(image_spec):
     return title
 
 def get_image_metrics(image_spec):
-    run_name_for_filename = get_run_name_for_filename(image_spec)
-    rep = get_rep(image_spec)
     image_type = image_spec['type']
-    if image_type == 'init_reco':
-        type_key = 'init'
-    elif image_type == 'best_reco':
-        type_key = 'best'
+    if image_type == 'fbp':
+        image_metrics = metrics['fbp']['sample_{:d}'.format(SAMPLE)]
     else:
-        raise ValueError(
-                'No metrics available for "type" \'{}\''.format(image_type))
-
-    image_metrics = metrics[run_name_for_filename]['rep_{:d}'.format(rep)][
-            'sample_{:d}'.format(SAMPLE)][type_key]
+        run_name_for_filename = get_run_name_for_filename(image_spec)
+        rep = get_rep(image_spec)
+        if image_type == 'init_reco':
+            type_key = 'init'
+        elif image_type == 'best_reco':
+            type_key = 'best'
+        else:
+            raise ValueError(
+                    'No metrics available for "type" \'{}\''.format(image_type))
+        image_metrics = metrics[run_name_for_filename]['rep_{:d}'.format(rep)][
+                'sample_{:d}'.format(SAMPLE)][type_key]
 
     return image_metrics
 
@@ -375,10 +391,14 @@ for i, (image_spec, image, vrange, ax) in enumerate(zip(
 
         if image_spec.get('show_metrics'):
             image_metrics = get_image_metrics(image_spec)
-            ax.set_xlabel('PSNR: ${:.2f}\,$dB\nSSIM: ${:.4f}\,$'.format(
-                    image_metrics['psnr'], image_metrics['ssim']))
+            ax.set_xlabel('PSNR: ${:.2f}\,$dB, SSIM: ${:.4f}\,$'.format(
+                    image_metrics['psnr'], image_metrics['ssim']),
+                    fontsize=metrics_fontsize)
 
-        ax.axis('off')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
 
     elif SUBPLOT_TYPES[image_type] == 'plot':
         if image_type == 'uncertainty':
@@ -469,6 +489,7 @@ else:
 
 if save_fig:
     filename = '{}_{}_{}.pdf'.format(data, plot_name, runs_filename)
-    fig.savefig(os.path.join(FIG_PATH, filename), bbox_inches='tight')
+    fig.savefig(os.path.join(FIG_PATH, filename),
+                bbox_inches='tight', pad_inches=pad_inches)
 
 plt.show()
