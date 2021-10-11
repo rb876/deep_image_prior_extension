@@ -22,6 +22,7 @@ PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 FIG_PATH = os.path.dirname(__file__)
 
 save_fig = True
+formats = ('pdf', 'png')
 
 with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
@@ -560,7 +561,9 @@ if save_fig:
                 [(r['experiment'] if r.get('name') is None
                   else '{}_{}'.format(r['experiment'], r['name']))
                  for r in runs_to_compare])
-    filename = '{}_on_{}.pdf'.format(runs_filename, data)
-    fig.savefig(os.path.join(FIG_PATH, filename), bbox_inches='tight')
+    for fmt in formats:
+        filename = '{}_on_{}.{}'.format(runs_filename, data, fmt)
+        fig.savefig(os.path.join(FIG_PATH, filename), bbox_inches='tight',
+                    dpi=200)
 
 plt.show()
