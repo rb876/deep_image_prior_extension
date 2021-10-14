@@ -49,10 +49,24 @@ def get_title_from_run_spec(run_spec):
     return title
 
 def get_data_title_full(data, validation_run):
-    data_title_full_parts = [data_title_dict[data]]
-    data_title_full_parts.append('Validation (Shepp-Logan)' if validation_run
-                                 else 'Test (Lotus)')
-
-    data_title_full = ', '.join(data_title_full_parts)
+    if validation_run:
+        part = {
+                'ellipses_lotus_20': 'Shepp-Logan',
+                'ellipses_lotus_40': 'Shepp-Logan',
+                'ellipses_lotus_limited_30': 'Shepp-Logan',
+                'brain_walnut_120': 'Shepp-Logan',
+                'ellipses_walnut_120': 'Shepp-Logan',
+                }[data]
+        data_title_part = 'Validation on {}'.format(part)
+    else:
+        part = {
+                'ellipses_lotus_20': 'Lotus',
+                'ellipses_lotus_40': 'Lotus',
+                'ellipses_lotus_limited_30': 'Lotus',
+                'brain_walnut_120': 'Walnut',
+                'ellipses_walnut_120': 'Walnut',
+                }[data]
+        data_title_part = 'Test on {}'.format(part)
+    data_title_full = '{}: {}'.format(data_title_dict[data], data_title_part)
 
     return data_title_full
