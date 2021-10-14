@@ -251,8 +251,8 @@ plot_settings_dict = {
         'psnr0_x_shift_per_run_idx': {
             0: -250,
         },
-        'psnr_steady_y_pos': 32.5,
-        'psnr_steady_y_shift_per_run_idx': {
+        'rise_time_to_baseline_y_pos': 32.5,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
             3: 1.,
             4: 1.,
         } if variant == 'all' else {
@@ -270,8 +270,8 @@ plot_settings_dict = {
         'psnr0_x_shift_per_run_idx': {
             0: -200,
         },
-        'psnr_steady_y_pos': 27,
-        'psnr_steady_y_shift_per_run_idx': {
+        'rise_time_to_baseline_y_pos': 27,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
             3: 0.9,
             4: 0.9
         } if variant == 'all' else {},
@@ -287,8 +287,8 @@ plot_settings_dict = {
         'psnr0_x_shift_per_run_idx': {
             0: -750,
         },
-        'psnr_steady_y_pos': 35.,
-        'psnr_steady_y_shift_per_run_idx': {
+        'rise_time_to_baseline_y_pos': 35.,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
             0: 1.8,
         } if variant == 'all' else {
         },
@@ -305,8 +305,8 @@ plot_settings_dict = {
         'psnr0_x_shift_per_run_idx': {
             0: -750,
         },
-        'psnr_steady_y_pos': 35.,
-        'psnr_steady_y_shift_per_run_idx': {
+        'rise_time_to_baseline_y_pos': 35.,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
             2: 1.8,
             3: 1.8,
             4: 1.8,
@@ -480,18 +480,19 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
         if ax_ is ax:
             run_handles += h
         if rise_time_to_baseline is not None:
-            h = ax_.plot(rise_time_to_baseline,
-                    plot_settings_dict[data]['psnr_steady_y_pos'] +
+            rise_time_to_baseline_y_pos_shifted = (
+                    plot_settings_dict[data]['rise_time_to_baseline_y_pos'] +
                             plot_settings_dict[data][
-                                'psnr_steady_y_shift_per_run_idx'].get(i, 0),
+                                    'rise_time_to_baseline_y_shift_per_run_idx']
+                                    .get(i, 0))
+            h = ax_.plot(
+                    rise_time_to_baseline, rise_time_to_baseline_y_pos_shifted,
                     '*', color=color, markersize=8)
             if ax_ is ax:
                 rise_time_handles += h
             ax_.plot([rise_time_to_baseline, rise_time_to_baseline],
                     [median_psnr_history[rise_time_to_baseline],
-                    plot_settings_dict[data]['psnr_steady_y_pos'] +
-                            plot_settings_dict[data][
-                                'psnr_steady_y_shift_per_run_idx'].get(i, 0)],
+                     rise_time_to_baseline_y_pos_shifted],
                     color=color, linestyle='--', zorder=1.5)
 
     h = (ax.plot(
