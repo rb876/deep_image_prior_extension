@@ -94,29 +94,6 @@ plot_settings_dict = {
     },
 }
 
-eval_settings_dict = {
-    'ellipses_lotus_20': {
-        'psnr_steady_start': -5000,
-        'psnr_steady_stop': None,
-        'rise_time_to_baseline_remaining_psnr': 0.5,
-    },
-    'ellipses_lotus_limited_30': {
-        'psnr_steady_start': -5000,
-        'psnr_steady_stop': None,
-        'rise_time_to_baseline_remaining_psnr': 0.5,
-    },
-    'brain_walnut_120': {
-        'psnr_steady_start': -5000,
-        'psnr_steady_stop': None,
-        'rise_time_to_baseline_remaining_psnr': 0.5,
-    },
-    'ellipses_walnut_120': {
-        'psnr_steady_start': -5000,
-        'psnr_steady_stop': None,
-        'rise_time_to_baseline_remaining_psnr': 0.5,
-    },
-}
-
 data_title_full = get_data_title_full(data, validation_run=True)
 
 fig, ax = plt.subplots(figsize=plot_settings_dict[data].get('figsize', (8, 5)))
@@ -165,8 +142,6 @@ max_psnr_steady = np.max(list(psnrs_steady.values()))
 
 zorder_list = plot_settings_dict[data].get(
         'zorder_list', [1.5 for _ in val_run_paths])
-
-cycle_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 baseline_cfg = get_run_cfg(cfg.val.baseline_run_path)
 baseline_experiment_name = get_run_experiment_name(cfg.val.baseline_run_path)
