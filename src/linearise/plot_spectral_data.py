@@ -9,7 +9,7 @@ def singular_values_plot(s, labels, colors, line):
     fig, ax = plt.subplots(figsize=(6, 6))
     for val, lab, col, lin in zip(s, labels, colors, line):
         len_vec = list(range(len(val)))
-        ax.plot(len_vec, val, lin, linewidth=2.5, color=col, label=lab)
+        ax.plot(len_vec, val, linestyle=lin, linewidth=2.5, color=col, label=lab)
     ax.grid()
     ax.legend()
     ax.spines['right'].set_visible(False)
@@ -18,7 +18,7 @@ def singular_values_plot(s, labels, colors, line):
     ax.set_yscale('log')
     ax.set_xlabel('# projections', fontsize=12)
     ax.set_ylabel('Magnitude', fontsize=12)
-    lgd = ax.legend(loc='upper center', bbox_to_anchor=(0.5, 0.05), ncol=2, framealpha=1.)
+    lgd = ax.legend(loc='upper right', ncol=2, framealpha=1.)
     fig.savefig('singular_values_comparison_plot.pdf', bbox_extra_artists=(lgd,), bbox_inches='tight')
     
 def singular_vectors_plot(v1, v2, n_cols=4, plot_first_k=None, labels=None, filename=None, reorder_idx=None):
@@ -202,9 +202,10 @@ def main():
 
     singular_values_plot(
         s, 
-        labels=['EDIP (0)', 'EDIP (9500)', 'DIP (0)', 'DIP (9500)'],
-        colors=['#EC2215', '#EC2215', '#3D78B2', '#3D78B2'], 
-        line=['-', '-', '-', '-']
+        labels=['EDIP ($\\theta^{\\mathrm{conv}}$)', 'EDIP ($\\theta^{[100]}$)', 'EDIP ($\\theta^{\\mathrm{init}}$)',
+                'DIP ($\\theta^{\\mathrm{conv}}$)', 'DIP ($\\theta^{[100]}$)', 'DIP ($\\theta^{\\mathrm{init}}$)'],
+        colors=['#084B8D', '#3D78B2', '#96D6BA', '#084B8D', '#3D78B2', '#96D6BA'],
+        line=['-', '-', '-', (0, (2, 5)), (0, (2, 5)), (0, (2, 5))]
         )
     
 if __name__ == "__main__":
