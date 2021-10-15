@@ -29,10 +29,10 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-# data = 'ellipses_lotus_20'
+data = 'ellipses_lotus_20'
 # data = 'ellipses_lotus_limited_30'
 # data = 'brain_walnut_120'
-data = 'ellipses_walnut_120'
+# data = 'ellipses_walnut_120'
 
 variant = ''
 
@@ -243,7 +243,7 @@ baseline_label = '{}'.format(
  baseline_rise_time_handle,
  baseline_psnr_steady_handle) = plot_run(
         ax, psnr_histories=baseline_psnr_histories, info=baseline_info,
-        label=baseline_label, color='gray', zorder=2.)
+        label=baseline_label, color='k', zorder=1.55)
 
 run_handles_dict = {}
 rise_time_handles_dict = {}
