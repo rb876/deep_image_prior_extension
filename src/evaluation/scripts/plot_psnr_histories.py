@@ -424,7 +424,7 @@ plot_settings_dict = {
             (0.48, -0.125) if variant == 'checkpoints' else
             (0.5, -0.125))
         ),
-        'run_legend_bbox_loc': 'upper center',
+        'run_legend_loc': 'upper center',
         'run_legend_handletextpad': (0.6 if variant == 'checkpoints' else None),
         'run_legend_columnspacing': (1.5 if variant == 'checkpoints' else None),
     },
@@ -449,7 +449,7 @@ plot_settings_dict = {
             (0.48, -0.125) if variant == 'checkpoints' else
             (0.5, -0.125))
         ),
-        'run_legend_bbox_loc': 'upper center',
+        'run_legend_loc': 'upper center',
         'run_legend_handletextpad': (0.6 if variant == 'checkpoints' else None),
         'run_legend_columnspacing': (1.5 if variant == 'checkpoints' else None),
     },
@@ -499,12 +499,14 @@ plot_settings_dict = {
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.525],
         'inset_axes_rect_border': [0.0625, 0.0675],
         'ylabel_pad': 0.,
+        'run_legend_ncol': (
+            len(runs_to_compare) if variant == 'checkpoints' else None),
         'run_legend_bbox_to_anchor': (
             (0.5, -0.125) if (not variant) or variant == 'all' else (
             (0.475, -0.125) if variant == 'checkpoints' else
             (0.5, -0.125))
         ),
-        'run_legend_bbox_loc': 'upper center',
+        'run_legend_loc': 'upper center',
         'run_legend_handletextpad': (0.4 if variant == 'checkpoints' else None),
         'run_legend_columnspacing': (1.2 if variant == 'checkpoints' else None),
     },
@@ -562,14 +564,14 @@ plot_settings_dict = {
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.475],
         'inset_axes_rect_border': [0.07, 0.0675],
         'ylabel_pad': 0.,
+        'run_legend_ncol': (
+            len(runs_to_compare) if variant == 'checkpoints' else None),
         'run_legend_bbox_to_anchor': (
             (0.5, -0.125) if (not variant) or variant == 'all' else (
             (0.475, -0.125) if variant == 'checkpoints' else
             (0.5, -0.125))
         ),
-        'run_legend_ncol': (
-            len(runs_to_compare) if variant == 'checkpoints' else None),
-        'run_legend_bbox_loc': 'upper center',
+        'run_legend_loc': 'upper center',
         'run_legend_handletextpad': (0.4 if variant == 'checkpoints' else None),
         'run_legend_columnspacing': (1.2 if variant == 'checkpoints' else None),
     },
