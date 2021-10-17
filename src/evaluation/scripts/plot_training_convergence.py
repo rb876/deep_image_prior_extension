@@ -78,23 +78,19 @@ plot_settings_dict = {
     'ellipses_lotus_20': {
         'ylim': (16., 25.),
         'zorders_per_run_idx': {0: {0: 2.3}, 1: {0: 2.2}, 2: {0: 2.1}},
-        'lr_yaxis_tick_fmt': '%g',
         'lr_legend_loc': 'upper right',
     },
     'ellipses_lotus_limited_30': {
         'ylim': (16., None),
-        'lr_yaxis_tick_fmt': '%g',
     },
     'brain_walnut_120': {
         'ylim': (20., 36.),
         'zorders_per_run_idx': {0: {0: 2.3}, 1: {0: 2.2}, 2: {0: 2.1}},
-        'lr_yaxis_tick_fmt': '%g',
         'lr_legend_loc': 'lower right',
     },
     'ellipses_walnut_120': {
         'ylim': (25., 36.),
         'zorders_per_run_idx': {0: {0: 2.3}, 1: {0: 2.2}, 2: {0: 2.1}},
-        'lr_yaxis_tick_fmt': '%.2e',
         'lr_legend_loc': 'lower right',
     },
 }
@@ -281,7 +277,7 @@ for scalars_multirun in scalars_per_run_spec:
 
 fig, (ax0, ax1) = plt.subplots(
         2, 1, figsize=plot_settings_dict[data].get('figsize', (8, 4)),
-        gridspec_kw={'height_ratios': (3., 1.), 'hspace': 0.5})
+        gridspec_kw={'height_ratios': (3., 1.), 'hspace': 0.4})
 
 val_handles = []
 handles = []
@@ -297,13 +293,13 @@ for i, (run_spec, cfgs, experiment_names, scalars_multirun) in enumerate(zip(
         h = ax0.plot(
                 scalars['val_psnr_steps'] / num_steps_per_epoch,
                 scalars['val_psnr_scalars'],
-                label='{}, validation'.format(label),
+                label='{}, val.'.format(label),
                 color=color, linestyle='--', zorder=zorder)
         val_handles += h
         h = ax0.plot(
                 scalars['psnr_steps'] / num_steps_per_epoch,
                 scalars['psnr_scalars'],
-                label='{}, training'.format(label),
+                label='{}, train.'.format(label),
                 color=color, linestyle='-', zorder=zorder)
         handles += h
 
@@ -335,7 +331,7 @@ ax1.grid(True, linestyle='-')
 ax1.spines['right'].set_visible(False)
 # ax1.spines['top'].set_visible(False)
 # ax1.spines['left'].set_visible(False)
-# ax1.spines['bottom'].set_visible(False)
+ax1.spines['bottom'].set_visible(False)
 ax1.set_ylim((0., None))
 ax1.set_yticks([lr_scalars[0], np.max(lr_scalars)])
 ax1.yaxis.set_major_formatter(FormatStrFormatter(
