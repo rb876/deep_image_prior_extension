@@ -1,8 +1,8 @@
 pretrain_only_fbp:
-  path_to_data_9500: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-09-21/15-50-14/0/spct_data.npz
-  path_to_data_100: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-09-21/18-35-04/0/spct_data.npz
-  path_to_data_0: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-09-20/19-02-33/0/spct_data.npz
+  path_to_data_9500: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-10-21/17-32-59/0/spct_data.npz
+  path_to_data_100: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-10-21/17-18-23/0/spct_data.npz
+  path_to_data_0: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-10-21/16-58-08/0/spct_data.npz
 no_pretrain_fbp:
-  path_to_data_9500: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-09-21/15-33-45/0/spct_data.npz
-  path_to_data_100: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-09-21/18-11-29/0/spct_data.npz
-  path_to_data_0: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-09-20/18-33-32/0/spct_data.npz
+  path_to_data_9500: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-10-21/16-43-40/0/spct_data.npz
+  path_to_data_100: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-10-21/16-28-07/0/spct_data.npz
+  path_to_data_0: /localdata/jleuschn/experiments/deep_image_prior_extension/linearise/multirun/2021-10-21/16-13-34/0/spct_data.npz

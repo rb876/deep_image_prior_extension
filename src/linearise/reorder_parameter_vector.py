@@ -97,16 +97,16 @@ def coordinator(cfg : DictConfig) -> None:
                  'observation_space': dataset.space[0]
                 }
 
-    # '''Jacobian approx. with pre-sigmoid network's output'''
-    # if cfg.mdl.arch.use_sigmoid:
-    #     cfg.mdl.arch.use_sigmoid = False
-    #     cfg.mdl.normalize_by_stats = False
+    '''Jacobian approx. with pre-sigmoid network's output'''
+    if cfg.mdl.arch.use_sigmoid:
+        cfg.mdl.arch.use_sigmoid = False
+        cfg.mdl.normalize_by_stats = False
 
     reconstructor = DeepImagePriorReconstructor(**ray_trafo, cfg=cfg.mdl)
-    # '''Exclude GroupNorm & Scale_in/_out params from spectral analsyis & their biases'''
-    # skip_layers = list_norm_layers(reconstructor.model)
-    # if skip_layers is not None:
-    #     cfg.spct.skip_layers += skip_layers # adding group norms. layers 
+    '''Exclude GroupNorm & Scale_in/_out params from spectral analsyis & their biases'''
+    skip_layers = list_norm_layers(reconstructor.model)
+    if skip_layers is not None:
+        cfg.spct.skip_layers += skip_layers # adding group norms. layers
 
     store_device = reconstructor.device
 
@@ -136,6 +136,7 @@ def coordinator(cfg : DictConfig) -> None:
             reconstructor.model.named_parameters(),
             get_named_parameters_sorted(reconstructor, cfg.spct),
             cfg.spct)
+    print(reorder_idx.shape)
     np.save('reorder_idx.npy', reorder_idx)
 
 if __name__ == '__main__':

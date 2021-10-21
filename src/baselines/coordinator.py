@@ -27,17 +27,18 @@ def coordinator(cfg : DictConfig) -> None:
     filename = os.path.join(cfg.save_reconstruction_path,'recos.hdf5')
     file = h5py.File(filename, 'w')
     dataset = file.create_dataset('recos', shape=(1, )
-        + (128, 128), maxshape=(1, ) + (128, 128), dtype=np.float32, chunks=True)
+        + dataset.space[1].shape, maxshape=(1, ) + dataset.space[1].shape, dtype=np.float32, chunks=True)
 
     dataloader = DataLoader(dataset_test, batch_size=1, num_workers=0,
                             shuffle=True, pin_memory=True)
 
-    for i, (noisy_obs, fbp) in enumerate(dataloader):
-        reco = reconstructor.reconstruct(noisy_obs.float(), fbp)
+    for i, (noisy_obs, fbp, *gt) in enumerate(dataloader):
+        gt = gt[0] if gt else None
+        reco = reconstructor.reconstruct(noisy_obs.float(), fbp, ground_truth=gt, log=True)
         dataset[i] = reco
 
-    filename_mat = os.path.join(cfg.save_reconstruction_path,'TVGroundTruthLotus128.mat')
-    dict_mat = {'recon': reco.T, 'label': 'ground_truth'}
-    savemat(filename_mat, dict_mat)
+    # filename_mat = os.path.join(cfg.save_reconstruction_path,'TVGroundTruthLotus128.mat')
+    # dict_mat = {'recon': reco.T, 'label': 'ground_truth'}
+    # savemat(filename_mat, dict_mat)
 if __name__ == '__main__':
     coordinator()

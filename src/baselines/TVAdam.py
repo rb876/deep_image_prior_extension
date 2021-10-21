@@ -1,10 +1,22 @@
 import torch
 import numpy as np
 import torch.nn as nn
+import tensorboardX
 from torch.optim import Adam
 from torch.nn import MSELoss
 from warnings import warn
 from tqdm import tqdm
+
+def PSNR(reconstruction, ground_truth, data_range=None):
+    gt = np.asarray(ground_truth)
+    mse = np.mean((np.asarray(reconstruction) - gt)**2)
+    if mse == 0.:
+        return float('inf')
+    if data_range is not None:
+        return 20*np.log10(data_range) - 10*np.log10(mse)
+    else:
+        data_range = np.max(gt) - np.min(gt)
+        return 20*np.log10(data_range) - 10*np.log10(mse)
 
 def tv_loss(x):
     """
@@ -35,7 +47,7 @@ class TVAdamReconstructor:
         self.forward_op_module = ray_trafo_module.to(self.device)
         self.cfg = cfg
 
-    def reconstruct(self, observation, fbp, ground_truth=None, **kwargs):
+    def reconstruct(self, observation, fbp, ground_truth=None, log=False, **kwargs):
 
         torch.random.manual_seed(10)
         self.output = fbp.clone().detach().to(self.device)
@@ -49,6 +61,9 @@ class TVAdamReconstructor:
         else:
             warn('Unknown loss function, falling back to MSE')
             criterion = MSELoss()
+
+        if log:
+            self.writer = tensorboardX.SummaryWriter()
 
         best_loss = np.infty
         best_output = self.model(self.output).detach().clone()
@@ -66,5 +81,14 @@ class TVAdamReconstructor:
                     best_output = output.detach()
                 if i % 100 == 0: # display and save
                     show_image('lotus_{}'.format(str(i)), best_output[0, 0, ...].cpu().numpy(), 'gray')
+                if log and ground_truth is not None:
+                    best_output_psnr = PSNR(best_output.detach().cpu(), ground_truth.cpu())
+                    output_psnr = PSNR(output.detach().cpu(), ground_truth.cpu())
+                    pbar.set_postfix({'output_psnr': output_psnr})
+                    self.writer.add_scalar('best_output_psnr', best_output_psnr, i)
+                    self.writer.add_scalar('output_psnr', output_psnr, i)
+
+        if log:
+            self.writer.close()
 
         return best_output[0, 0, ...].cpu().numpy()
