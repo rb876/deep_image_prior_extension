@@ -57,13 +57,17 @@ if data == 'ellipses_lotus_20':
         runs_to_compare = [
             {
             'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
             },
             {
             'experiment': 'no_pretrain_fbp',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
             },
             {
             'experiment': 'no_pretrain',
-            'name': 'fixed_encoder',
+            'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (noise)',
             'name_title': '',
             'color': 'gray',
@@ -71,7 +75,7 @@ if data == 'ellipses_lotus_20':
             },
             *([{
             'experiment': 'no_pretrain_fbp',
-            'name': 'fixed_encoder',
+            'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (FBP)',
             'name_title': '',
             'color': '#00AAFF',
@@ -79,13 +83,17 @@ if data == 'ellipses_lotus_20':
             }] if variant == 'all' else []),
             {
             'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs100',
+            'name_title': '',
             },
             {
             'experiment': 'pretrain',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs100',
+            'name_title': '',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run0_epochs100_fixed_encoder',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs100_fixed_encoder',
             'experiment_title': 'EDIP-FE (FBP)',
             'name_title': '',
             'color': '#EC2215',
@@ -93,7 +101,7 @@ if data == 'ellipses_lotus_20':
             },
             *([{
             'experiment': 'pretrain',
-            'name': 'train_run0_epochs100_fixed_encoder',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs100_fixed_encoder',
             'experiment_title': 'EDIP-FE (noise)',
             'name_title': '',
             'color': '#B15CD1',
@@ -104,48 +112,50 @@ if data == 'ellipses_lotus_20':
         runs_to_compare = [
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run0_epochs100',
+            'name': 'no_stats_no_sigmoid_train_run0_epochs100',
             'experiment_title': 'Run 0: 100 epochs',
             'name_title': '',
             'color': '#404099',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run0_epochs20',
+            'name': 'no_stats_no_sigmoid_train_run0_epochs20',
             'experiment_title': 'Run 0: 20 epochs',
             'name_title': '',
             'color': '#8080BB',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run1_epochs100',
+            'name': 'no_stats_no_sigmoid_train_run1_epochs100',
             'experiment_title': 'Run 1: 100 epochs',
             'name_title': '',
             'color': '#994040',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run1_epochs20',
+            'name': 'no_stats_no_sigmoid_train_run1_epochs20',
             'experiment_title': 'Run 1: 20 epochs',
             'name_title': '',
             'color': '#BB8080',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run2_epochs100',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs100',
             'experiment_title': 'Run 2: 100 epochs',
             'name_title': '',
             'color': '#409940',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run2_epochs20',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs20',
             'experiment_title': 'Run 2: 20 epochs',
             'name_title': '',
             'color': '#80BB80',
             },
             {
             'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
             },
         ]
 
@@ -367,12 +377,12 @@ plot_settings_dict = {
     'ellipses_lotus_20': {
         'xlim': (
             (-625, 10000) if (not variant) or variant == 'all' else (
-            (-975, 10000) if variant == 'checkpoints' else
+            (-1125, 10000) if variant == 'checkpoints' else
             (None, None))
         ),
         'xlim_inset': (
             (-200, 6750) if (not variant) or variant == 'all' else (
-            (-200, 3750) if variant == 'checkpoints' else
+            (-100, 3750) if variant == 'checkpoints' else
             (None, None))
         ),
         'ylim': (
@@ -389,44 +399,47 @@ plot_settings_dict = {
         'psnr0_x_shift_per_run_idx': {
             0: -250,
         } if (not variant) or variant == 'all' else ({
-            0: -600,
-            1: -600,
-            2: -350,
-            3: -250,
-            4: 0,
+            0: -750,
+            1: -650,
+            2: -425,
+            3: -325,
+            4: -100,
             5: 0,
         } if variant == 'checkpoints' else {}),
         'rise_time_to_baseline_y_pos': 32.5,
         'rise_time_to_baseline_y_shift_per_run_idx': {
             3: 1.
         } if not variant else ({
-            3: 1.,
             4: 1.,
         } if variant == 'all' else ({
-            0: 3.2,
-            1: 1.2,
+            0: 2.0,
+            1: 0.0,
             2: 2.6,
             3: 0.6,
-            4: 2.0,
-            5: 0.0,
+            4: 3.2,
+            5: 1.2,
         } if variant == 'checkpoints' else {})),
         'zorder_per_run_idx': {
         } if (not variant) or variant == 'all' else ({
-            0: 2.6,
-            1: 2.3,
+            0: 2.4,
+            1: 2.1,
             2: 2.5,
             3: 2.2,
-            4: 2.4,
-            5: 2.1,
+            4: 2.6,
+            5: 2.3,
         } if variant == 'checkpoints' else {}),
         'inset_axes_rect': (
             [0.255, 0.175, 0.725, 0.55]
             if (not variant) or variant == 'all' else (
-            [0.255, 0.175, 0.725, 0.5]
+            [0.265, 0.175, 0.715, 0.5]
             if variant == 'checkpoints' else
             [0.255, 0.175, 0.725, 0.55])
         ),
-        'inset_axes_rect_border': [0.085, 0.0675],
+        'inset_axes_rect_border': (
+            [0.085, 0.0675] if (not variant) or variant == 'all' else (
+            [0.07, 0.0675] if variant == 'checkpoints' else
+            [0.085, 0.0675])
+        ),
         'tv_text_shift': [30, 0.02],
         'run_legend_bbox_to_anchor': (
             (0.5, -0.125) if (not variant) or variant == 'all' else (
