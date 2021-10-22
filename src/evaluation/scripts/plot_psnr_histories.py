@@ -1,4 +1,5 @@
 import os
+import json
 from warnings import warn
 import numpy as np
 import yaml
@@ -18,10 +19,15 @@ from matplotlib.patches import Rectangle
 # PATH = '/media/chen/Res/deep_image_prior_extension/'
 # PATH = '/localdata/jleuschn/experiments/deep_image_prior_extension/'
 PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+TVADAM_PSNRS_FILEPATH = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        'baselines', 'tvadam_psnrs.yaml')
 
 FIG_PATH = os.path.dirname(__file__)
+EVAL_RESULTS_PATH = os.path.dirname(__file__)
 
 save_fig = True
+save_eval_results = True
 formats = ('pdf', 'png')
 
 with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
@@ -36,6 +42,8 @@ data = 'ellipses_lotus_20'
 variant = ''
 # variant = 'all'
 # variant = 'checkpoints'
+
+show_tv_in_inset = (not variant) or variant == 'all'
 
 # Additional `run_spec` dict fields:
 # 
@@ -373,8 +381,8 @@ plot_settings_dict = {
             (None, None))
         ),
         'ylim_inset': (
-            (29.25, 31.85) if (not variant) or variant == 'all' else (
-            (30., 31.85) if variant == 'checkpoints' else
+            (30.5, 31.85) if (not variant) or variant == 'all' else (
+            (30.75, 31.85) if variant == 'checkpoints' else
             (29.25, 31.85))
         ),
         'psnr0_x_pos': -187.5,
@@ -418,7 +426,8 @@ plot_settings_dict = {
             if variant == 'checkpoints' else
             [0.255, 0.175, 0.725, 0.55])
         ),
-        'inset_axes_rect_border': [0.07, 0.0675],
+        'inset_axes_rect_border': [0.085, 0.0675],
+        'tv_text_shift': [30, 0.02],
         'run_legend_bbox_to_anchor': (
             (0.5, -0.125) if (not variant) or variant == 'all' else (
             (0.48, -0.125) if variant == 'checkpoints' else
@@ -444,6 +453,7 @@ plot_settings_dict = {
         } if variant == 'all' else {},
         'inset_axes_rect': [0.245, 0.2, 0.715, 0.575],
         'inset_axes_rect_border': [0.0625, 0.0675],
+        'tv_text_shift': [30, 0.02],
         'run_legend_bbox_to_anchor': (
             (0.5, -0.125) if (not variant) or variant == 'all' else (
             (0.48, -0.125) if variant == 'checkpoints' else
@@ -470,7 +480,7 @@ plot_settings_dict = {
             (None, None))
         ),
         'ylim_inset': (
-            (22.5, 33.75) if (not variant) or variant == 'all' else (
+            (30.5, 33.75) if (not variant) or variant == 'all' else (
             (25.5, 33.75) if variant == 'checkpoints' else
             (None, None))
         ),
@@ -498,6 +508,7 @@ plot_settings_dict = {
         } if variant == 'checkpoints' else {}),
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.525],
         'inset_axes_rect_border': [0.0625, 0.0675],
+        'tv_text_shift': [110, 0.05],
         'ylabel_pad': 0.,
         'run_legend_ncol': (
             len(runs_to_compare) if variant == 'checkpoints' else None),
@@ -527,7 +538,7 @@ plot_settings_dict = {
             (None, None))
         ),
         'ylim_inset': (
-            (22.5, 33.75) if (not variant) or variant == 'all' else (
+            (30.5, 33.75) if (not variant) or variant == 'all' else (
             (25.5, 33.75) if variant == 'checkpoints' else
             (None, None))
         ),
@@ -563,6 +574,7 @@ plot_settings_dict = {
         } if variant == 'checkpoints' else {}),
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.475],
         'inset_axes_rect_border': [0.07, 0.0675],
+        'tv_text_shift': [110, 0.05],
         'ylabel_pad': 0.,
         'run_legend_ncol': (
             len(runs_to_compare) if variant == 'checkpoints' else None),
@@ -581,22 +593,22 @@ eval_settings_dict = {
     'ellipses_lotus_20': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
-        'rise_time_to_baseline_remaining_psnr': 0.5,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
     },
     'ellipses_lotus_limited_30': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
-        'rise_time_to_baseline_remaining_psnr': 0.5,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
     },
     'brain_walnut_120': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
-        'rise_time_to_baseline_remaining_psnr': 0.5,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
     },
     'ellipses_walnut_120': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
-        'rise_time_to_baseline_remaining_psnr': 0.5,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
     },
 }
 
@@ -694,6 +706,8 @@ baseline_psnr_steady = get_psnr_steady(
         start=eval_settings_dict[data]['psnr_steady_start'],
         stop=eval_settings_dict[data]['psnr_steady_stop'])
 
+print('baseline steady PSNR', baseline_psnr_steady)
+
 for ax_ in axs:
     h = ax_.axhline(baseline_psnr_steady, color='gray', linestyle='--',
                     zorder=1.5)
@@ -703,6 +717,8 @@ for ax_ in axs:
 run_handles = []
 psnr0_handles = []
 rise_time_handles = []
+
+eval_results_list = []
 
 for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
         runs_to_compare, cfgs_list, experiment_names_list, histories_list)):
@@ -720,6 +736,17 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
                         'rise_time_to_baseline_remaining_psnr'])
     except IndexError:
         rise_time_to_baseline = None
+
+    eval_results = {}
+    eval_results['run_spec'] = run_spec
+    eval_results['rise_time_to_baseline'] = rise_time_to_baseline
+    eval_results['PSNR_steady'] = get_psnr_steady(
+            psnr_histories,
+            start=eval_settings_dict[data]['psnr_steady_start'],
+            stop=eval_settings_dict[data]['psnr_steady_stop'])
+    eval_results['PSNR_0'] = float(median_psnr_history[0])
+
+    eval_results_list.append(eval_results)
 
     label = get_label(run_spec, cfgs[0])
     color = get_color(run_spec, cfgs[0])
@@ -804,6 +831,19 @@ if axins is not None:
             ))
     # axins_bbox = axins.get_tightbbox(fig.canvas.get_renderer())  # TODO use this?
 
+    if show_tv_in_inset:
+        with open(TVADAM_PSNRS_FILEPATH, 'r') as f:
+            tv_psnr = yaml.safe_load(f)[data]
+            axins.axhline(tv_psnr, color='#444444', linestyle=':',
+                          linewidth=1., zorder=1.4)
+            tv_text_pos = axins.get_xlim()[0], tv_psnr
+            tv_text_pos_shift = plot_settings_dict[data].get(
+                    'tv_text_shift', [30, 0.02])
+            tv_text_pos_shifted = (
+                    tv_text_pos[0] + tv_text_pos_shift[0],
+                    tv_text_pos[1] + tv_text_pos_shift[1])
+            axins.text(*tv_text_pos_shifted, 'TV', color='#444444', zorder=1.4)
+
 run_legend = ax.legend(
         handles=run_handles,
         bbox_to_anchor=plot_settings_dict[data].get(
@@ -843,16 +883,23 @@ if title is None:
              data_title)
 ax.set_title(title)
 
+if runs_filename is None:
+    runs_filename = '_vs_'.join(
+            [(r['experiment'] if r.get('name') is None
+                else '{}_{}'.format(r['experiment'], r['name']))
+                for r in runs_to_compare])
+suffix = '_{}'.format(variant) if variant else ''
+filename = '{}_on_{}{}'.format(runs_filename, data, suffix)
+
 if save_fig:
-    if runs_filename is None:
-        runs_filename = '_vs_'.join(
-                [(r['experiment'] if r.get('name') is None
-                  else '{}_{}'.format(r['experiment'], r['name']))
-                 for r in runs_to_compare])
     for fmt in formats:
-        suffix = '_{}'.format(variant) if variant else ''
-        filename = '{}_on_{}{}.{}'.format(runs_filename, data, suffix, fmt)
-        fig.savefig(os.path.join(FIG_PATH, filename), bbox_inches='tight',
+        filename_fmt = '{}.{}'.format(filename, fmt)
+        fig.savefig(os.path.join(FIG_PATH, filename_fmt), bbox_inches='tight',
                     dpi=200)
+
+if save_eval_results:
+    with open(os.path.join(EVAL_RESULTS_PATH,
+                           '{}.{}'.format(filename, 'json')), 'w') as f:
+        json.dump(eval_results_list, f, indent=4)
 
 plt.show()
