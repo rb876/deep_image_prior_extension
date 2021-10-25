@@ -1,0 +1,34 @@
+# @package _group_
+name: ellipses_lotus_limited_45
+validation_data: shepp_logan
+test_data: lotus
+im_shape: 128
+train_len: 32000
+validation_len: 3200
+test_len: 3200
+seed: 1
+geometry_specs:
+  src_radius: 540
+  det_radius: 90
+  num_angles: 45
+  angles_subsampling:
+    start: 0
+    stop: 45
+    step: 1
+    num_angles_orig: 120
+  num_det_pixels: 429
+  impl: 'matrix'
+  ray_trafo_filename: /media/chen/Res/deep_image_prior_extension/src/FIPS_Lotus/LotusData128.mat
+noise_specs:
+  noise_type: white
+  stddev: 0.05
+stats:
+  mean_fbp: 0.2227553875045851
+  std_fbp: 0.28549086669364249
+  mean_gt: 0.22401905693265145
+  std_gt: 0.22258047788033836
+implicit_scaling_except_for_test_data: 41.
+fbp_scaling_factor: 0.012645500784201912
+fbp_filter_type: 'Hann'
+fbp_frequency_scaling: 0.6
+ground_truth_filename: /media/chen/Res/deep_image_prior_extension/src/FIPS_Lotus/TVGroundTruthLotus128.mat
