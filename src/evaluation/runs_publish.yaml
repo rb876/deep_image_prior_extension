@@ -1,0 +1,91 @@
+# coordinator.py --multirun ...
+reconstruction:
+  ellipses_lotus_20:
+    pretrain:
+      - run_path: multirun/2021-10-11/21-38-22/
+        name: no_stats_no_sigmoid_train_run2_epochs100
+      - run_path: multirun/2021-10-11/21-41-46/
+        name: no_stats_no_sigmoid_train_run2_epochs100_fixed_encoder
+    pretrain_only_fbp:
+      - run_path: multirun/2021-10-21/00-41-21/
+        name: no_stats_no_sigmoid_train_run0_epochs100
+      - run_path: multirun/2021-10-21/01-10-20/
+        name: no_stats_no_sigmoid_train_run1_epochs100
+      - run_path: multirun/2021-10-21/01-36-21/  # selected
+        name: no_stats_no_sigmoid_train_run2_epochs100
+      - run_path: multirun/2021-10-21/02-02-13/
+        name: no_stats_no_sigmoid_train_run0_epochs20
+      - run_path: multirun/2021-10-21/02-30-55/
+        name: no_stats_no_sigmoid_train_run1_epochs20
+      - run_path: multirun/2021-10-21/02-59-15/
+        name: no_stats_no_sigmoid_train_run2_epochs20
+      - run_path: multirun/2021-10-11/21-40-56/
+        name: no_stats_no_sigmoid_train_run2_epochs100_fixed_encoder
+    no_pretrain:
+      - run_path: multirun/2021-10-09/23-17-58/
+        name: no_stats_no_sigmoid
+      - run_path: multirun/2021-10-10/00-29-32/
+        name: no_stats_no_sigmoid_fixed_encoder
+    no_pretrain_fbp:
+      - run_path: multirun/2021-10-09/23-19-29/
+        name: no_stats_no_sigmoid
+      - run_path: multirun/2021-10-10/00-31-19/
+        name: no_stats_no_sigmoid_fixed_encoder
+  # ellipses_lotus_limited_30:
+  #   pretrain:
+  #   pretrain_only_fbp:
+  #   no_pretrain:
+  #   no_pretrain_fbp:
+  # ellipses_walnut_120:
+  #   pretrain:
+  #   pretrain_only_fbp:
+  #   no_pretrain:
+  #   no_pretrain_fbp:
+  # brain_walnut_120:
+  #   pretrain:
+  #   pretrain_only_fbp:
+  #   no_pretrain:
+  #   no_pretrain_fbp:
+
+# coordinator.py --multirun ...
+pretraining:
+  ellipses_lotus_20:
+    pretrain:  # same as pretrain_only_fbp
+      - run_path: multirun/2021-10-09/11-48-53/
+        name: no_stats_no_sigmoid_train_run0
+      - run_path: multirun/2021-10-09/11-49-09/
+        name: no_stats_no_sigmoid_train_run1
+      - run_path: multirun/2021-10-09/11-49-17/
+        name: no_stats_no_sigmoid_train_run2
+  # ellipses_lotus_limited_30:
+  #   pretrain:  # same as pretrain_only_fbp
+  # ellipses_walnut_120:
+  #   pretrain:  # same as pretrain_only_fbp
+  # brain_walnut_120:
+  #   pretrain:  # same as pretrain_only_fbp
+
+# validation_baseline.py ...
+validation_baseline:
+  ellipses_lotus_20:
+    no_pretrain:
+      - single_run_path: outputs/2021-10-10/11-57-23/
+        name: no_stats_no_sigmoid
+  # ellipses_lotus_limited_30:
+  #   no_pretrain:
+  # ellipses_walnut_120:
+  #   no_pretrain:
+  # brain_walnut_120:
+  #   no_pretrain:
+
+# validation.py ...
+validation:
+  ellipses_lotus_20:
+    pretrain_only_fbp:
+      - single_run_path: outputs/2021-10-10/13-44-38/
+        name: no_stats_no_sigmoid
+  # ellipses_lotus_limited_30:
+  #   pretrain_only_fbp:
+  # ellipses_walnut_120:
+  #   pretrain_only_fbp:
+  # brain_walnut_120:
+  #   pretrain_only_fbp:
