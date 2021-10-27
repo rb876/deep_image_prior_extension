@@ -129,7 +129,9 @@ def coordinator(cfg : DictConfig) -> None:
             infos[model_path] = infos_unfiltered[model_path]
 
     def key(info):
-        return info['rise_time_to_baseline']
+        return (
+                info['rise_time_to_baseline']
+                if info['rise_time_to_baseline'] is not None else float('inf'))
 
     infos = {k: v for k, v in sorted(infos.items(), key=lambda item: key(item[1]))}
 

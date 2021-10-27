@@ -191,8 +191,14 @@ def validate_model(val_dataset, ray_trafo, seed, val_sub_path_mdl, baseline_psnr
         median_psnr_output > psnr_steady - cfg.val.rise_time_remaining_psnr)[0][0])
     if baseline_psnr_steady == 'own_PSNR_steady':
         baseline_psnr_steady = psnr_steady
-    rise_time_to_baseline = None if baseline_psnr_steady is None else int(np.argwhere(
-        median_psnr_output > baseline_psnr_steady - cfg.val.rise_time_to_baseline_remaining_psnr)[0][0])
+    if baseline_psnr_steady is None:
+        rise_time_to_baseline = None
+    else:
+        argwhere_close_enough_to_baseline = np.argwhere(
+                median_psnr_output > baseline_psnr_steady - cfg.val.rise_time_to_baseline_remaining_psnr)
+        rise_time_to_baseline = (
+                int(argwhere_close_enough_to_baseline[0][0])
+                if len(argwhere_close_enough_to_baseline) >= 1 else None)
 
     info = {'rise_time': rise_time,
             'rise_time_to_baseline': rise_time_to_baseline,
