@@ -8,21 +8,52 @@ from math import ceil
 from PIL import Image
 
 # after running this script, combine the images in OUT_PATH with:
-# ffmpeg -r 30 -start_number 0 -i iter%05d.png -c:v libx264 -pix_fmt yuv420p -r 30 out_filename.mp4
+# cat $(find . -maxdepth 1 -name "*.png" | sort -V) | ffmpeg -r 60 -i - -c:v libx264 -pix_fmt yuv420p -r 60 -y out_filename.mp4
+# (alternatively, if images are consecutive:
+#  ffmpeg -r 60 -start_number 0 -i iter%05d.png -c:v libx264 -pix_fmt yuv420p -r 60 out_filename.mp4
+# )
 
 PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
-# OUT_PATH = '/localdata/edip_noise_vs_dip_noise_iterates_walnut/'
+# OUT_PATH = '/localdata/edip_ellipses_walnut_120_video/'
 
 # titles = [
-#     'EDIP (noise)\nEllipses-Walnut',
-#     'EDIP (noise)\nBrain-Walnut',
-#     'DIP (noise)\nWalnut',
+#     'EDIP (FBP)',
+#     'EDIP (noise)',
+#     'DIP (noise)',
 # ]
 # iterates_paths = [
-#     'multirun/2021-10-12/15-21-35/0/results/pretraining/iterates.npz',
-#     'multirun/2021-10-12/22-48-15/0/results/pretraining/iterates.npz',
-#     'multirun/2021-10-12/22-49-04/0/results/nopretrainingnoise/iterates.npz',
+#     'multirun/2021-10-28/04-32-17/0/results/pretrainingonlyfbp/iterates.npz',
+#     'multirun/2021-10-27/23-27-39/0/results/pretraining/iterates.npz',
+#     'multirun/2021-10-28/04-30-33/0/results/nopretrainingnoise/iterates.npz',
+# ]
+
+# iterates_iters_slice = slice(None)
+
+# scaling_fct = 14.  # implicit_scaling_except_for_test_data
+
+# SAMPLE = 0  # test sample (there is only one)
+
+# IMAGE_SIZE = 501
+# UPSCALE_IMAGE = 1
+# IMAGE_SEP = 10
+# TITLE_HEIGHT = 35
+# SUP_TITLE_HEIGHT = 40
+
+# DPI = 192
+
+
+# OUT_PATH = '/localdata/edip_brain_walnut_120_video/'
+
+# titles = [
+#     'EDIP (noise)\n1 epoch',
+#     'EDIP (noise)\n20 epochs',
+#     'DIP (noise)',
+# ]
+# iterates_paths = [
+#     'multirun/2021-10-28/17-26-09/0/results/pretraining/iterates.npz',
+#     'multirun/2021-10-28/18-24-30/0/results/pretraining/iterates.npz',
+#     'multirun/2021-10-28/04-30-33/0/results/nopretrainingnoise/iterates.npz',
 # ]
 
 # iterates_iters_slice = slice(None)
@@ -39,15 +70,18 @@ PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 # DPI = 192
 
-OUT_PATH = '/localdata/edip_noise_vs_dip_noise_iterates_lotus_20/'
+
+OUT_PATH = '/localdata/edip_ellipses_lotus_20_video/'
 
 titles = [
+    'EDIP (FBP)',
     'EDIP (noise)',
     'DIP (noise)',
 ]
 iterates_paths = [
-    'multirun/2021-10-13/23-41-41/0/results/pretraining/iterates.npz',
-    'multirun/2021-10-14/21-05-40/0/results/nopretrainingnoise/iterates.npz',
+    'multirun/2021-10-28/23-47-08/0/results/pretrainingonlyfbp/iterates.npz',
+    'multirun/2021-10-22/14-40-42/0/results/pretraining/iterates.npz',
+    'multirun/2021-10-22/14-32-46/0/results/nopretrainingnoise/iterates.npz',
 ]
 
 iterates_iters_slice = slice(None)
@@ -86,7 +120,7 @@ SHAPE = (ceil((image_size + TITLE_HEIGHT + SUP_TITLE_HEIGHT) / 2) * 2,
 
 fig = plt.figure(figsize=(SHAPE[1] / DPI, SHAPE[0] / DPI), dpi=DPI)
 
-for iterates_iter in tqdm(iterates_iters_selected):
+for j, iterates_iter in enumerate(tqdm(iterates_iters_selected)):
 
     fig.clear()
     for i, title in enumerate(titles):
@@ -120,12 +154,13 @@ for iterates_iter in tqdm(iterates_iters_selected):
             img = img[:, :-1]
 
     for i, iterates in enumerate(iterates_list):
+        iterates_selected = iterates[iterates_iters_slice]
         i0 = SHAPE[0] - image_size
         i1 = ((image_size + IMAGE_SEP) * i
               if i < num_images - 1 else
               SHAPE[1] - image_size)
         iterate = (
-                iterates[iterates_iter][SAMPLE]
+                iterates_selected[j][SAMPLE]
                 .repeat(UPSCALE_IMAGE, axis=0).repeat(UPSCALE_IMAGE, axis=1))
         img[i0:i0+image_size, i1:i1+image_size] = np.clip(
                 iterate.T * scaling_fct * 255., 0., 255.)

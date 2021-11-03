@@ -15,6 +15,7 @@ from math import ceil
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
 from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 
 # PATH = '/media/chen/Res/deep_image_prior_extension/'
 # PATH = '/localdata/jleuschn/experiments/deep_image_prior_extension/'
@@ -35,6 +36,9 @@ data = 'ellipses_lotus_20'
 # data = 'ellipses_walnut_120'
 
 variant = ''
+# variant = 'fewer_ckpts'
+
+use_inset = data == 'ellipses_lotus_20'
 
 # Additional `run_spec` dict fields:
 # 
@@ -50,8 +54,11 @@ variant = ''
 
 val_run_spec = {
     'experiment': 'pretrain_only_fbp',
-    # 'only_run_indices': range(0, 3),
-    # 'only_ckpt_indices': range(0, 2),
+    'name': 'no_stats_no_sigmoid',
+    # 'name': 'no_stats_no_sigmoid_containing_histories',
+    'name_title': '',
+    # 'only_run_indices': list(range(0, 3)),
+    'only_ckpt_indices': [1, 2, 4] if variant == 'fewer_ckpts' else None,
 }
 
 title = None
@@ -60,12 +67,16 @@ val_run_filename = 'validation'
 plot_settings_dict = {
     'ellipses_lotus_20': {
         'xlim': (-37.5, 37500),
-        'ylim': (24.5, 30.4),
-        'rise_time_to_baseline_y_pos': 29.5,
-        'rise_time_to_baseline_y_shift_i_run': 0.,
-        'rise_time_to_baseline_y_shift_i_plot_ckpt': .15,
+        'xlim_inset': (500, 4250),
+        'ylim': (23.5, 32.7) if variant == 'fewer_ckpts' else (23.5, 33.1),
+        'ylim_inset': (26.5, 30.35),
+        'rise_time_to_baseline_y_pos': 30.5,
+        'rise_time_to_baseline_y_shift_i_run': 0.1,
+        'rise_time_to_baseline_y_shift_i_plot_ckpt': .45,
         'run_colors': ['#000077', '#770000', '#007700'],
-        'zorder_list': [1.8, 1.7, 1.6],
+        'zorder_list': [1.51, 1.52, 1.53],
+        'inset_axes_rect': [0.125, 0.075, 0.85, 0.35],
+        'inset_axes_rect_border': [0.05, 0.0675],
     },
     'ellipses_lotus_limited_30': {
         'xlim': (None, None),
@@ -73,24 +84,22 @@ plot_settings_dict = {
     'brain_walnut_120': {
         'xlim': (-50, 50000),
         'ylim': (27.5, 39.),
-        'rise_time_to_baseline_y_pos': 38.5,
+        'rise_time_to_baseline_y_pos': 38.75,
         'rise_time_to_baseline_y_shift_i_run': 0.,
         'rise_time_to_baseline_y_shift_i_plot_ckpt': .15,
         'run_colors': ['#000077', '#770000', '#007700'],
-        'zorder_list': [1.8, 1.7, 1.6],
-        'symbol_legend_loc': 'lower right',
-        'symbol_legend_bbox_to_anchor': (1., 0.13),
+        'zorder_list': [1.52, 1.53, 1.51],
+        'symbol_legend_loc': 'lower center',
     },
     'ellipses_walnut_120': {
         'xlim': (-50, 50000),
-        'ylim': (27.5, 41.),
-        'rise_time_to_baseline_y_pos': 40.5,
+        'ylim': (27.5, 39.),
+        'rise_time_to_baseline_y_pos': 38.75,
         'rise_time_to_baseline_y_shift_i_run': 0.,
         'rise_time_to_baseline_y_shift_i_plot_ckpt': .15,
         'run_colors': ['#000077', '#770000', '#007700'],
-        'zorder_list': [1.8, 1.7, 1.6],
-        'symbol_legend_loc': 'lower right',
-        'symbol_legend_bbox_to_anchor': (1., 0.13),
+        'zorder_list': [1.52, 1.53, 1.51],
+        'symbol_legend_loc': 'lower center',
     },
 }
 
@@ -99,6 +108,14 @@ data_title_full = get_data_title_full(data, validation_run=True)
 fig, ax = plt.subplots(figsize=plot_settings_dict[data].get('figsize', (8, 5)))
 
 xlim = plot_settings_dict[data]['xlim']
+xlim_inset = plot_settings_dict[data].get('xlim_inset', (None, None))
+
+if use_inset:
+    axins = ax.inset_axes(plot_settings_dict[data]['inset_axes_rect'])
+    axs = [ax, axins]
+else:
+    axins = None
+    axs = [ax]
 
 experiment = val_run_spec['experiment']
 available_runs = runs['validation'][data][experiment]
@@ -168,8 +185,8 @@ info_dict = {}
 for i_run, (directory_path, checkpoints_paths) in enumerate(
         val_run_paths.items()):
 
-    if i_run not in val_run_spec.get('only_run_indices',
-                                     range(len(val_run_paths.items()))):
+    if i_run not in (val_run_spec.get('only_run_indices') or
+                             range(len(val_run_paths.items()))):
         continue
 
     psnr_histories_dict[i_run] = {}
@@ -177,8 +194,8 @@ for i_run, (directory_path, checkpoints_paths) in enumerate(
 
     for i_ckpt, filename in enumerate(checkpoints_paths):
 
-        if i_ckpt not in val_run_spec.get('only_ckpt_indices',
-                                          range(len(checkpoints_paths))):
+        if i_ckpt not in (val_run_spec.get('only_ckpt_indices') or
+                                  range(len(checkpoints_paths))):
             continue
 
         psnr_histories, info = validate_model(
@@ -231,6 +248,8 @@ def plot_run(ax, psnr_histories, info, label, color, zorder, i_plot_ckpt=None):
                 [median_psnr_history[rise_time_to_baseline],
                  rise_time_to_baseline_y_pos_shifted],
                 color=color, linestyle='--', zorder=zorder)
+    else:
+        rise_time_handle = None
 
     return run_handle, rise_time_handle, psnr_steady_handle
 
@@ -244,6 +263,10 @@ baseline_label = '{}'.format(
  baseline_psnr_steady_handle) = plot_run(
         ax, psnr_histories=baseline_psnr_histories, info=baseline_info,
         label=baseline_label, color='k', zorder=1.55)
+if axins is not None:
+    plot_run(
+            axins, psnr_histories=baseline_psnr_histories, info=baseline_info,
+            label=baseline_label, color='k', zorder=1.55)
 
 run_handles_dict = {}
 rise_time_handles_dict = {}
@@ -302,8 +325,8 @@ for i_run, (directory_path, checkpoints_paths) in enumerate(
 for i_run, (directory_path, checkpoints_paths) in enumerate(
         val_run_paths.items()):
 
-    if i_run not in val_run_spec.get('only_run_indices',
-                                     range(len(val_run_paths.items()))):
+    if i_run not in (val_run_spec.get('only_run_indices') or
+                             range(len(val_run_paths.items()))):
         continue
 
     run_handles_dict[i_run] = {}
@@ -316,8 +339,8 @@ for i_run, (directory_path, checkpoints_paths) in enumerate(
 
         filename = checkpoints_paths[i_ckpt]
 
-        if i_ckpt not in val_run_spec.get('only_ckpt_indices',
-                                          range(len(checkpoints_paths))):
+        if i_ckpt not in (val_run_spec.get('only_ckpt_indices') or
+                                  range(len(checkpoints_paths))):
             continue
 
         psnr_histories = psnr_histories_dict[i_run][i_ckpt]
@@ -326,12 +349,17 @@ for i_run, (directory_path, checkpoints_paths) in enumerate(
         label = get_label(i_run, filename)
         color = get_color(i_run, i_plot_ckpt, len(checkpoints_paths) - 1)
 
-        zorder = zorder_list[i_run] + i_plot_ckpt
+        zorder = zorder_list[i_run] + 0.1 * i_plot_ckpt
 
         run_handle, rise_time_handle, psnr_steady_handle = plot_run(
                 ax, psnr_histories=psnr_histories, info=info,
                 label=label, color=color, zorder=zorder,
                 i_plot_ckpt=i_plot_ckpt)
+        if axins is not None:
+            plot_run(
+                    axins, psnr_histories=psnr_histories, info=info,
+                    label=label, color=color, zorder=zorder,
+                    i_plot_ckpt=i_plot_ckpt)
 
         run_handles_dict[i_run][i_ckpt] = run_handle
         rise_time_handles_dict[i_run][i_ckpt] = rise_time_handle
@@ -346,15 +374,44 @@ ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 # ax.set_xscale('log')
 
+if axins is not None:
+    # axins.grid(True, linestyle=':')
+    axins.set_xlim(xlim_inset)
+    axins.set_ylim(plot_settings_dict[data]['ylim_inset'])
+    axins.spines['right'].set_visible(False)
+    axins.spines['top'].set_visible(False)
+
+    ax.add_patch(Rectangle([
+            plot_settings_dict[data]['inset_axes_rect'][0] -
+            plot_settings_dict[data]['inset_axes_rect_border'][0],
+            plot_settings_dict[data]['inset_axes_rect'][1] -
+            plot_settings_dict[data]['inset_axes_rect_border'][1]],
+            plot_settings_dict[data]['inset_axes_rect'][2] +
+            plot_settings_dict[data]['inset_axes_rect_border'][0] +
+            0.0025,
+            plot_settings_dict[data]['inset_axes_rect'][3] +
+            plot_settings_dict[data]['inset_axes_rect_border'][1] +
+            0.005,
+            transform=ax.transAxes,
+            color='#EEEEEE',
+            zorder=3,
+            ))
+    # axins_bbox = axins.get_tightbbox(fig.canvas.get_renderer())  # TODO use this?
+
 run_handles = []
 for i_run, ckpt_sort_inds in enumerate(ckpt_sort_inds_list):
-    for i_ckpt in reversed(ckpt_sort_inds):
-        run_handles.append(run_handles_dict[i_run][i_ckpt])
-    run_handles.append(
-            baseline_run_handle if i_run == len(ckpt_sort_inds_list) - 1
-            else Line2D([], [], alpha=0.))
+    if i_run in run_handles_dict:
+        for i_ckpt in reversed(ckpt_sort_inds):
+            if i_ckpt in run_handles_dict[i_run]:
+                run_handles.append(run_handles_dict[i_run][i_ckpt])
+        run_handles.append(
+                baseline_run_handle if i_run == len(ckpt_sort_inds_list) - 1
+                else Line2D([], [], alpha=0.))
 run_legend = ax.legend(
-        handles=run_handles, loc='lower right',
+        handles=run_handles,
+        loc=plot_settings_dict[data].get('run_legend_loc', 'upper center'),
+        bbox_to_anchor=plot_settings_dict[data].get(
+                'run_legend_bbox_to_anchor', (0.5, -0.125)),
         ncol=len(val_run_paths), framealpha=1.)
 run_legend.set_zorder(50.)
 ax.add_artist(run_legend)
@@ -362,8 +419,7 @@ rise_time_handle = copy(baseline_rise_time_handle)
 rise_time_handle.set_markerfacecolor('gray')
 rise_time_handle.set_markeredgecolor('gray')
 psnr_steady_handle = copy(baseline_psnr_steady_handle)
-psnr_steady_handle.set_markerfacecolor('gray')
-psnr_steady_handle.set_markeredgecolor('gray')
+psnr_steady_handle.set_color('gray')
 symbol_legend = ax.legend(
         [rise_time_handle, psnr_steady_handle],
         ['Rise time (to $-${:g} dB)'.format(

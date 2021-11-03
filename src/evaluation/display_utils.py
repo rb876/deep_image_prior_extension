@@ -67,6 +67,6 @@ def get_data_title_full(data, validation_run):
                 'ellipses_walnut_120': 'Walnut',
                 }[data]
         data_title_part = 'Test on {}'.format(part)
-    data_title_full = '{}: {}'.format(data_title_dict[data], data_title_part)
+    data_title_full = u'{} \u2013 {}'.format(data_title_dict[data], data_title_part)
 
     return data_title_full

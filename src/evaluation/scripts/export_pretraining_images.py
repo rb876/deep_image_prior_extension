@@ -19,7 +19,7 @@ OUTPUT_PATH = os.path.join(os.path.dirname(__file__), 'images')
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
 data = 'ellipses_lotus_20'
-# data = 'ellipses_limited_30'
+# data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
@@ -34,9 +34,29 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-run_spec = {
-    'experiment': 'pretrain_only_fbp',
-}
+if data == 'ellipses_lotus_20':
+    run_spec = {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_train_run2_epochs100',
+        'name_title': '',
+    }
+elif data == 'ellipses_lotus_limited_45':
+    run_spec = {
+        'experiment': 'pretrain_only_fbp',
+    }
+elif data == 'brain_walnut_120':
+    run_spec = {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_train_run1',
+        'name_title': '',
+    }
+elif data == 'ellipses_walnut_120':
+    run_spec = {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_train_run1',
+        'name_title': '',
+    }
+
 
 experiment = run_spec['experiment']
 
@@ -72,7 +92,17 @@ experiment_names = get_multirun_experiment_names(
 if len(cfgs) == 0:
     raise RuntimeError('No runs found at path "{}", aborting.'.format(
             run_path_multirun))
-assert all((cfg['data']['name'] == data for cfg in cfgs))
+try:
+    assert all((cfg['data']['name'] == data for cfg in cfgs))
+except AssertionError:
+    data_name_valid = (
+            data in ['ellipses_walnut_120', 'brain_walnut_120'] and
+            all((not cfg['mdl']['load_pretrain_model']) and
+                    cfg['data']['name'] in [
+                        'ellipses_walnut_120', 'brain_walnut_120']
+                for cfg in cfgs))
+    if not data_name_valid:
+        raise
 assert all((cfg['mdl']['load_pretrain_model'] for cfg in cfgs))
 swa = uses_swa_weights(cfgs[0])
 assert all((uses_swa_weights(cfg) == swa for cfg in cfgs))

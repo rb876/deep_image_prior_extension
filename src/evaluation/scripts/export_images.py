@@ -43,19 +43,31 @@ if data == 'ellipses_lotus_20':
     runs_to_export = [
         {
         'experiment': 'no_pretrain',
+        'name': 'no_stats_no_sigmoid',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'no_pretrain_fbp',
+        'name': 'no_stats_no_sigmoid',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_train_run2_epochs100',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'pretrain',
+        'name': 'no_stats_no_sigmoid_train_run2_epochs100',
+        'name_title': '',
+        'name_filename': None,
         },
     ]
 
-elif data == 'ellipses_lotus_limited_30':
+elif data == 'ellipses_lotus_limited_45':
     runs_to_export = [
         {
         'experiment': 'no_pretrain',
@@ -75,15 +87,27 @@ elif data == 'brain_walnut_120':
     runs_to_export = [
         {
         'experiment': 'no_pretrain',
+        'name': 'no_stats_no_sigmoid',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'no_pretrain_fbp',
+        'name': 'no_stats_no_sigmoid',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_train_run1',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'pretrain',
+        'name': 'no_stats_no_sigmoid_train_run1',
+        'name_title': '',
+        'name_filename': None,
         },
     ]
 
@@ -91,15 +115,27 @@ elif data == 'ellipses_walnut_120':
     runs_to_export = [
         {
         'experiment': 'no_pretrain',
+        'name': 'no_stats_no_sigmoid',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'no_pretrain_fbp',
+        'name': 'no_stats_no_sigmoid',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_train_run1',
+        'name_title': '',
+        'name_filename': None,
         },
         {
         'experiment': 'pretrain',
+        'name': 'no_stats_no_sigmoid_train_run1',
+        'name_title': '',
+        'name_filename': None,
         },
     ]
 
@@ -142,7 +178,17 @@ for run_spec in runs_to_export:
     if len(cfgs) == 0:
         warn('No runs found at path "{}", skipping.'.format(run_path_multirun))
         continue
-    assert all((cfg['data']['name'] == data for cfg in cfgs))
+    try:
+        assert all((cfg['data']['name'] == data for cfg in cfgs))
+    except AssertionError:
+        data_name_valid = (
+                data in ['ellipses_walnut_120', 'brain_walnut_120'] and
+                all((not cfg['mdl']['load_pretrain_model']) and
+                     cfg['data']['name'] in [
+                            'ellipses_walnut_120', 'brain_walnut_120']
+                    for cfg in cfgs))
+        if not data_name_valid:
+            raise
     swa = cfgs[0]['mdl']['load_pretrain_model'] and uses_swa_weights(cfgs[0])
     assert all(((cfg['mdl']['load_pretrain_model'] and uses_swa_weights(cfg))
                 == swa) for cfg in cfgs)
@@ -294,9 +340,11 @@ for run_spec, cfgs, experiment_names, reconstructions in zip(
 
 
 def get_run_name_for_filename(run_spec):
+    name_filename = run_spec.get('name_filename', run_spec.get('name'))
+
     run_name_for_filename = (
-            run_spec['experiment'] if run_spec.get('name') is None
-            else '{}_{}'.format(run_spec['experiment'], run_spec['name']))
+            run_spec['experiment'] if not name_filename
+            else '{}_{}'.format(run_spec['experiment'], name_filename))
 
     return run_name_for_filename
 

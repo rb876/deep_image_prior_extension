@@ -35,15 +35,18 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
 data = 'ellipses_lotus_20'
-# data = 'ellipses_lotus_limited_30'
+# data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
 variant = ''
 # variant = 'all'
 # variant = 'checkpoints'
+# variant = 'checkpoints_epochs'
 
-show_tv_in_inset = (not variant) or variant == 'all'
+show_tv_in_inset = variant == 'all'
+
+use_best_output_psnr = False
 
 # Additional `run_spec` dict fields:
 # 
@@ -159,67 +162,71 @@ if data == 'ellipses_lotus_20':
             },
         ]
 
-elif data == 'ellipses_lotus_limited_30':
-    if (not variant) or variant == 'all':
-        runs_to_compare = [
-            {
-            'experiment': 'no_pretrain',
-            },
-            {
-            'experiment': 'no_pretrain_fbp',
-            },
-            {
-            'experiment': 'no_pretrain',
-            'name': 'fixed_encoder',
-            'experiment_title': 'DIP-FE (noise)',
-            'name_title': '',
-            'color': 'gray',
-            'skip_psnr0': True,
-            },
-            *([{
-            'experiment': 'no_pretrain_fbp',
-            'name': 'fixed_encoder',
-            'experiment_title': 'DIP-FE (FBP)',
-            'name_title': '',
-            'color': '#00AAFF',
-            'skip_psnr0': True,
-            }] if variant == 'all' else []),
-            {
-            'experiment': 'pretrain_only_fbp',
-            },
-            {
-            'experiment': 'pretrain',
-            },
-            {
-            'experiment': 'pretrain_only_fbp',
-            'name': 'train_run2_epochs40_fixed_encoder',
-            'experiment_title': 'EDIP-FE (FBP)',
-            'name_title': '',
-            'color': '#EC2215',
-            'skip_psnr0': True,
-            },
-            *([{
-            'experiment': 'pretrain',
-            'name': 'train_run2_epochs40_fixed_encoder',
-            'experiment_title': 'EDIP-FE (noise)',
-            'name_title': '',
-            'color': '#B15CD1',
-            'skip_psnr0': True,
-            }] if variant == 'all' else []),
-        ]
+# elif data == 'ellipses_lotus_limited_45':
+#     if (not variant) or variant == 'all':
+#         runs_to_compare = [
+#             {
+#             'experiment': 'no_pretrain',
+#             },
+#             {
+#             'experiment': 'no_pretrain_fbp',
+#             },
+#             {
+#             'experiment': 'no_pretrain',
+#             'name': 'fixed_encoder',
+#             'experiment_title': 'DIP-FE (noise)',
+#             'name_title': '',
+#             'color': 'gray',
+#             'skip_psnr0': True,
+#             },
+#             *([{
+#             'experiment': 'no_pretrain_fbp',
+#             'name': 'fixed_encoder',
+#             'experiment_title': 'DIP-FE (FBP)',
+#             'name_title': '',
+#             'color': '#00AAFF',
+#             'skip_psnr0': True,
+#             }] if variant == 'all' else []),
+#             {
+#             'experiment': 'pretrain_only_fbp',
+#             },
+#             {
+#             'experiment': 'pretrain',
+#             },
+#             {
+#             'experiment': 'pretrain_only_fbp',
+#             'name': 'train_run2_epochs40_fixed_encoder',
+#             'experiment_title': 'EDIP-FE (FBP)',
+#             'name_title': '',
+#             'color': '#EC2215',
+#             'skip_psnr0': True,
+#             },
+#             *([{
+#             'experiment': 'pretrain',
+#             'name': 'train_run2_epochs40_fixed_encoder',
+#             'experiment_title': 'EDIP-FE (noise)',
+#             'name_title': '',
+#             'color': '#B15CD1',
+#             'skip_psnr0': True,
+#             }] if variant == 'all' else []),
+#         ]
 
 elif data == 'brain_walnut_120':
     if (not variant) or variant == 'all':
         runs_to_compare = [
             {
             'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
             },
             {
             'experiment': 'no_pretrain_fbp',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
             },
             {
             'experiment': 'no_pretrain',
-            'name': 'fixed_encoder',
+            'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (noise)',
             'name_title': '',
             'color': 'gray',
@@ -227,7 +234,7 @@ elif data == 'brain_walnut_120':
             },
             *([{
             'experiment': 'no_pretrain_fbp',
-            'name': 'fixed_encoder',
+            'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (FBP)',
             'name_title': '',
             'color': '#00AAFF',
@@ -235,13 +242,17 @@ elif data == 'brain_walnut_120':
             }] if variant == 'all' else []),
             {
             'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run1',
+            'name_title': '',
             },
             {
             'experiment': 'pretrain',
+            'name': 'no_stats_no_sigmoid_train_run1',
+            'name_title': '',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run0_fixed_encoder',
+            'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
             'experiment_title': 'EDIP-FE (FBP)',
             'name_title': '',
             'color': '#EC2215',
@@ -249,7 +260,7 @@ elif data == 'brain_walnut_120':
             },
             *([{
             'experiment': 'pretrain',
-            'name': 'train_run0_fixed_encoder',
+            'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
             'experiment_title': 'EDIP-FE (noise)',
             'name_title': '',
             'color': '#B15CD1',
@@ -260,21 +271,21 @@ elif data == 'brain_walnut_120':
         runs_to_compare = [
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run0',
+            'name': 'no_stats_no_sigmoid_train_run0',
             'experiment_title': 'Run 0: min. val. loss',
             'name_title': '',
             'color': '#404099',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run1',
+            'name': 'no_stats_no_sigmoid_train_run1',
             'experiment_title': 'Run 1: min. val. loss',
             'name_title': '',
             'color': '#994040',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run2',
+            'name': 'no_stats_no_sigmoid_train_run2',
             'experiment_title': 'Run 2: min. val. loss',
             'name_title': '',
             'color': '#409940',
@@ -283,19 +294,66 @@ elif data == 'brain_walnut_120':
             'experiment': 'no_pretrain',
             },
         ]
+    elif variant == 'checkpoints_epochs':
+        runs_to_compare = [
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_repeated_epochs1',
+            'experiment_title': '1 epoch',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(80),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_repeated_epochs2',
+            'experiment_title': '2 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(128),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_repeated_epochs3',
+            'experiment_title': '3 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(160),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_repeated_epochs4',
+            'experiment_title': '4 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(200),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_repeated_epochs20',
+            'experiment_title': '20 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(232),
+            },
+            {
+            'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
+            },
+        ]
 
 elif data == 'ellipses_walnut_120':
     if (not variant) or variant == 'all':
         runs_to_compare = [
             {
             'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
             },
             {
             'experiment': 'no_pretrain_fbp',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
             },
             {
             'experiment': 'no_pretrain',
-            'name': 'fixed_encoder',
+            'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (noise)',
             'name_title': '',
             'color': 'gray',
@@ -303,7 +361,7 @@ elif data == 'ellipses_walnut_120':
             },
             *([{
             'experiment': 'no_pretrain_fbp',
-            'name': 'fixed_encoder',
+            'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (FBP)',
             'name_title': '',
             'color': '#00AAFF',
@@ -311,13 +369,22 @@ elif data == 'ellipses_walnut_120':
             }] if variant == 'all' else []),
             {
             'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run1',
+            'name_title': '',
             },
             {
             'experiment': 'pretrain',
+            'name': 'no_stats_no_sigmoid_train_run1',
+            'name_title': '',
             },
+            # {
+            # 'experiment': 'pretrain',
+            # 'name': 'no_stats_no_sigmoid_train_run1_warmup5000_init5e-4',
+            # # 'name_title': '',
+            # },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run0_fixed_encoder',
+            'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
             'experiment_title': 'EDIP-FE (FBP)',
             'name_title': '',
             'color': '#EC2215',
@@ -325,32 +392,40 @@ elif data == 'ellipses_walnut_120':
             },
             *([{
             'experiment': 'pretrain',
-            'name': 'train_run0_fixed_encoder',
+            'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
             'experiment_title': 'EDIP-FE (noise)',
             'name_title': '',
             'color': '#B15CD1',
             'skip_psnr0': True,
             }] if variant == 'all' else []),
+            # *([{
+            # 'experiment': 'pretrain',
+            # 'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
+            # 'experiment_title': 'EDIP-FE (noise)',
+            # 'name_title': '',
+            # 'color': '#B15CD1',
+            # 'skip_psnr0': True,
+            # }] if variant == 'all' else []),
         ]
     elif variant == 'checkpoints':
         runs_to_compare = [
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run0',
+            'name': 'no_stats_no_sigmoid_train_run0',
             'experiment_title': 'Run 0: min. val. loss',
             'name_title': '',
             'color': '#404099',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run1',
+            'name': 'no_stats_no_sigmoid_train_run1',
             'experiment_title': 'Run 1: min. val. loss',
             'name_title': '',
             'color': '#994040',
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'train_run2',
+            'name': 'no_stats_no_sigmoid_train_run2',
             'experiment_title': 'Run 2: min. val. loss',
             'name_title': '',
             'color': '#409940',
@@ -363,14 +438,16 @@ elif data == 'ellipses_walnut_120':
 
 if not variant or variant == 'all':
     baseline_run_idx = 0
-elif variant == 'checkpoints':
+elif variant == 'checkpoints' or variant == 'checkpoints_epochs':
     baseline_run_idx = -1
 
 title = None
 runs_title = ''  # None -> auto from run_specs
 if variant == 'checkpoints':
-    # runs_title = 'The perks of being a validated EDIP'
     runs_title = 'Comparing training runs for EDIP'
+    # runs_title = 'The perks of being a validated EDIP'
+elif variant == 'checkpoints_epochs':
+    runs_title = 'Comparing training epochs for EDIP'
 runs_filename = 'comparison'  # None -> auto from run_specs
 
 plot_settings_dict = {
@@ -382,7 +459,7 @@ plot_settings_dict = {
         ),
         'xlim_inset': (
             (-200, 6750) if (not variant) or variant == 'all' else (
-            (-100, 3750) if variant == 'checkpoints' else
+            (-50, 2250) if variant == 'checkpoints' else
             (None, None))
         ),
         'ylim': (
@@ -479,32 +556,48 @@ plot_settings_dict = {
     'brain_walnut_120': {
         'xlim': (
             (-1875, 30000) if (not variant) or variant == 'all' else (
-            (-2625, 30000) if variant == 'checkpoints' else
-            (None, None))
+            # (-20, 100) if (not variant) or variant == 'all' else (
+            (-2625, 30000) if variant == 'checkpoints' else (
+            (-4125, 30000) if variant == 'checkpoints_epochs' else 
+            (None, None)))
         ),
         'xlim_inset': (
             (-600, 21250) if (not variant) or variant == 'all' else (
-            (-100, 6250) if variant == 'checkpoints' else
+            (-97.5, 9750) if variant == 'checkpoints' else
+            (5000, 25250) if variant == 'checkpoints_epochs' else
             (None, None))
         ),
         'ylim': (
-            (-14.5, 37.75) if (not variant) or variant == 'all' else (
-            (-14.5, 37.75) if variant == 'checkpoints' else
-            (None, None))
+            (None, 38.5) if (not variant) or variant == 'all' else (
+            (None, 38.5) if variant == 'checkpoints' else (
+            (None, 37.) if variant == 'checkpoints_epochs' else
+            (None, None)))
         ),
         'ylim_inset': (
-            (30.5, 33.75) if (not variant) or variant == 'all' else (
-            (25.5, 33.75) if variant == 'checkpoints' else
+            (29.5, 34.75) if (not variant) or variant == 'all' else (
+            (25.5, 34.65) if variant == 'checkpoints' else
+            (26.5, 35.25) if variant == 'checkpoints_epochs' else
             (None, None))
         ),
         'psnr0_x_pos': -562.5,
         'psnr0_x_shift_per_run_idx': {
             0: -750,
-        },
-        'rise_time_to_baseline_y_pos': 35.,
+        } if (not variant) or variant == 'all' else (
+        {
+            0: -1500,
+            1: -750,
+            2: 0,
+        } if variant == 'checkpoints' else ({
+            0: -3000,
+            1: -2250,
+            2: -1500,
+            3: -750,
+            4: 0,
+        } if variant == 'checkpoints_epochs' else {})),
+        'rise_time_to_baseline_y_pos': 35.75,
         'rise_time_to_baseline_y_shift_per_run_idx': {
         } if not variant else ({
-            0: 1.8,
+            1: 1.8,
         } if variant == 'all' else ({
             0: 1.8,
             1: 0.9,
@@ -518,10 +611,17 @@ plot_settings_dict = {
             3: 2.2,
             4: 2.4,
             5: 2.1,
-        } if variant == 'checkpoints' else {}),
-        'inset_axes_rect': [0.255, 0.175, 0.725, 0.525],
+        } if variant == 'checkpoints' else ({
+            0: 2.6,
+            1: 2.5,
+            2: 2.4,
+            3: 2.3,
+            4: 2.2,
+            5: 2.1,
+        } if variant == 'checkpoints_epochs' else {})),
+        'inset_axes_rect': [0.255, 0.175, 0.725, 0.45],
         'inset_axes_rect_border': [0.0625, 0.0675],
-        'tv_text_shift': [110, 0.05],
+        'tv_text_shift': [80, 0.05],
         'ylabel_pad': 0.,
         'run_legend_ncol': (
             len(runs_to_compare) if variant == 'checkpoints' else None),
@@ -542,17 +642,17 @@ plot_settings_dict = {
         ),
         'xlim_inset': (
             (-600, 21250) if (not variant) or variant == 'all' else (
-            (-100, 6250) if variant == 'checkpoints' else
+            (-62.5, 6250) if variant == 'checkpoints' else
             (None, None))
         ),
         'ylim': (
-            (-14.5, 37.75) if (not variant) or variant == 'all' else (
-            (-14.5, 37.75) if variant == 'checkpoints' else
+            (None, 38.5) if (not variant) or variant == 'all' else (
+            (None, 38.5) if variant == 'checkpoints' else
             (None, None))
         ),
         'ylim_inset': (
-            (30.5, 33.75) if (not variant) or variant == 'all' else (
-            (25.5, 33.75) if variant == 'checkpoints' else
+            (29.0, 34.5) if (not variant) or variant == 'all' else (
+            (25.5, 34.65) if variant == 'checkpoints' else
             (None, None))
         ),
         'psnr0_x_pos': -562.5,
@@ -563,7 +663,7 @@ plot_settings_dict = {
             1: -750,
             2: 0,
         } if variant == 'checkpoints' else {}),
-        'rise_time_to_baseline_y_pos': 35.,
+        'rise_time_to_baseline_y_pos': 35.75,
         'rise_time_to_baseline_y_shift_per_run_idx': {
             2: 1.8,
             3: 1.8,
@@ -586,8 +686,8 @@ plot_settings_dict = {
             5: 2.1,
         } if variant == 'checkpoints' else {}),
         'inset_axes_rect': [0.255, 0.175, 0.725, 0.475],
-        'inset_axes_rect_border': [0.07, 0.0675],
-        'tv_text_shift': [110, 0.05],
+        'inset_axes_rect_border': [0.0625, 0.0675],
+        'tv_text_shift': [80, 0.05],
         'ylabel_pad': 0.,
         'run_legend_ncol': (
             len(runs_to_compare) if variant == 'checkpoints' else None),
@@ -653,7 +753,8 @@ def get_label(run_spec, cfg):
 xlim = plot_settings_dict[data]['xlim']
 xlim_inset = plot_settings_dict[data]['xlim_inset']
 
-if (not variant) or variant == 'all' or variant == 'checkpoints':
+if ((not variant) or variant == 'all' or variant == 'checkpoints' or
+        variant == 'checkpoints_epochs'):
     axins = ax.inset_axes(plot_settings_dict[data]['inset_axes_rect'])
     axs = [ax, axins]
 else:
@@ -699,7 +800,17 @@ for run_spec in runs_to_compare:
     if len(cfgs) == 0:
         warn('No runs found at path "{}", skipping.'.format(run_path_multirun))
         continue
-    assert all((cfg['data']['name'] == data for cfg in cfgs))
+    try:
+        assert all((cfg['data']['name'] == data for cfg in cfgs))
+    except AssertionError:
+        data_name_valid = (
+                data in ['ellipses_walnut_120', 'brain_walnut_120'] and
+                all((not cfg['mdl']['load_pretrain_model']) and
+                     cfg['data']['name'] in [
+                            'ellipses_walnut_120', 'brain_walnut_120']
+                    for cfg in cfgs))
+        if not data_name_valid:
+            raise
     swa = cfgs[0]['mdl']['load_pretrain_model'] and uses_swa_weights(cfgs[0])
     assert all(((cfg['mdl']['load_pretrain_model'] and uses_swa_weights(cfg))
                 == swa) for cfg in cfgs)
@@ -713,19 +824,37 @@ for run_spec in runs_to_compare:
     histories_list.append(histories)
 
 
+def get_best_output_psnr_history(histories):
+    best_loss_history = np.minimum.accumulate(histories['loss'])
+    _, unique_indices, unique_inverse = np.unique(
+            best_loss_history, return_index=True, return_inverse=True)
+    best_output_psnr_history = histories['psnr'][unique_indices][unique_inverse]
+    return best_output_psnr_history
+
 baseline_histories = histories_list[baseline_run_idx]
+baseline_psnr_histories = [
+        (get_best_output_psnr_history(h)
+         if use_best_output_psnr else
+         h['psnr'])
+        for h in baseline_histories]
 baseline_psnr_steady = get_psnr_steady(
-        [h['psnr'] for h in baseline_histories],
+        baseline_psnr_histories,
         start=eval_settings_dict[data]['psnr_steady_start'],
         stop=eval_settings_dict[data]['psnr_steady_stop'])
 
-print('baseline steady PSNR', baseline_psnr_steady)
+print('baseline steady PSNR' + (
+        ' (using running best loss output)' if use_best_output_psnr
+        else ''),
+        baseline_psnr_steady)
 
-for ax_ in axs:
-    h = ax_.axhline(baseline_psnr_steady, color='gray', linestyle='--',
-                    zorder=1.5)
-    if ax_ is ax:
-        baseline_handle = h
+# for ax_ in axs:
+#     h = ax_.axhline(baseline_psnr_steady, color='gray', linestyle='--',
+#                     zorder=1.5)
+#     if ax_ is ax:
+#         baseline_handle = h
+axins_if_exist = axins if axins is not None else ax
+h = axins_if_exist.axhline(baseline_psnr_steady, color='gray', linestyle='--', zorder=1.5)
+baseline_handle = h
 
 run_handles = []
 psnr0_handles = []
@@ -736,7 +865,11 @@ eval_results_list = []
 for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
         runs_to_compare, cfgs_list, experiment_names_list, histories_list)):
 
-    psnr_histories = [h['psnr'] for h in histories]
+    psnr_histories = [
+            (get_best_output_psnr_history(h)
+             if use_best_output_psnr else
+             h['psnr'])
+            for h in histories]
 
     mean_psnr_history = np.mean(psnr_histories, axis=0)
     std_psnr_history = np.std(psnr_histories, axis=0)
@@ -757,7 +890,7 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
             psnr_histories,
             start=eval_settings_dict[data]['psnr_steady_start'],
             stop=eval_settings_dict[data]['psnr_steady_stop'])
-    eval_results['PSNR_0'] = float(median_psnr_history[0])
+    eval_results['PSNR_0'] = float(mean_psnr_history[0])
 
     eval_results_list.append(eval_results)
 
@@ -855,7 +988,8 @@ if axins is not None:
             tv_text_pos_shifted = (
                     tv_text_pos[0] + tv_text_pos_shift[0],
                     tv_text_pos[1] + tv_text_pos_shift[1])
-            axins.text(*tv_text_pos_shifted, 'TV', color='#444444', zorder=1.4)
+            axins.text(*tv_text_pos_shifted, 'TV', color='#444444', zorder=1.4,
+                       clip_on=True)
 
 run_legend = ax.legend(
         handles=run_handles,
@@ -901,7 +1035,9 @@ if runs_filename is None:
             [(r['experiment'] if r.get('name') is None
                 else '{}_{}'.format(r['experiment'], r['name']))
                 for r in runs_to_compare])
-suffix = '_{}'.format(variant) if variant else ''
+suffix = (
+        ('_{}'.format(variant) if variant else '') +
+        ('_best_loss_output' if use_best_output_psnr else ''))
 filename = '{}_on_{}{}'.format(runs_filename, data, suffix)
 
 if save_fig:

@@ -19,7 +19,7 @@ FIG_PATH = os.path.dirname(__file__)
 save_fig = True
 
 data = 'ellipses_lotus_20'
-# data = 'ellipses_limited_30'
+# data = 'ellipses_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
@@ -54,7 +54,7 @@ runs_filename = None
 # 'gt', 'fbp', 'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std',
 # 'mean_reco_error', 'uncertainty'
 
-if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_30',
+if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_45',
             'brain_walnut_120', 'ellipses_walnut_120']:
 
     if plot_name == 'images':
@@ -150,7 +150,7 @@ plot_settings_dict = {
     },
     # 'ellipses_lotus_20': {
     # },
-    # 'ellipses_lotus_limited_30': {
+    # 'ellipses_lotus_limited_45': {
     # },
     # 'brain_walnut_120': {
     # },
@@ -176,9 +176,11 @@ def get_run_name_for_filename(image_spec):
             'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std',
             'mean_reco_error')
 
+    name_filename = image_spec.get('name_filename', image_spec.get('name'))
+
     run_name_for_filename = (
-            image_spec['experiment'] if image_spec.get('name') is None
-            else '{}_{}'.format(image_spec['experiment'], image_spec['name']))
+            image_spec['experiment'] if not name_filename
+            else '{}_{}'.format(image_spec['experiment'], name_filename))
 
     return run_name_for_filename
 
@@ -283,7 +285,7 @@ def get_title(image_spec):
     image_type = image_spec['type']
 
     if image_type == 'gt':
-        title = 'Ground truth'
+        title = 'Reference' if 'lotus' in data else 'Ground truth'
     elif image_type == 'fbp':
         title = 'FBP' if 'lotus' in data else 'FDK'
     elif image_type == 'init_reco':

@@ -53,19 +53,19 @@ if data in ('ellipses_lotus_20', 'ellipses_lotus_limited_30',
     runs_to_compare = [
         {
         'experiment': 'pretrain',
-        'name': 'train_run0',
+        'name': 'no_stats_no_sigmoid_train_run0',
         'name_title': 'Run 0',
         'color': '#404099',
         },
         {
         'experiment': 'pretrain',
-        'name': 'train_run1',
+        'name': 'no_stats_no_sigmoid_train_run1',
         'name_title': 'Run 1',
         'color': '#994040',
         },
         {
         'experiment': 'pretrain',
-        'name': 'train_run2',
+        'name': 'no_stats_no_sigmoid_train_run2',
         'name_title': 'Run 2',
         'color': '#409940',
         },
@@ -86,12 +86,12 @@ plot_settings_dict = {
     'brain_walnut_120': {
         'ylim': (20., 36.),
         'zorders_per_run_idx': {0: {0: 2.3}, 1: {0: 2.2}, 2: {0: 2.1}},
-        'lr_legend_loc': 'lower right',
+        'lr_legend_loc': 'upper right',
     },
     'ellipses_walnut_120': {
         'ylim': (25., 36.),
         'zorders_per_run_idx': {0: {0: 2.3}, 1: {0: 2.2}, 2: {0: 2.1}},
-        'lr_legend_loc': 'lower right',
+        'lr_legend_loc': 'upper right',
     },
 }
 
@@ -331,7 +331,7 @@ ax1.grid(True, linestyle='-')
 ax1.spines['right'].set_visible(False)
 # ax1.spines['top'].set_visible(False)
 # ax1.spines['left'].set_visible(False)
-ax1.spines['bottom'].set_visible(False)
+ax1.spines['bottom'].set_color(plt.rcParams['grid.color'])
 ax1.set_ylim((0., None))
 ax1.set_yticks([lr_scalars[0], np.max(lr_scalars)])
 ax1.yaxis.set_major_formatter(FormatStrFormatter(

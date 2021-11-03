@@ -12,17 +12,17 @@ FIG_PATH = os.path.dirname(__file__)
 
 save_fig = True
 
-# filename = 'edip_noise_vs_dip_noise_iterates_walnut.pdf'
+# filename = 'iterates_ellipses_walnut_120.pdf'
 
 # titles = [
-#     'EDIP (noise)\nEllipses-Walnut',
-#     'EDIP (noise)\nBrain-Walnut',
-#     'DIP (noise)\nWalnut',
+#     'EDIP (FBP)',
+#     'EDIP (noise)',
+#     'DIP (noise)',
 # ]
 # iterates_paths = [
-#     'multirun/2021-10-12/15-21-35/0/results/pretraining/iterates.npz',
-#     'multirun/2021-10-12/22-48-15/0/results/pretraining/iterates.npz',
-#     'multirun/2021-10-12/22-49-04/0/results/nopretrainingnoise/iterates.npz',
+#     'multirun/2021-10-28/04-32-17/0/results/pretrainingonlyfbp/iterates.npz',
+#     'multirun/2021-10-27/23-27-39/0/results/pretraining/iterates.npz',
+#     'multirun/2021-10-28/04-30-33/0/results/nopretrainingnoise/iterates.npz',
 # ]
 
 # iterates_iters_inds = [70, 100, 150, 250]
@@ -33,7 +33,7 @@ save_fig = True
 
 # IMAGE_SIZE = 501
 # IMAGE_SEP = 10
-# TITLE_HEIGHT = 70
+# TITLE_HEIGHT = 35
 # SUP_TITLE_HEIGHT = 40
 
 # FIGSIZE = (8, 10.5)
@@ -41,20 +41,20 @@ save_fig = True
 
 # grid_orientation_iterations = 'vertical'
 
-# filename = 'edip_noise_vs_dip_noise_iterates_lotus_part0.pdf'
-filename = 'edip_noise_vs_dip_noise_iterates_lotus_part1.pdf'
+filename = 'edip_noise_vs_dip_noise_iterates_lotus_20_part0.pdf'
+# filename = 'edip_noise_vs_dip_noise_iterates_lotus_20_part1.pdf'
 
 titles = [
     'EDIP (noise)',
     'DIP (noise)',
 ]
 iterates_paths = [
-    'multirun/2021-10-13/23-41-41/0/results/pretraining/iterates.npz',
-    'multirun/2021-10-14/21-05-40/0/results/nopretrainingnoise/iterates.npz',
+    'multirun/2021-10-22/14-40-42/0/results/pretraining/iterates.npz',
+    'multirun/2021-10-22/14-32-46/0/results/nopretrainingnoise/iterates.npz',
 ]
 
-# iterates_iters_inds = [5, 25, 60]  # part0
-iterates_iters_inds = [150, 250, 500]  # part1
+iterates_iters_inds = [2, 25, 100]  # part0
+# iterates_iters_inds = [200, 500, 1000]  # part1
 
 scaling_fct = 41.  # implicit_scaling_except_for_test_data
 
