@@ -8,14 +8,15 @@ arch:
 optim:
   lr: 1e-4
   init_lr: 1e-7
+  num_warmup_iter: null
   encoder:
     lr: ${mdl.optim.lr}
     init_lr: ${mdl.optim.init_lr}
-    num_warmup_iter: null
+    num_warmup_iter: ${mdl.optim.num_warmup_iter}
   decoder:
     lr: ${mdl.optim.lr}
     init_lr: ${mdl.optim.init_lr}
-    num_warmup_iter: null
+    num_warmup_iter: ${mdl.optim.num_warmup_iter}
   iterations: 10000
   loss_function: mse
   gamma: 1e-4
