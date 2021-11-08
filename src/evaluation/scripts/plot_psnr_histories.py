@@ -30,7 +30,7 @@ save_fig = True
 save_eval_results = True
 formats = ('pdf', 'png')
 
-with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs_publish.yaml'),
+with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
