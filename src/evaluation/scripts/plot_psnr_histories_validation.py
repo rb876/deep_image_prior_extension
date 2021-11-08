@@ -170,6 +170,11 @@ if baseline_cfg.val.load_histories_from_run_path is None:
 if cfg.val.load_histories_from_run_path is None:
     cfg.val.load_histories_from_run_path = run_path
 
+# override rise_time_to_baseline_remaining_psnr of baseline to the one used in
+# the (actual) validation of pretrained DIPs
+baseline_cfg.val.rise_time_to_baseline_remaining_psnr = (
+        cfg.val.rise_time_to_baseline_remaining_psnr)
+
 baseline_psnr_histories, baseline_info = validate_model(
         cfg=baseline_cfg, val_dataset=val_dataset,
         baseline_psnr_steady='own_PSNR_steady', val_sub_path_mdl='baseline',
