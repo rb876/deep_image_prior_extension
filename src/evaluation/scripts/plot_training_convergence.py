@@ -42,8 +42,8 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs_publish
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-# data = 'ellipses_lotus_20'
-data = 'ellipses_lotus_limited_45'
+data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
@@ -53,17 +53,38 @@ if data in ('ellipses_lotus_20', 'ellipses_lotus_limited_45',
     runs_to_compare = [
         {
         'experiment': 'pretrain',
+        'name': 'no_stats_no_sigmoid_train_run0',
+        'name_title': 'Run 0',
+        'color': '#404099',
+        },
+        {
+        'experiment': 'pretrain',
+        'name': 'no_stats_no_sigmoid_train_run1',
+        'name_title': 'Run 1',
+        'color': '#994040',
+        },
+        {
+        'experiment': 'pretrain',
+        'name': 'no_stats_no_sigmoid_train_run2',
+        'name_title': 'Run 2',
+        'color': '#409940',
+        },
+    ]
+elif data == 'ellipses_lotus_limited_45':
+    runs_to_compare = [
+        {
+        'experiment': 'pretrain',
         'name': 'no_stats_no_sigmoid_train_run0_1',
         'name_title': 'Run 0',
         'color': '#404099',
-        'sub_runs': [0], 
+        'sub_runs': [0],
         },
         {
         'experiment': 'pretrain',
         'name': 'no_stats_no_sigmoid_train_run0_1',
         'name_title': 'Run 1',
         'color': '#994040',
-        'sub_runs': [1], 
+        'sub_runs': [1],
         },
         {
         'experiment': 'pretrain',
