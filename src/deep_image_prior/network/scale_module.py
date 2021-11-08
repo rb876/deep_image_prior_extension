@@ -58,5 +58,5 @@ class ScaleModule(nn.Module):
 def get_scale_modules(ch_in, ch_out, mean_in=0., mean_out=0., std_in=1.,
                      std_out=1., conv3d=False):
     scale_in = ScaleModule(ch_in, mean_in, std_in, conv3d)
-    scale_out = ScaleModule(ch_out, mean_out, std_out, conv3d)
+    scale_out = ScaleModule(ch_out, -mean_out, 1./std_out, conv3d)
     return scale_in, scale_out

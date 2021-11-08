@@ -121,7 +121,10 @@ class DeepImagePriorReconstructor():
             skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
             use_sigmoid=self.cfg.arch.use_sigmoid,
             use_norm=self.cfg.arch.use_norm,
-            use_scale_layer = self.cfg.normalize_by_stats,
+            use_scale_in_layer = (self.cfg.normalize_by_stats and
+                    ((not self.cfg.recon_from_randn) or
+                     self.cfg.add_init_reco)),
+            use_scale_out_layer = self.cfg.normalize_by_stats,
             scaling_kwargs = scaling_kwargs
             ).to(self.device)
 
