@@ -2,7 +2,7 @@ import os
 import yaml
 
 # after running this script, copy the results using (e.g.):
-# rsync -r --files-from=runs_publish_dir_list.txt /path/to/src/ /path/to/dest/
+# rsync -r --files-from=runs_publish_dir_list_ellipses_lotus_20.txt /path/to/src/ /path/to/dest/
 
 # data_to_publish = ''
 data_to_publish = 'ellipses_lotus_20'
