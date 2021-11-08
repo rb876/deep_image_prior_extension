@@ -15,6 +15,7 @@ from math import ceil
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+from matplotlib.legend_handler import HandlerLine2D
 
 # PATH = '/media/chen/Res/deep_image_prior_extension/'
 # PATH = '/localdata/jleuschn/experiments/deep_image_prior_extension/'
@@ -36,8 +37,8 @@ data = 'ellipses_lotus_20'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
-# variant = ''
-variant = 'all'
+variant = ''
+# variant = 'all'
 # variant = 'checkpoints'
 # variant = 'checkpoints_epochs'
 
@@ -59,13 +60,13 @@ if data == 'ellipses_lotus_20':
             'name': 'no_stats_no_sigmoid',
             'name_title': '',
             },
-            {
+            *([{
             'experiment': 'no_pretrain',
             'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (noise)',
             'name_title': '',
             'color': 'gray',
-            },
+            }] if variant == 'all' else []),
             *([{
             'experiment': 'no_pretrain_fbp',
             'name': 'no_stats_no_sigmoid_fixed_encoder',
@@ -83,13 +84,13 @@ if data == 'ellipses_lotus_20':
             'name': 'no_stats_no_sigmoid_train_run2_epochs100',
             'name_title': '',
             },
-            {
+            *([{
             'experiment': 'pretrain_only_fbp',
             'name': 'no_stats_no_sigmoid_train_run2_epochs100_fixed_encoder',
             'experiment_title': 'EDIP-FE (FBP)',
             'name_title': '',
             'color': '#EC2215',
-            },
+            }] if variant == 'all' else []),
             *([{
             'experiment': 'pretrain',
             'name': 'no_stats_no_sigmoid_train_run2_epochs100_fixed_encoder',
@@ -158,13 +159,13 @@ if data == 'ellipses_lotus_20':
 #             {
 #             'experiment': 'no_pretrain_fbp',
 #             },
-#             {
+#             *([{
 #             'experiment': 'no_pretrain',
 #             'name': 'fixed_encoder',
 #             'experiment_title': 'DIP-FE (noise)',
 #             'name_title': '',
 #             'color': 'gray',
-#             },
+#             }] if variant == 'all' else []),
 #             *([{
 #             'experiment': 'no_pretrain_fbp',
 #             'name': 'fixed_encoder',
@@ -178,13 +179,13 @@ if data == 'ellipses_lotus_20':
 #             {
 #             'experiment': 'pretrain',
 #             },
-#             {
+#             *([{
 #             'experiment': 'pretrain_only_fbp',
 #             'name': 'train_run2_epochs40_fixed_encoder',
 #             'experiment_title': 'EDIP-FE (FBP)',
 #             'name_title': '',
 #             'color': '#EC2215',
-#             },
+#             }] if variant == 'all' else []),
 #             *([{
 #             'experiment': 'pretrain',
 #             'name': 'train_run2_epochs40_fixed_encoder',
@@ -207,13 +208,13 @@ elif data == 'brain_walnut_120':
             'name': 'no_stats_no_sigmoid',
             'name_title': '',
             },
-            {
+            *([{
             'experiment': 'no_pretrain',
             'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (noise)',
             'name_title': '',
             'color': 'gray',
-            },
+            }] if variant == 'all' else []),
             *([{
             'experiment': 'no_pretrain_fbp',
             'name': 'no_stats_no_sigmoid_fixed_encoder',
@@ -231,13 +232,13 @@ elif data == 'brain_walnut_120':
             'name': 'no_stats_no_sigmoid_train_run1',
             'name_title': '',
             },
-            {
+            *([{
             'experiment': 'pretrain_only_fbp',
             'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
             'experiment_title': 'EDIP-FE (FBP)',
             'name_title': '',
             'color': '#EC2215',
-            },
+            }] if variant == 'all' else []),
             *([{
             'experiment': 'pretrain',
             'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
@@ -330,13 +331,13 @@ elif data == 'ellipses_walnut_120':
             'name': 'no_stats_no_sigmoid',
             'name_title': '',
             },
-            {
+            *([{
             'experiment': 'no_pretrain',
             'name': 'no_stats_no_sigmoid_fixed_encoder',
             'experiment_title': 'DIP-FE (noise)',
             'name_title': '',
             'color': 'gray',
-            },
+            }] if variant == 'all' else []),
             *([{
             'experiment': 'no_pretrain_fbp',
             'name': 'no_stats_no_sigmoid_fixed_encoder',
@@ -351,21 +352,21 @@ elif data == 'ellipses_walnut_120':
             },
             {
             'experiment': 'pretrain',
-            'name': 'no_stats_no_sigmoid_train_run1',
-            'name_title': '',
+            'name': 'no_stats_no_sigmoid_train_run1_warmup5000_init5e-4',
+            'name_title': 'warm-up',
             },
-            {
+            *([{
             'experiment': 'pretrain_only_fbp',
             'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
             'experiment_title': 'EDIP-FE (FBP)',
             'name_title': '',
             'color': '#EC2215',
-            },
+            }] if variant == 'all' else []),
             *([{
             'experiment': 'pretrain',
-            'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
+            'name': 'no_stats_no_sigmoid_train_run1_warmup5000_init5e-4_fixed_encoder',
             'experiment_title': 'EDIP-FE (noise)',
-            'name_title': '',
+            'name_title': 'warm-up',
             'color': '#B15CD1',
             }] if variant == 'all' else []),
         ]
@@ -398,10 +399,10 @@ elif data == 'ellipses_walnut_120':
         ]
 
 
-if not variant or variant == 'all':
-    baseline_run_idx = 0
-elif variant == 'checkpoints' or variant == 'checkpoints_epochs':
-    baseline_run_idx = -1
+# if not variant or variant == 'all':
+#     baseline_run_idx = 0
+# elif variant == 'checkpoints' or variant == 'checkpoints_epochs':
+#     baseline_run_idx = -1
 
 title = None
 runs_title = ''  # None -> auto from run_specs
@@ -415,23 +416,33 @@ runs_filename = 'comparison'  # None -> auto from run_specs
 plot_settings_dict = {
     'ellipses_lotus_20': {
         'xlim': (-60, 6000),
-        'ylim': (None, 36.75),
+        'ylim': (None, 35.95),
         'ylim_loss': None,
         'stop_time_y_pos': 32.5,
         'stop_time_y_shift_per_run_idx': {
-            0: 1.5,
-            1: 0.5,
-            2: 1.0,
-            3: 0.0,
-            4: 3.5,
-            5: 2.5,
-            6: 3.0,
-            7: 2.0,
-        } if variant == 'all' else {},
+            0: 3.,
+            1: 1.,
+            2: 2.,
+            3: 0.,
+            4: 7.,
+            5: 5.,
+            6: 6.,
+            7: 4.,
+        } if variant == 'all' else ({
+            0: 1.,
+            1: 0.,
+            2: 3.,
+            3: 2.,
+        } if (not variant) else {}),
         'zorder_per_run_idx': {
         },
         'run_legend_bbox_to_anchor': (0.5, -0.125),
         'run_legend_loc': 'upper center',
+        'run_legend_ncol': (
+            len(runs_to_compare) if not variant else
+            len(runs_to_compare) // 2),
+        'symbol_legend_bbox_to_anchor': (1., 0.825),
+        'symbol_legend_loc': 'upper right',
     },
     'ellipses_lotus_limited_30': {
     },
@@ -439,23 +450,33 @@ plot_settings_dict = {
     },
     'ellipses_walnut_120': {
         'xlim': (-300, 30000),
-        'ylim': (None, 41.5),
+        'ylim': (None, 39.25),
         'ylim_loss': None,
         'stop_time_y_pos': 35.5,
         'stop_time_y_shift_per_run_idx': {
-            0: 2.25,
-            1: 0.75,
-            2: 1.5,
-            3: 0.0,
-            4: 5.25,
-            5: 3.75,
-            6: 4.5,
-            7: 3.0,
-        } if variant == 'all' else {},
+            0: 3.,
+            1: 1.,
+            2: 2.,
+            3: 0.,
+            4: 7.,
+            5: 5.,
+            6: 6.,
+            7: 4.,
+        } if variant == 'all' else ({
+            0: 1.,
+            1: 0.,
+            2: 3.,
+            3: 2.,
+        } if (not variant) else {}),
         'zorder_per_run_idx': {
         },
         'run_legend_bbox_to_anchor': (0.5, -0.125),
         'run_legend_loc': 'upper center',
+        'run_legend_ncol': (
+            len(runs_to_compare) if not variant else
+            len(runs_to_compare) // 2),
+        'symbol_legend_bbox_to_anchor': (1., 0.85),
+        'symbol_legend_loc': 'upper right',
     }
 }
 
@@ -599,19 +620,19 @@ def get_stop_time(histories, threshold, avg_interval=1):
     stop_time = int(argwhere_stop[0][0]) if len(argwhere_stop) > 0 else None
     return stop_time
 
-baseline_histories = histories_list[baseline_run_idx]
-baseline_best_psnr_histories = [
-        get_best_output_psnr_history(h) for h in baseline_histories]
-baseline_psnr_steady = get_psnr_steady(
-        baseline_best_psnr_histories,
-        start=eval_settings_dict[data]['psnr_steady_start'],
-        stop=eval_settings_dict[data]['psnr_steady_stop'])
+# baseline_histories = histories_list[baseline_run_idx]
+# baseline_best_psnr_histories = [
+#         get_best_output_psnr_history(h) for h in baseline_histories]
+# baseline_psnr_steady = get_psnr_steady(
+#         baseline_best_psnr_histories,
+#         start=eval_settings_dict[data]['psnr_steady_start'],
+#         stop=eval_settings_dict[data]['psnr_steady_stop'])
 
-print('baseline steady PSNR (using running best loss output)',
-        baseline_psnr_steady)
+# print('baseline steady PSNR (using running best loss output)',
+#         baseline_psnr_steady)
 
-h = ax.axhline(baseline_psnr_steady, color='gray', linestyle='--', zorder=1.5)
-baseline_handle = h
+# h = ax.axhline(baseline_psnr_steady, color='gray', linestyle='--', zorder=1.5)
+# baseline_handle = h
 
 run_handles = []
 stop_time_handles = []
@@ -641,38 +662,36 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
     color = get_color(run_spec, cfgs[0])
     linestyle = run_spec.get('linestyle', 'solid')
 
-    zorder = plot_settings_dict[data].get('zorder_per_run_idx', {}).get(i)
+    zorder = plot_settings_dict[data].get('zorder_per_run_idx', {}).get(
+            2 + 0.1 * i)
 
     for best_psnr_history in best_psnr_histories:
         h = ax.plot(best_psnr_history, label=label, color=color,
-                        linestyle=linestyle, linewidth=1,
+                        linestyle=linestyle, linewidth=2,
                         zorder=zorder)
     run_handles += h
     for best_loss_history in best_loss_histories:
         h = ax_loss.plot(best_loss_history, label=label, color=color,
-                        linestyle=linestyle, linewidth=1,
+                        linestyle=linestyle, linewidth=2,
                         zorder=zorder)
     for loss_history in loss_histories:
         h = ax_loss.plot(loss_history, label=label, color=color,
-                        linestyle=linestyle, linewidth=1,
+                        linestyle=linestyle, linewidth=2,
                         zorder=zorder, alpha=0.075)
-    for best_psnr_history, stop_time in zip(best_psnr_histories, stop_times):
-        if stop_time is not None:
-            stop_time_y_pos_shifted = (
-                    plot_settings_dict[data]['stop_time_y_pos'] +
-                            plot_settings_dict[data][
-                                    'stop_time_y_shift_per_run_idx']
-                                    .get(i, 0))
-            h = ax.scatter(
-                    stop_time, stop_time_y_pos_shifted,
-                    marker='$\u21af$', s=50., color=color,
-                    zorder=zorder if zorder is not None else 2.)
-            stop_time_handles.append(h)
-            ax.plot([stop_time, stop_time],
-                    [best_psnr_history[stop_time],
-                    stop_time_y_pos_shifted],
-                    color=color, linestyle='--',
-                    zorder=zorder)
+    x_stop_times = sorted([
+            (stop_time if stop_time is not None else
+             cfgs[0].mdl.optim.iterations + 1)
+            for stop_time in stop_times])
+    stop_time_y_pos_shifted = (
+            plot_settings_dict[data]['stop_time_y_pos'] +
+                    plot_settings_dict[data][
+                            'stop_time_y_shift_per_run_idx']
+                            .get(i, 0))
+    h = ax.plot(x_stop_times,
+            [stop_time_y_pos_shifted] * len(x_stop_times),
+            color=color, linestyle='-', solid_capstyle='butt', linewidth=2,
+            marker='|', markersize=4, zorder=zorder)
+    stop_time_handles += h
 
 ax.grid(True, linestyle='-')
 ax.set_xlim(xlim)
@@ -701,19 +720,19 @@ run_legend = ax.legend(
 ax.add_artist(run_legend)
 stop_time_handle = copy(stop_time_handles[0])
 stop_time_handle.set_color('gray')
-symbol_legend = ax.legend(
-        [stop_time_handle, baseline_handle],
-        ['Stop time (moving avg. size {:d}, threshold {:g})'.format(
-                 eval_settings_dict[data]['stop_avg_interval'],
-                 eval_settings_dict[data]['stop_threshold']),
-         'Steady PSNR of {}'.format(
-                 get_label(runs_to_compare[baseline_run_idx], cfgs[0]))
-         # 'Baseline steady PSNR'.format(
-         #         get_label(runs_to_compare[baseline_run_idx], cfgs[0]))
+symbol_legend = ax_loss.legend(
+        [stop_time_handle],
+        ['Stop times'  # (moving avg. size {:d}, threshold {:g})'.format(
+                #  eval_settings_dict[data]['stop_avg_interval'],
+                #  eval_settings_dict[data]['stop_threshold'])
         ],
-        loc='center right',
-        ncol=1, framealpha=1.
+        handler_map={stop_time_handle: HandlerLine2D(numpoints=5)},
+        bbox_to_anchor=plot_settings_dict[data].get(
+                'symbol_legend_bbox_to_anchor', (1., 0.825)),
+        loc=plot_settings_dict[data].get('symbol_legend_loc', 'upper right'),
+        ncol=1, framealpha=1.,
         )
+symbol_legend.set_zorder(50.)
 
 if title is None:
     if runs_title is None:
