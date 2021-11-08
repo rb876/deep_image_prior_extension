@@ -26,19 +26,19 @@ FIG_PATH = os.path.dirname(__file__)
 save_fig = True
 formats = ('pdf', 'png')
 
-with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
+with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs_publish.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-data = 'ellipses_lotus_20'
-# data = 'ellipses_lotus_limited_30'
+# data = 'ellipses_lotus_20'
+data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
 variant = ''
 # variant = 'fewer_ckpts'
 
-use_inset = data == 'ellipses_lotus_20'
+use_inset = False #data.startswith('ellipses_lotus_')
 
 # Additional `run_spec` dict fields:
 # 
@@ -78,8 +78,18 @@ plot_settings_dict = {
         'inset_axes_rect': [0.125, 0.075, 0.85, 0.35],
         'inset_axes_rect_border': [0.05, 0.0675],
     },
-    'ellipses_lotus_limited_30': {
-        'xlim': (None, None),
+    'ellipses_lotus_limited_45': {
+        'xlim': (-37.5, 10000),
+        'xlim_inset': (100, 3250),
+        'ylim': (17.5, 30) if variant == 'fewer_ckpts' else (17.5, 30),
+        'ylim_inset': (22.5, 27),
+        'rise_time_to_baseline_y_pos': 27.5,
+        'rise_time_to_baseline_y_shift_i_run': 0.01,
+        'rise_time_to_baseline_y_shift_i_plot_ckpt': .45,
+        'run_colors': ['#000077', '#770000', '#007700'],
+        'zorder_list': [1.51, 1.52, 1.53],
+        'inset_axes_rect': [0.125, 0.075, 0.85, 0.35],
+        'inset_axes_rect_border': [0.05, 0.0675],
     },
     'brain_walnut_120': {
         'xlim': (-50, 50000),

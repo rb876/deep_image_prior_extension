@@ -21,7 +21,7 @@ from matplotlib.patches import Rectangle
 PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 TVADAM_PSNRS_FILEPATH = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        'baselines', 'tvadam_psnrs.yaml')
+        '../baselines', 'tvadam_psnrs.yaml')
 
 FIG_PATH = os.path.dirname(__file__)
 EVAL_RESULTS_PATH = os.path.dirname(__file__)
@@ -30,18 +30,18 @@ save_fig = True
 save_eval_results = True
 formats = ('pdf', 'png')
 
-with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
+with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs_publish.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-data = 'ellipses_lotus_20'
-# data = 'ellipses_lotus_limited_45'
+# data = 'ellipses_lotus_20'
+data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
-variant = ''
+# variant = ''
 # variant = 'all'
-# variant = 'checkpoints'
+variant = 'checkpoints'
 # variant = 'checkpoints_epochs'
 
 show_tv_in_inset = variant == 'all'
@@ -162,54 +162,113 @@ if data == 'ellipses_lotus_20':
             },
         ]
 
-# elif data == 'ellipses_lotus_limited_45':
-#     if (not variant) or variant == 'all':
-#         runs_to_compare = [
-#             {
-#             'experiment': 'no_pretrain',
-#             },
-#             {
-#             'experiment': 'no_pretrain_fbp',
-#             },
-#             {
-#             'experiment': 'no_pretrain',
-#             'name': 'fixed_encoder',
-#             'experiment_title': 'DIP-FE (noise)',
-#             'name_title': '',
-#             'color': 'gray',
-#             'skip_psnr0': True,
-#             },
-#             *([{
-#             'experiment': 'no_pretrain_fbp',
-#             'name': 'fixed_encoder',
-#             'experiment_title': 'DIP-FE (FBP)',
-#             'name_title': '',
-#             'color': '#00AAFF',
-#             'skip_psnr0': True,
-#             }] if variant == 'all' else []),
-#             {
-#             'experiment': 'pretrain_only_fbp',
-#             },
-#             {
-#             'experiment': 'pretrain',
-#             },
-#             {
-#             'experiment': 'pretrain_only_fbp',
-#             'name': 'train_run2_epochs40_fixed_encoder',
-#             'experiment_title': 'EDIP-FE (FBP)',
-#             'name_title': '',
-#             'color': '#EC2215',
-#             'skip_psnr0': True,
-#             },
-#             *([{
-#             'experiment': 'pretrain',
-#             'name': 'train_run2_epochs40_fixed_encoder',
-#             'experiment_title': 'EDIP-FE (noise)',
-#             'name_title': '',
-#             'color': '#B15CD1',
-#             'skip_psnr0': True,
-#             }] if variant == 'all' else []),
-#         ]
+elif data == 'ellipses_lotus_limited_45':
+    if (not variant) or variant == 'all':
+        runs_to_compare = [
+            {
+            'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
+            },
+            {
+            'experiment': 'no_pretrain_fbp',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
+            },
+            {
+            'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid_fixed_encoder',
+            'experiment_title': 'DIP-FE (noise)',
+            'name_title': '',
+            'color': 'gray',
+            'skip_psnr0': True,
+            },
+            *([{
+            'experiment': 'no_pretrain_fbp',
+            'name': 'no_stats_no_sigmoid_fixed_encoder',
+            'experiment_title': 'DIP-FE (FBP)',
+            'name_title': '',
+            'color': '#00AAFF',
+            'skip_psnr0': True,
+            }] if variant == 'all' else []),
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run1_epochs100',
+            'name_title': '',
+            },
+            {
+            'experiment': 'pretrain',
+            'name': 'no_stats_no_sigmoid_train_run1_epochs100', 
+            'name_title': '', 
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run1_epochs100_fixed_encoder',
+            'experiment_title': 'EDIP-FE (FBP)',
+            'name_title': '',
+            'color': '#EC2215',
+            'skip_psnr0': True,
+            },
+            *([{
+            'experiment': 'pretrain',
+            'name': 'no_stats_no_sigmoid_train_run1_epochs100_fixed_encoder',
+            'experiment_title': 'EDIP-FE (noise)',
+            'name_title': '',
+            'color': '#B15CD1',
+            'skip_psnr0': True,
+            }] if variant == 'all' else []),
+        ]
+    elif variant == 'checkpoints':
+        runs_to_compare = [
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run0_epochs100',
+            'experiment_title': 'Run 0: 100 epochs',
+            'name_title': '',
+            'color': '#404099',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run0_epochs20',
+            'experiment_title': 'Run 0: 20 epochs',
+            'name_title': '',
+            'color': '#8080BB',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run1_epochs100',
+            'experiment_title': 'Run 1: 100 epochs',
+            'name_title': '',
+            'color': '#994040',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run1_epochs20',
+            'experiment_title': 'Run 1: 20 epochs',
+            'name_title': '',
+            'color': '#BB8080',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs100',
+            'experiment_title': 'Run 2: 100 epochs',
+            'name_title': '',
+            'color': '#409940',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs20',
+            'experiment_title': 'Run 2: 20 epochs',
+            'name_title': '',
+            'color': '#80BB80',
+            },
+            {
+            'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
+            },
+        ]
+        
 
 elif data == 'brain_walnut_120':
     if (not variant) or variant == 'all':
@@ -527,23 +586,26 @@ plot_settings_dict = {
         'run_legend_handletextpad': (0.6 if variant == 'checkpoints' else None),
         'run_legend_columnspacing': (1.5 if variant == 'checkpoints' else None),
     },
-    'ellipses_lotus_limited_30': {
-        'xlim': (-500, 8000),
-        'xlim_inset': (-200, 3750),
-        'ylim': (None, 27.5),
-        'ylim_inset': (21.5, 26.5),
-        'psnr0_x_pos': -150,
+    'ellipses_lotus_limited_45': {
+        'xlim': (-625, 10000),
+        'xlim_inset': (-200, 4750),
+        'ylim': (None, 32.5),
+        'ylim_inset': (28.5, 30.1),
+        'psnr0_x_pos': -187.5,
         'psnr0_x_shift_per_run_idx': {
-            0: -200,
+            0: -250,
         },
-        'rise_time_to_baseline_y_pos': 27,
+        'rise_time_to_baseline_y_pos': 31,
         'rise_time_to_baseline_y_shift_per_run_idx': {
+            1: 0.9,
             3: 0.9,
             4: 0.9
-        } if variant == 'all' else {},
+        } if variant == 'all' else ( {
+            1: 0.9,
+        }),
         'inset_axes_rect': [0.245, 0.2, 0.715, 0.575],
-        'inset_axes_rect_border': [0.0625, 0.0675],
-        'tv_text_shift': [30, 0.02],
+        'inset_axes_rect_border': [0.085, 0.0675],
+        'tv_text_shift': [30, -0.1],
         'run_legend_bbox_to_anchor': (
             (0.5, -0.125) if (not variant) or variant == 'all' else (
             (0.48, -0.125) if variant == 'checkpoints' else
@@ -708,7 +770,7 @@ eval_settings_dict = {
         'psnr_steady_stop': None,
         'rise_time_to_baseline_remaining_psnr': 0.1,
     },
-    'ellipses_lotus_limited_30': {
+    'ellipses_lotus_limited_45': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
         'rise_time_to_baseline_remaining_psnr': 0.1,

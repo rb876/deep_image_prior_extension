@@ -38,30 +38,32 @@ FIG_PATH = os.path.dirname(__file__)
 save_fig = True
 formats = ('pdf', 'png')
 
-with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
+with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs_publish.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-data = 'ellipses_lotus_20'
-# data = 'ellipses_lotus_limited_30'
+# data = 'ellipses_lotus_20'
+data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
 
-if data in ('ellipses_lotus_20', 'ellipses_lotus_limited_30',
+if data in ('ellipses_lotus_20', 'ellipses_lotus_limited_45',
             'brain_walnut_120', 'ellipses_walnut_120'):
     runs_to_compare = [
         {
         'experiment': 'pretrain',
-        'name': 'no_stats_no_sigmoid_train_run0',
+        'name': 'no_stats_no_sigmoid_train_run0_1',
         'name_title': 'Run 0',
         'color': '#404099',
+        'sub_runs': [0], 
         },
         {
         'experiment': 'pretrain',
-        'name': 'no_stats_no_sigmoid_train_run1',
+        'name': 'no_stats_no_sigmoid_train_run0_1',
         'name_title': 'Run 1',
         'color': '#994040',
+        'sub_runs': [1], 
         },
         {
         'experiment': 'pretrain',
@@ -80,8 +82,10 @@ plot_settings_dict = {
         'zorders_per_run_idx': {0: {0: 2.3}, 1: {0: 2.2}, 2: {0: 2.1}},
         'lr_legend_loc': 'upper right',
     },
-    'ellipses_lotus_limited_30': {
+    'ellipses_lotus_limited_45': {
         'ylim': (16., None),
+        'zorders_per_run_idx': {0: {0: 2.3}, 1: {0: 2.2}, 2: {0: 2.1}},
+        'lr_legend_loc': 'upper right',
     },
     'brain_walnut_120': {
         'ylim': (20., 36.),
@@ -134,7 +138,7 @@ for run_spec in runs_to_compare:
     experiment_names = get_multirun_experiment_names(
             run_path_multirun, sub_runs=sub_runs)
     trn_log_paths = [
-            os.path.join(run_path_multirun, '{:d}'.format(i),
+            os.path.join(run_path_multirun, '{:d}'.format(sub_runs[i] if sub_runs is not None else i),
                          cfg['trn']['log_path'])
             for i, cfg in enumerate(cfgs)]
     trn_log_filepaths = []

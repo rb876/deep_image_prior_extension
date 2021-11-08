@@ -31,11 +31,40 @@ reconstruction:
         name: no_stats_no_sigmoid
       - run_path: multirun/2021-10-10/00-31-19/
         name: no_stats_no_sigmoid_fixed_encoder
-  # ellipses_lotus_limited_30:
-  #   pretrain:
-  #   pretrain_only_fbp:
-  #   no_pretrain:
-  #   no_pretrain_fbp:
+  ellipses_lotus_limited_45:
+    pretrain:
+      - run_path: multirun/2021-10-26/11-56-33/
+        name: no_stats_no_sigmoid_train_run1_epochs100
+      - run_path: multirun/2021-10-27/12-21-07/
+        name: no_stats_no_sigmoid_train_run1_epochs100_fixed_encoder
+    pretrain_only_fbp:
+      - run_path: multirun/2021-10-26/10-43-34/
+        name: no_stats_no_sigmoid_train_run1_epochs100 # selected
+      - run_path: multirun/2021-10-26/13-25-58/
+        name: no_stats_no_sigmoid_train_run1_epochs100_fixed_encoder
+      - run_path: multirun/2021-10-27/12-13-21/
+        name: no_stats_no_sigmoid_train_run1_epochs20
+      - run_path: multirun/2021-10-27/12-50-35/
+        name: no_stats_no_sigmoid_train_run0_epochs100
+      - run_path: multirun/2021-10-27/13-50-40/
+        name: no_stats_no_sigmoid_train_run0_epochs20
+      - run_path: multirun/2021-10-27/14-33-14/
+        name: no_stats_no_sigmoid_train_run2_epochs100
+      - run_path: multirun/2021-10-27/15-09-42/
+        name: no_stats_no_sigmoid_train_run2_epochs20
+
+    no_pretrain:
+      - run_path: multirun/2021-10-26/10-42-15/
+        name: no_stats_no_sigmoid
+      - run_path: multirun/2021-10-27/12-58-15/
+        name: no_stats_no_sigmoid_fixed_encoder
+    no_pretrain_fbp:
+      - run_path: multirun/2021-10-26/11-58-17/
+        name: no_stats_no_sigmoid
+      - run_path: multirun/2021-10-26/13-26-56/
+        name: no_stats_no_sigmoid_fixed_encoder
+    
+
   # ellipses_walnut_120:
   #   pretrain:
   #   pretrain_only_fbp:
@@ -57,8 +86,13 @@ pretraining:
         name: no_stats_no_sigmoid_train_run1
       - run_path: multirun/2021-10-09/11-49-17/
         name: no_stats_no_sigmoid_train_run2
-  # ellipses_lotus_limited_30:
-  #   pretrain:  # same as pretrain_only_fbp
+  ellipses_lotus_limited_45:
+    pretrain: # same as pretrain_only_fbp
+      - run_path: multirun/2021-10-22/17-09-41/
+        name:  no_stats_no_sigmoid_train_run0_1
+      - run_path: multirun/2021-10-22/17-10-54/
+        name: no_stats_no_sigmoid_train_run2
+        
   # ellipses_walnut_120:
   #   pretrain:  # same as pretrain_only_fbp
   # brain_walnut_120:
@@ -70,8 +104,10 @@ validation_baseline:
     no_pretrain:
       - single_run_path: outputs/2021-10-10/11-57-23/
         name: no_stats_no_sigmoid
-  # ellipses_lotus_limited_30:
-  #   no_pretrain:
+  ellipses_lotus_limited_45:
+    no_pretrain: 
+      - single_run_path: multirun/2021-10-25/14-18-55/0/
+        name:  no_stats_no_sigmoid
   # ellipses_walnut_120:
   #   no_pretrain:
   # brain_walnut_120:
@@ -83,8 +119,12 @@ validation:
     pretrain_only_fbp:
       - single_run_path: outputs/2021-10-10/13-44-38/
         name: no_stats_no_sigmoid
-  # ellipses_lotus_limited_30:
-  #   pretrain_only_fbp:
+  ellipses_lotus_limited_45:
+    pretrain_only_fbp:
+      - single_run_path: outputs/2021-10-25/19-51-44/
+        name: no_stats_no_sigmoid_containing_histories
+      - single_run_path: outputs/2021-11-03/19-02-29/
+        name: no_stats_no_sigmoid
   # ellipses_walnut_120:
   #   pretrain_only_fbp:
   # brain_walnut_120:
