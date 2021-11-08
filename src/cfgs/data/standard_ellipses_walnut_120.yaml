@@ -6,7 +6,7 @@ im_shape: 501
 train_len: 32000
 validation_len: 3200
 test_len: 3200
-data_path_test: /localdata/jleuschn/Walnuts/
+data_path_test: null  # insert "/path/to/Walnuts/", which should contain a sub-folder "Walnut1/" extracted from Walnut1.zip, download from: https://zenodo.org/record/2686726/files/Walnut1.zip?download=1
 walnut_id: 1
 orbit_id: 2
 zoom: 0.73

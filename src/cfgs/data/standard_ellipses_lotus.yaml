@@ -13,7 +13,7 @@ geometry_specs:
   num_angles: 120
   num_det_pixels: 429
   impl: 'matrix'
-  ray_trafo_filename: null
+  ray_trafo_filename: null  # insert "/path/to/LotusData128.mat", download from: https://zenodo.org/record/1254204/files/LotusData128.mat?download=1
 noise_specs:
   noise_type: white
   stddev: 0.05
