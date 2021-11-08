@@ -5,7 +5,7 @@ from evaluation.display_utils import get_title_from_run_spec
 EVAL_RESULTS_PATH = os.path.dirname(__file__)
 
 eval_results_filename = 'comparison_on_ellipses_lotus_20_all'
-# eval_results_filename = 'comparison_on_ellipses_lotus_limited_30_all'
+# eval_results_filename = 'comparison_on_ellipses_lotus_limited_45_all'
 # eval_results_filename = 'comparison_on_brain_walnut_120_all'
 # eval_results_filename = 'comparison_on_ellipses_walnut_120_all'
 

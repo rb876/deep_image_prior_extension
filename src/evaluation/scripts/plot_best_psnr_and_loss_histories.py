@@ -444,7 +444,7 @@ plot_settings_dict = {
         'symbol_legend_bbox_to_anchor': (1., 0.825),
         'symbol_legend_loc': 'upper right',
     },
-    'ellipses_lotus_limited_30': {
+    'ellipses_lotus_limited_45': {
     },
     'brain_walnut_120': {
     },
@@ -487,7 +487,7 @@ eval_settings_dict = {
         'stop_threshold': 5e-6,
         'stop_avg_interval': 100,
     },
-    'ellipses_lotus_limited_30': {
+    'ellipses_lotus_limited_45': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
         'stop_threshold': 1e-8,

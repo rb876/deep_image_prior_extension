@@ -24,7 +24,7 @@ os.makedirs(OUTPUT_PATH, exist_ok=True)
 SAVE_ONLY_MEDIAN_REP = True
 
 data = 'ellipses_lotus_20'
-# data = 'ellipses_limited_30'
+# data = 'ellipses_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 

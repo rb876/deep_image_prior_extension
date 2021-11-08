@@ -13,7 +13,7 @@ FIG_PATH = os.path.dirname(__file__)
 save_fig = True
 
 data = 'ellipses_lotus_20'
-# data = 'ellipses_limited_30'
+# data = 'ellipses_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
@@ -29,7 +29,7 @@ CMAP = 'gray'
 # possible values for 'type' are
 # 'gt', 'fbp', 'reco'
 
-if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_30',
+if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_45',
             'brain_walnut_120', 'ellipses_walnut_120']:
 
     images_to_plot = []
@@ -66,7 +66,7 @@ plot_settings_dict = {
     },
     # 'ellipses_lotus_20': {
     # },
-    # 'ellipses_lotus_limited_30': {
+    # 'ellipses_lotus_limited_45': {
     # },
     # 'brain_walnut_120': {
     # },

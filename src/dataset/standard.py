@@ -29,8 +29,8 @@ def subsample_angles_ray_trafo_matrix(matrix, cfg, proj_shape, order='C'):
 
 def load_ray_trafo_matrix(name, cfg):
 
-    if name in ['ellipses_lotus', 'ellipses_lotus_20', 'ellipses_lotus_40',
-                'ellipses_lotus_limited_30', 'ellipses_lotus_limited_45' ]:
+    if name in ['ellipses_lotus', 'ellipses_lotus_20',
+                'ellipses_lotus_limited_45']:
         matrix = lotus.get_ray_trafo_matrix(cfg.ray_trafo_filename)
     # elif name == 'brain_walnut_120':  # currently useless as we can't use the
                                         # matrix impl for the walnut ray trafo,
@@ -220,10 +220,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
                 specs_kwargs=specs_kwargs,
                 noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
                 'test': cfg.seed + 2})
-    elif (name == 'ellipses_lotus_20' or
-          name == 'ellipses_lotus_40' or
-          name == 'ellipses_lotus_limited_30' or 
-          name == 'ellipses_lotus_limited_45'):
+    elif name == 'ellipses_lotus_20' or name == 'ellipses_lotus_limited_45':
         dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                          'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
         ellipses_dataset = EllipsesDataset(**dataset_specs)
