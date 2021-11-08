@@ -38,8 +38,8 @@ reconstruction:
       - run_path: multirun/2021-10-27/12-21-07/
         name: no_stats_no_sigmoid_train_run1_epochs100_fixed_encoder
     pretrain_only_fbp:
-      - run_path: multirun/2021-10-26/10-43-34/
-        name: no_stats_no_sigmoid_train_run1_epochs100 # selected
+      - run_path: multirun/2021-10-26/10-43-34/  # selected
+        name: no_stats_no_sigmoid_train_run1_epochs100
       - run_path: multirun/2021-10-26/13-25-58/
         name: no_stats_no_sigmoid_train_run1_epochs100_fixed_encoder
       - run_path: multirun/2021-10-27/12-13-21/
@@ -69,8 +69,12 @@ reconstruction:
       - run_path: multirun/2021-11-03/15-00-05/
         name: no_stats_no_sigmoid_train_run1_warmup5000_init5e-4_fixed_encoder
     pretrain_only_fbp:
-      - run_path: multirun/2021-10-24/17-59-23/
+      - run_path: multirun/2021-10-24/01-44-42/
+        name: no_stats_no_sigmoid_train_run0
+      - run_path: multirun/2021-10-24/17-59-23/  # selected
         name: no_stats_no_sigmoid_train_run1
+      - run_path: multirun/2021-10-25/10-10-07/
+        name: no_stats_no_sigmoid_train_run2
       - run_path: multirun/2021-10-27/11-17-17/
         name: no_stats_no_sigmoid_train_run1_fixed_encoder
     no_pretrain:
@@ -90,8 +94,12 @@ reconstruction:
       - run_path: multirun/2021-10-27/12-08-06/
         name: no_stats_no_sigmoid_train_run1_fixed_encoder
     pretrain_only_fbp:
-      - run_path: multirun/2021-10-24/17-36-39/
+      - run_path: multirun/2021-10-24/01-34-05/
+        name: no_stats_no_sigmoid_train_run0
+      - run_path: multirun/2021-10-24/17-36-39/  # selected
         name: no_stats_no_sigmoid_train_run1
+      - run_path: multirun/2021-10-25/09-52-36/
+        name: no_stats_no_sigmoid_train_run2
       - run_path: multirun/2021-10-27/12-07-20/
         name: no_stats_no_sigmoid_train_run1_fixed_encoder
       - run_path: multirun/2021-10-25/11-09-31/
@@ -159,7 +167,7 @@ validation_baseline:
   ellipses_lotus_limited_45:
     no_pretrain: 
       - single_run_path: multirun/2021-10-25/14-18-55/0/
-        name:  no_stats_no_sigmoid
+        name: no_stats_no_sigmoid
   ellipses_walnut_120:
     no_pretrain:
       - single_run_path: outputs/2021-10-21/17-12-21/
@@ -179,9 +187,9 @@ validation:
         name: no_stats_no_sigmoid
   ellipses_lotus_limited_45:
     pretrain_only_fbp:
-      - single_run_path: outputs/2021-10-25/19-51-44/
+      - single_run_path: outputs/2021-10-25/19-51-44/  # contains the psnr histories (rise_time_to_baseline_remaining_psnr=0.5 dB)
         name: no_stats_no_sigmoid_containing_histories
-      - single_run_path: outputs/2021-11-03/19-02-29/
+      - single_run_path: outputs/2021-11-03/19-02-29/  # rise_time_to_baseline_remaining_psnr=0.1 dB, based on outputs/2021-10-25/19-51-44/
         name: no_stats_no_sigmoid
   ellipses_walnut_120:
     pretrain_only_fbp:
