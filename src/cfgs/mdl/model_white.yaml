@@ -4,7 +4,7 @@ arch:
   channels: [128, 128, 128, 128, 128, 128]
   skip_channels: [0, 0, 0, 0, 4, 4]
   use_norm: True
-  use_sigmoid: True
+  use_sigmoid: False
 optim:
   lr: 1e-4
   init_lr: 1e-7

@@ -11,7 +11,7 @@ mdl:
   recon_from_randn: True
   add_init_reco: False
   log_path: ./runs/nopretrainingnoise/
-  normalize_by_stats: True
+  normalize_by_stats: False
   stats: ${data.stats}
   implicit_scaling_except_for_test_data: ${data.implicit_scaling_except_for_test_data}
   optim:
