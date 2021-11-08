@@ -156,7 +156,7 @@ def get_title(image_spec):
     if image_type == 'gt':
         title = 'Ground truth'
     elif image_type == 'fbp':
-        title = 'FBP' if 'lotus' in data else 'FDK'
+        title = 'FBP'  # if 'lotus' in data else 'FDK'
     elif image_type == 'reco':
         title = 'U-Net'
     else:

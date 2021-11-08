@@ -34,14 +34,14 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs_publish
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-# data = 'ellipses_lotus_20'
-data = 'ellipses_lotus_limited_45'
+data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
 # variant = ''
-# variant = 'all'
-variant = 'checkpoints'
+variant = 'all'
+# variant = 'checkpoints'
 # variant = 'checkpoints_epochs'
 
 show_tv_in_inset = variant == 'all'
@@ -431,16 +431,16 @@ elif data == 'ellipses_walnut_120':
             'name': 'no_stats_no_sigmoid_train_run1',
             'name_title': '',
             },
-            {
-            'experiment': 'pretrain',
-            'name': 'no_stats_no_sigmoid_train_run1',
-            'name_title': '',
-            },
             # {
             # 'experiment': 'pretrain',
-            # 'name': 'no_stats_no_sigmoid_train_run1_warmup5000_init5e-4',
-            # # 'name_title': '',
+            # 'name': 'no_stats_no_sigmoid_train_run1',
+            # 'name_title': '',
             # },
+            {
+            'experiment': 'pretrain',
+            'name': 'no_stats_no_sigmoid_train_run1_warmup5000_init5e-4',
+            'name_title': 'warm-up',
+            },
             {
             'experiment': 'pretrain_only_fbp',
             'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
@@ -449,14 +449,6 @@ elif data == 'ellipses_walnut_120':
             'color': '#EC2215',
             'skip_psnr0': True,
             },
-            *([{
-            'experiment': 'pretrain',
-            'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
-            'experiment_title': 'EDIP-FE (noise)',
-            'name_title': '',
-            'color': '#B15CD1',
-            'skip_psnr0': True,
-            }] if variant == 'all' else []),
             # *([{
             # 'experiment': 'pretrain',
             # 'name': 'no_stats_no_sigmoid_train_run1_fixed_encoder',
@@ -465,6 +457,14 @@ elif data == 'ellipses_walnut_120':
             # 'color': '#B15CD1',
             # 'skip_psnr0': True,
             # }] if variant == 'all' else []),
+            *([{
+            'experiment': 'pretrain',
+            'name': 'no_stats_no_sigmoid_train_run1_warmup5000_init5e-4_fixed_encoder',
+            'experiment_title': 'EDIP-FE (noise)',
+            'name_title': 'warm-up',
+            'color': '#B15CD1',
+            'skip_psnr0': True,
+            }] if variant == 'all' else []),
         ]
     elif variant == 'checkpoints':
         runs_to_compare = [
@@ -945,6 +945,18 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
     except IndexError:
         rise_time_to_baseline = None
 
+    try:
+        with open(TVADAM_PSNRS_FILEPATH, 'r') as f:
+            tv_psnr = yaml.safe_load(f)[data]
+    except FileNotFoundError:
+        pass
+    else:
+        argwhere_reached_tv = np.argwhere(
+                median_psnr_history > tv_psnr)
+        rise_time_to_reach_tv = (
+                int(argwhere_reached_tv[0][0])
+                if len(argwhere_reached_tv) > 0 else None)
+
     eval_results = {}
     eval_results['run_spec'] = run_spec
     eval_results['rise_time_to_baseline'] = rise_time_to_baseline
@@ -953,6 +965,10 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
             start=eval_settings_dict[data]['psnr_steady_start'],
             stop=eval_settings_dict[data]['psnr_steady_stop'])
     eval_results['PSNR_0'] = float(mean_psnr_history[0])
+    if rise_time_to_reach_tv is not None:
+        eval_results['rise_time_to_reach_tv'] = rise_time_to_reach_tv
+    # it = 900
+    # print(experiment_names[0], 'median PSNR at iter {:d}'.format(it), median_psnr_history[it])
 
     eval_results_list.append(eval_results)
 

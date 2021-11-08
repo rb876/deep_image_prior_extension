@@ -287,7 +287,7 @@ def get_title(image_spec):
     if image_type == 'gt':
         title = 'Reference' if 'lotus' in data else 'Ground truth'
     elif image_type == 'fbp':
-        title = 'FBP' if 'lotus' in data else 'FDK'
+        title = 'FBP'  # if 'lotus' in data else 'FDK'
     elif image_type == 'init_reco':
         experiment_title = experiment_title_dict[image_spec['experiment']]
         title =  '{} initial'.format(experiment_title)
