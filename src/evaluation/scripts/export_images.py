@@ -10,7 +10,7 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import get_cmap, ScalarMappable
 from evaluation.utils import (
         get_multirun_cfgs, get_multirun_experiment_names,
-        get_multirun_reconstructions, uses_swa_weights)
+        get_multirun_reconstructions, get_multirun_iterates, uses_swa_weights)
 from dataset import get_standard_dataset, get_test_data
 from deep_image_prior import DeepImagePriorReconstructor, PSNR, SSIM
 
@@ -133,15 +133,24 @@ elif data == 'ellipses_walnut_120':
         },
         {
         'experiment': 'pretrain',
-        'name': 'no_stats_no_sigmoid_train_run1',
+        'name': 'no_stats_no_sigmoid_train_run1_warmup5000_init5e-4',
         'name_title': '',
         'name_filename': None,
+        },
+        {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_save_many_iterates',
+        'export_iterates': [4500],
+        'name_title': 'saved iterates',
+        'name_filename': 'save_many_iterates',
         },
     ]
 
 cfgs_list = []
 experiment_names_list = []
 reconstructions_list = []
+iterates_lists_list = []
+iterates_iters_lists_list = []
 
 for run_spec in runs_to_export:
     experiment = run_spec['experiment']
@@ -168,6 +177,7 @@ for run_spec in runs_to_export:
 
     run_path_multirun = os.path.join(PATH, run['run_path'])
     sub_runs = run_spec.get('sub_runs')
+    export_iterates = run_spec.get('export_iterates')
 
     cfgs = get_multirun_cfgs(
             run_path_multirun, sub_runs=sub_runs)
@@ -175,6 +185,24 @@ for run_spec in runs_to_export:
             run_path_multirun, sub_runs=sub_runs)
     reconstructions = get_multirun_reconstructions(
             run_path_multirun, sub_runs=sub_runs)
+    if export_iterates:
+        saved_iterates_list, saved_iterates_iters_list = get_multirun_iterates(
+                run_path_multirun, sub_runs=sub_runs)
+        iterates_list = []
+        iterates_iters_list = []
+        for saved_iterates, saved_iterates_iters in zip(
+                saved_iterates_list, saved_iterates_iters_list):
+            iterates = []
+            for export_iterate in export_iterates:
+                argwhere_iterate = np.argwhere(
+                        saved_iterates_iters == export_iterate)
+                assert len(argwhere_iterate) == 1
+                iterates.append(saved_iterates[argwhere_iterate[0][0]][0])
+            iterates_list.append(iterates)
+            iterates_iters_list.append(export_iterates)
+    else:
+        iterates_list = [[] for cfg in cfgs]
+        iterates_iters_list = [[] for cfg in cfgs]
     if len(cfgs) == 0:
         warn('No runs found at path "{}", skipping.'.format(run_path_multirun))
         continue
@@ -197,12 +225,13 @@ for run_spec in runs_to_export:
     num_runs = len(cfgs)
     print('Found {:d} runs at path "{}".'.format(
             num_runs, run_path_multirun))
-    assert num_runs == NUM_REPEATS
+    assert num_runs == NUM_REPEATS or export_iterates
 
     cfgs_list.append(cfgs)
     experiment_names_list.append(experiment_names)
     reconstructions_list.append(reconstructions)
-
+    iterates_lists_list.append(iterates_list)
+    iterates_iters_lists_list.append(iterates_iters_list)
 
 def get_init_reco(reconstructor, fbp):
     fbp = fbp[None]
@@ -240,29 +269,47 @@ out_gts = None
 
 out_init_recos_list = []
 out_best_recos_list = []
+out_iterates_lists_list = []
+out_iterates_iters_lists_list = []
 out_init_reco_metrics_list = []
 out_best_reco_metrics_list = []
+out_iterates_metrics_lists_list = []
 out_init_reco_stds_list = []
 out_best_reco_stds_list = []
 out_mean_reco_errors_list = []
 
 
+_prev_cfg = None
 
-for run_spec, cfgs, experiment_names, reconstructions in zip(
-        runs_to_export, cfgs_list, experiment_names_list, reconstructions_list):
+for (run_spec, cfgs, experiment_names, reconstructions,
+        iterates_list, iterates_iters_list) in zip(
+                runs_to_export, cfgs_list, experiment_names_list,
+                reconstructions_list,
+                iterates_lists_list, iterates_iters_lists_list):
 
     experiment_name = experiment_names[0]
 
     out_init_recos = []
     out_best_recos = []
+    out_iterates_list = []
+    out_iterates_iters_list = []
     out_init_reco_metrics = []
     out_best_reco_metrics = []
+    out_iterates_metrics_list = []
 
-    for j, (cfg, recos) in enumerate(zip(cfgs, reconstructions)):
+    for j, (cfg, recos, iterates, iterates_iters) in enumerate(zip(
+            cfgs, reconstructions, iterates_list, iterates_iters_list)):
 
-        dataset, ray_trafos = get_standard_dataset(cfg.data.name, cfg.data)
+        # simple caching for performance improvement
+        if _prev_cfg is None or (
+                _prev_cfg.data.name != cfg.data.name or
+                _prev_cfg.data != cfg.data):
 
-        dataset_test = get_test_data(cfg.data.name, cfg.data)
+            dataset, ray_trafos = get_standard_dataset(cfg.data.name, cfg.data)
+
+            dataset_test = get_test_data(cfg.data.name, cfg.data)
+
+            _prev_cfg = cfg
 
         ray_trafo = {'ray_trafo_module': ray_trafos['ray_trafo_module'],
                      'reco_space': dataset.space[1],
@@ -275,8 +322,11 @@ for run_spec, cfgs, experiment_names, reconstructions in zip(
         cur_gts = []
         cur_init_recos = []
         cur_best_recos = []
+        cur_iterates_list = []
+        cur_iterates_iters_list = []
         cur_init_reco_metrics = []
         cur_best_reco_metrics = []
+        cur_iterates_metrics_list = []
 
         for k, (_, fbp, gt) in enumerate(dataset_test):
             init_reco = get_init_reco(reconstructor, fbp)
@@ -290,6 +340,11 @@ for run_spec, cfgs, experiment_names, reconstructions in zip(
             cur_gts.append(gt)
             cur_init_recos.append(init_reco)
             cur_best_recos.append(best_reco)
+            if run_spec.get('export_iterates'):
+                # iterates and iterates_iters are for k=0, i.e. the only sample
+                assert k == 0
+            cur_iterates_list.append(iterates)
+            cur_iterates_iters_list.append(iterates_iters)
 
             cur_init_reco_metrics.append(
                     {'psnr': PSNR(init_reco, gt),
@@ -297,6 +352,10 @@ for run_spec, cfgs, experiment_names, reconstructions in zip(
             cur_best_reco_metrics.append(
                     {'psnr': PSNR(best_reco, gt),
                      'ssim': SSIM(best_reco, gt)})
+            cur_iterates_metrics_list.append(
+                    [{'psnr': PSNR(iterate, gt),
+                      'ssim': SSIM(iterate, gt)}
+                     for iterate in iterates])
 
         if out_gts is None:
             out_fbps = cur_fbps
@@ -316,13 +375,19 @@ for run_spec, cfgs, experiment_names, reconstructions in zip(
 
         out_init_recos.append(cur_init_recos)
         out_best_recos.append(cur_best_recos)
+        out_iterates_list.append(cur_iterates_list)
+        out_iterates_iters_list.append(cur_iterates_iters_list)
         out_init_reco_metrics.append(cur_init_reco_metrics)
         out_best_reco_metrics.append(cur_best_reco_metrics)
+        out_iterates_metrics_list.append(cur_iterates_metrics_list)
 
     out_init_recos_list.append(out_init_recos)
     out_best_recos_list.append(out_best_recos)
+    out_iterates_lists_list.append(out_iterates_list)
+    out_iterates_iters_lists_list.append(out_iterates_iters_list)
     out_init_reco_metrics_list.append(out_init_reco_metrics)
     out_best_reco_metrics_list.append(out_best_reco_metrics)
+    out_iterates_metrics_lists_list.append(out_iterates_metrics_list)
 
     out_init_reco_stds = [
             np.std(np.stack([recos[k] for recos in out_init_recos]), axis=0)
@@ -357,13 +422,23 @@ metrics_list = [
             'sample_{:d}'.format(k): {
                 'init': init_metrics,
                 'best': best_metrics,
-            } for k, (init_metrics, best_metrics) in enumerate(
-                    zip(cur_init_reco_metrics, cur_best_reco_metrics))
-        } for j, (cur_init_reco_metrics, cur_best_reco_metrics) in enumerate(
-                zip(out_init_reco_metrics, out_best_reco_metrics))
-    } for run_spec, out_init_reco_metrics, out_best_reco_metrics in zip(
+                'iterates': {
+                    it_iter: m
+                    for it_iter, m in zip(iterates_iters, iterates_metrics)},
+            } for k, (init_metrics, best_metrics,
+                      iterates_iters, iterates_metrics) in enumerate(
+                    zip(cur_init_reco_metrics, cur_best_reco_metrics,
+                        cur_iterates_iters_list, cur_iterates_metrics_list))
+        } for j, (cur_init_reco_metrics, cur_best_reco_metrics,
+                  cur_iterates_iters_list,
+                  cur_iterates_metrics_list) in enumerate(
+                zip(out_init_reco_metrics, out_best_reco_metrics,
+                    out_iterates_iters_list, out_iterates_metrics_list))
+    } for (run_spec, out_init_reco_metrics, out_best_reco_metrics,
+           out_iterates_iters_list, out_iterates_metrics_list) in zip(
             runs_to_export,
-            out_init_reco_metrics_list, out_best_reco_metrics_list)
+            out_init_reco_metrics_list, out_best_reco_metrics_list,
+            out_iterates_iters_lists_list, out_iterates_metrics_lists_list)
 ]
 metrics = {
     get_run_name_for_filename(run_spec): m
@@ -412,18 +487,24 @@ for k, (fbp, gt) in enumerate(zip(out_fbps, out_gts)):
 
 for (run_spec, run_median_psnr_reps,
      out_init_recos, out_best_recos,
+     out_iterates_list, out_iterates_iters_list,
      out_init_reco_stds, out_best_reco_stds,
      out_mean_reco_errors) in zip(
         runs_to_export, median_psnr_reps_list,
         out_init_recos_list, out_best_recos_list,
+        out_iterates_lists_list, out_iterates_iters_lists_list,
         out_init_reco_stds_list, out_best_reco_stds_list,
         out_mean_reco_errors_list):
     run_name_for_filename = get_run_name_for_filename(run_spec)
 
-    for j, (cur_init_recos, cur_best_recos) in enumerate(zip(
-            out_init_recos, out_best_recos)):
-        for k, (init_reco, best_reco) in enumerate(zip(
-                cur_init_recos, cur_best_recos)):
+    for j, (cur_init_recos, cur_best_recos,
+            cur_iterates_list, cur_iterates_iters_list) in enumerate(zip(
+                    out_init_recos, out_best_recos,
+                    out_iterates_list, out_iterates_iters_list)):
+        for k, (init_reco, best_reco,
+                iterates, iterates_iters) in enumerate(zip(
+                        cur_init_recos, cur_best_recos,
+                        cur_iterates_list, cur_iterates_iters_list)):
             if (not SAVE_ONLY_MEDIAN_REP or
                     j == run_median_psnr_reps['sample_{:d}'.format(k)]):
                 init_reco_filename = '{}_{}_init_rep_{:d}_sample_{:d}'.format(
@@ -435,6 +516,14 @@ for (run_spec, run_median_psnr_reps,
                         init_reco)
                 np.save(os.path.join(OUTPUT_PATH, best_reco_filename),
                         best_reco)
+
+            for iterate, iterate_iter in zip(iterates, iterates_iters):
+                iterate_filename = (
+                        '{}_{}_rep_{:d}_sample_{:d}_iter_{:d}'.format(
+                        data, run_name_for_filename, j, k, iterate_iter))
+
+                np.save(os.path.join(OUTPUT_PATH, iterate_filename),
+                        iterate)
 
     for k, (init_reco_std, best_reco_std, mean_reco_error) in enumerate(zip(
             out_init_reco_stds, out_best_reco_stds, out_mean_reco_errors)):
