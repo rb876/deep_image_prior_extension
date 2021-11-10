@@ -144,9 +144,24 @@ plot_settings_dict = {
             'gridspec_kw': {'hspace': 0.3, 'wspace': -0.25},
             'pad_inches': 0.,
             'add_insets': ([
+                # {
+                #  'on_images': [0, 1, 2, 3, 4, 5],
+                #  'rect': [262, 82, 70, 70],
+                #  'add_metrics': {
+                #      'gt_idx': 2,
+                #      'pos': (-0.05, 0.95),
+                #      'kwargs': {
+                #          'ha': 'right',
+                #          'va': 'top',
+                #      }
+                #  },
+                #  'axes_rect': [0.69, 0.69, 0.31, 0.31],
+                #  'frame_path': [[0., 1.], [0., 0.3], [0.45, 0.], [1., 0.]],
+                #  'clip_path_closing': [[1., 1.]],
+                # },
                 {
                  'on_images': [0, 1, 2, 3, 4, 5],
-                 'rect': [271, 80, 84, 88],
+                 'rect': [279, 81, 30, 60],
                  'add_metrics': {
                      'gt_idx': 2,
                      'pos': (-0.05, 0.95),
@@ -155,13 +170,13 @@ plot_settings_dict = {
                          'va': 'top',
                      }
                  },
-                 'axes_rect': [0.685, 0.67, 0.315, 0.33],
-                 'frame_path': [[0., 1.], [0., 0.3], [0.45, 0.], [1., 0.]],
+                 'axes_rect': [0.82, 0.64, 0.18, 0.36],
+                 'frame_path': [[0., 1.], [0., 0.], [1., 0.]],
                  'clip_path_closing': [[1., 1.]],
                 },
                 {
                  'on_images': [0, 1, 2, 3, 4, 5],
-                 'rect': [200, 220, 65, 65],
+                 'rect': [200, 220, 65, 55],
                  'add_metrics': {
                      'gt_idx': 2,
                      'pos': (1.05, 0.05),
@@ -170,8 +185,8 @@ plot_settings_dict = {
                          'va': 'bottom',
                      }
                  },
-                 'axes_rect': [0., 0., 0.29, 0.29],
-                 'frame_path': [[0., 1.], [1., 1.], [1., 0.]],
+                 'axes_rect': [0., 0., 0.39, 0.33],
+                 'frame_path': [[0., 1.], [0.5, 1.], [1., 0.7], [1., 0.]],
                  'clip_path_closing': [[0., 0.]],
                 },
             ] if data == 'ellipses_walnut_120' and plot_name == 'images'
