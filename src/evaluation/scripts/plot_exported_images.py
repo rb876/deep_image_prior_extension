@@ -8,9 +8,11 @@ from matplotlib.colors import Normalize
 from matplotlib.ticker import FormatStrFormatter
 from matplotlib.cm import get_cmap, ScalarMappable
 from matplotlib.axes import Axes
+from matplotlib.path import Path
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 from mpl_toolkits.axes_grid1.inset_locator import InsetPosition
 from evaluation.display_utils import experiment_title_dict
+from deep_image_prior import PSNR, SSIM
 
 IMAGES_PATH = os.path.join(os.path.dirname(__file__), 'images')
 
@@ -38,6 +40,7 @@ SUBPLOT_TYPES = {
     'fbp': 'image',
     'init_reco': 'image',
     'best_reco': 'image',
+    'iterate': 'image',
     'init_reco_std': 'std_image',
     'best_reco_std': 'std_image',
     'mean_reco_error': 'error_image',
@@ -49,10 +52,6 @@ STD_CMAP = 'viridis'
 ERROR_CMAP = 'PiYG'
 
 runs_filename = None
-
-# possible values for 'type' are
-# 'gt', 'fbp', 'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std',
-# 'mean_reco_error', 'uncertainty'
 
 if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_45',
             'brain_walnut_120', 'ellipses_walnut_120']:
@@ -80,11 +79,18 @@ if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_45',
                 'repetition': 'median_psnr',
                 'show_metrics': True,
             },
-            {
+            ({
                 'type': 'init_reco',
                 'experiment': 'no_pretrain',
                 'repetition': 'median_psnr',
-            },
+            } if data == 'ellipses_lotus_20' else {
+                'type': 'iterate',
+                'experiment': 'pretrain_only_fbp',
+                'name_filename': 'save_many_iterates',
+                'iterate_iter': 4500,
+                'repetition': 0,
+                'show_metrics': True,
+            }),
             {
                 'type': 'fbp',
                 'show_metrics': True,
@@ -128,11 +134,48 @@ plot_settings_dict = {
     'default': {
         'images': {
             'nrows': 2,
-            'norm_group_inds': [0, 0, 0, 0, 1, 0],
+            'norm_group_inds': [
+                    1 if (image_spec['type'] == 'init_reco' and
+                            image_spec['experiment'] == 'no_pretrain')
+                    else 0
+                    for image_spec in images_to_plot],
             'norm_groups_use_vrange_from_images': {0: [2]},
             'colorbars_mode': 'off',
             'gridspec_kw': {'hspace': 0.3, 'wspace': -0.25},
             'pad_inches': 0.,
+            'add_insets': ([
+                {
+                 'on_images': [0, 1, 2, 3, 4, 5],
+                 'rect': [271, 80, 84, 88],
+                 'add_metrics': {
+                     'gt_idx': 2,
+                     'pos': (-0.05, 0.95),
+                     'kwargs': {
+                         'ha': 'right',
+                         'va': 'top',
+                     }
+                 },
+                 'axes_rect': [0.685, 0.67, 0.315, 0.33],
+                 'frame_path': [[0., 1.], [0., 0.3], [0.45, 0.], [1., 0.]],
+                 'clip_path_closing': [[1., 1.]],
+                },
+                {
+                 'on_images': [0, 1, 2, 3, 4, 5],
+                 'rect': [200, 220, 65, 65],
+                 'add_metrics': {
+                     'gt_idx': 2,
+                     'pos': (1.05, 0.05),
+                     'kwargs': {
+                         'ha': 'left',
+                         'va': 'bottom',
+                     }
+                 },
+                 'axes_rect': [0., 0., 0.29, 0.29],
+                 'frame_path': [[0., 1.], [1., 1.], [1., 0.]],
+                 'clip_path_closing': [[0., 0.]],
+                },
+            ] if data == 'ellipses_walnut_120' and plot_name == 'images'
+            else [])
         },
         'uncertainty': {
             'nrows': 2,
@@ -158,7 +201,6 @@ plot_settings_dict = {
     # },
 }
 
-
 try:
     with open(METRICS_PATH, 'r') as f:
         metrics = json.load(f)
@@ -173,8 +215,8 @@ except FileNotFoundError:
 
 def get_run_name_for_filename(image_spec):
     assert image_spec.get('type') in (
-            'init_reco', 'best_reco', 'init_reco_std', 'best_reco_std',
-            'mean_reco_error')
+            'init_reco', 'best_reco', 'iterate',
+            'init_reco_std', 'best_reco_std', 'mean_reco_error')
 
     name_filename = image_spec.get('name_filename', image_spec.get('name'))
 
@@ -213,6 +255,12 @@ def get_filename(image_spec):
             rep = get_rep(image_spec)
             filename = '{}_{}_rep_{:d}_sample_{:d}'.format(
                     data, run_name_for_filename, rep, SAMPLE)
+        elif image_type == 'iterate':
+            run_name_for_filename = get_run_name_for_filename(image_spec)
+            rep = get_rep(image_spec)
+            iterate_iter = image_spec['iterate_iter']
+            filename = '{}_{}_rep_{:d}_sample_{:d}_iter_{:d}'.format(
+                    data, run_name_for_filename, rep, SAMPLE, iterate_iter)
         elif image_type == 'init_reco_std':
             run_name_for_filename = get_run_name_for_filename(image_spec)
             filename = '{}_{}_init_std_sample_{:d}'.format(
@@ -279,6 +327,7 @@ titlepad = plot_settings.get('titlepad')
 figsize = plot_settings.get('figsize', (9, 6))
 gridspec_kw = plot_settings.get('gridspec_kw', {})
 pad_inches = plot_settings.get('pad_inches', 0.1)
+add_insets = plot_settings.get('add_insets')
 
 
 def get_title(image_spec):
@@ -294,6 +343,10 @@ def get_title(image_spec):
     elif image_type == 'best_reco':
         experiment_title = experiment_title_dict[image_spec['experiment']]
         title = experiment_title
+    elif image_type == 'iterate':
+        experiment_title = experiment_title_dict[image_spec['experiment']]
+        title = '{} iter. {:d}'.format(
+                experiment_title, image_spec['iterate_iter'])
     elif image_type == 'init_reco_std':
         experiment_title = experiment_title_dict[image_spec['experiment']]
         title = 'Std. of {} initial'.format(experiment_title)
@@ -323,11 +376,15 @@ def get_image_metrics(image_spec):
             type_key = 'init'
         elif image_type == 'best_reco':
             type_key = 'best'
+        elif image_type == 'iterate':
+            type_key = 'iterates'
         else:
             raise ValueError(
                     'No metrics available for "type" \'{}\''.format(image_type))
         image_metrics = metrics[run_name_for_filename]['rep_{:d}'.format(rep)][
                 'sample_{:d}'.format(SAMPLE)][type_key]
+        if image_type == 'iterate':
+            image_metrics = image_metrics[str(image_spec['iterate_iter'])]
 
     return image_metrics
 
@@ -394,7 +451,7 @@ for i, (image_spec, image, vrange, ax) in enumerate(zip(
 
         if image_spec.get('show_metrics'):
             image_metrics = get_image_metrics(image_spec)
-            ax.set_xlabel('PSNR: ${:.2f}\,$dB, SSIM: ${:.4f}\,$'.format(
+            ax.set_xlabel('PSNR: ${:.2f}\,$dB, SSIM: ${:.4f}$'.format(
                     image_metrics['psnr'], image_metrics['ssim']),
                     fontsize=metrics_fontsize)
 
@@ -402,6 +459,59 @@ for i, (image_spec, image, vrange, ax) in enumerate(zip(
         ax.set_yticks([])
         for spine in ax.spines.values():
             spine.set_visible(False)
+
+        if add_insets:
+            for add_inset in add_insets:
+                if i in add_inset['on_images']:
+                    ip = InsetPosition(ax, add_inset['axes_rect'])
+                    axins = Axes(fig, [0., 0., 1., 1.])
+                    axins.set_axes_locator(ip)
+                    fig.add_axes(axins)
+                    rect = add_inset['rect']
+                    slice0 = slice(rect[0], rect[0]+rect[2])
+                    slice1 = slice(rect[1], rect[1]+rect[3])
+                    inset_image = image[slice0, slice1]
+                    inset_image_handle = axins.imshow(
+                            inset_image.T, cmap=cmap, vmin=vmin, vmax=vmax,
+                            interpolation='none')
+                    add_metrics = add_inset.get('add_metrics')
+                    if add_metrics:
+                        gt_idx = add_metrics['gt_idx']
+                        assert images_to_plot[gt_idx]['type'] == 'gt'
+                        if i != gt_idx:
+                            gt = images[gt_idx]
+                            inset_gt = gt[slice0, slice1]
+                            inset_psnr = PSNR(inset_image, inset_gt,
+                                    data_range=np.max(gt)-np.min(gt))
+                            inset_ssim = SSIM(inset_image, inset_gt,
+                                    data_range=np.max(gt)-np.min(gt))
+                            axins.text(
+                                    *add_metrics.get('pos', [0., 0.]),
+                                    'PSNR: ${:.2f}\,$dB\nSSIM: ${:.4f}$'.format(
+                                            inset_psnr, inset_ssim),
+                                    transform=axins.transAxes,
+                                    fontsize=add_metrics.get('fontsize', 6),
+                                    color=add_metrics.get('color', '#cccccc'),
+                                    **add_metrics.get('kwargs', {}),
+                                    )
+                    axins.set_xticks([])
+                    axins.set_yticks([])
+                    axins.patch.set_visible(False)
+                    for spine in axins.spines.values():
+                        spine.set_visible(False)
+                    frame_path = add_inset.get(
+                            'frame_path', [[0., 0.], [1., 0.], [0., 1.], [1., 1]])
+                    if frame_path:
+                        axins.plot(
+                                *np.array(frame_path).T,
+                                transform=axins.transAxes,
+                                color=add_inset.get('frame_color', '#555555'),
+                                solid_capstyle='butt')
+                        inset_image_handle.set_clip_path(Path(
+                                frame_path + add_inset.get(
+                                        'clip_path_closing', [])),
+                                transform=axins.transAxes)
+                        inset_image_handle.set_clip_on(True)
 
     elif SUBPLOT_TYPES[image_type] == 'plot':
         if image_type == 'uncertainty':
