@@ -21,7 +21,8 @@ from matplotlib.patches import Rectangle
 PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 TVADAM_PSNRS_FILEPATH = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        '../baselines', 'tvadam_psnrs.yaml')
+        'baselines', 'tvadam_psnrs.yaml')
+        # '../baselines', 'tvadam_psnrs.yaml')
 
 FIG_PATH = os.path.dirname(__file__)
 EVAL_RESULTS_PATH = os.path.dirname(__file__)

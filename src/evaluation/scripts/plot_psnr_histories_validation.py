@@ -30,8 +30,8 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-# data = 'ellipses_lotus_20'
-data = 'ellipses_lotus_limited_45'
+data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 
@@ -152,6 +152,24 @@ if run.get('single_run_path') is None:
 run_path = os.path.join(PATH, run['single_run_path'])
 
 cfg = get_run_cfg(run_path)
+
+# # one may need to adapt some absolute paths manually here
+# cfg.data.geometry_specs.ray_trafo_filename = '/localdata/data/FIPS_Lotus/LotusData128.mat'
+# cfg.data.ground_truth_filename = '/localdata/data/FIPS_Lotus/TVGroundTruthLotus128.mat'
+# cfg.val.baseline_run_path = os.path.join(PATH, os.path.relpath(
+#         cfg.val.baseline_run_path,
+#         os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+#                 cfg.val.baseline_run_path.rstrip('/')))))))
+# cfg.val.multirun_base_paths = [os.path.join(PATH, os.path.relpath(
+#         multirun_run_path,
+#         os.path.dirname(os.path.dirname(os.path.dirname(
+#                 multirun_run_path.rstrip('/'))))))
+#         for multirun_run_path in cfg.val.multirun_base_paths]
+# print(cfg.val.multirun_base_paths)
+# cfg.val.load_histories_from_run_path = os.path.join(PATH, os.path.relpath(
+#         cfg.val.load_histories_from_run_path,
+#         os.path.dirname(os.path.dirname(os.path.dirname(
+#                 cfg.val.load_histories_from_run_path.rstrip('/'))))))
 
 val_dataset = get_validation_data(cfg.data.name, cfg.data)
 num_val_samples = len(val_dataset)  # 1
