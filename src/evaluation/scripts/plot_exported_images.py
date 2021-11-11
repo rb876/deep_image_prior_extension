@@ -80,17 +80,25 @@ if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_45',
                 'show_metrics': True,
             },
             ({
-                'type': 'init_reco',
-                'experiment': 'no_pretrain',
-                'repetition': 'median_psnr',
-            } if data == 'ellipses_lotus_20' else {
                 'type': 'iterate',
                 'experiment': 'pretrain_only_fbp',
                 'name_filename': 'save_many_iterates',
                 'iterate_iter': 4500,
                 'repetition': 0,
                 'show_metrics': True,
-            }),
+             } if data == 'ellipses_walnut_120' else ({
+                'type': 'best_reco',
+                'experiment': 'pretrain_only_fbp',
+                'name_filename': 'repeated_epochs1',
+                'name_title': '1 epoch',
+                'repetition': 'median_psnr',
+                'show_metrics': True,
+             } if data == 'brain_walnut_120' else {
+                'type': 'init_reco',
+                'experiment': 'no_pretrain',
+                'repetition': 'median_psnr',
+             })
+            ),
             {
                 'type': 'fbp',
                 'show_metrics': True,
@@ -189,7 +197,7 @@ plot_settings_dict = {
                  'frame_path': [[0., 1.], [0.5, 1.], [1., 0.7], [1., 0.]],
                  'clip_path_closing': [[0., 0.]],
                 },
-            ] if data == 'ellipses_walnut_120' and plot_name == 'images'
+            ] if data.endswith('walnut_120') and plot_name == 'images'
             else [])
         },
         'uncertainty': {
@@ -345,6 +353,13 @@ pad_inches = plot_settings.get('pad_inches', 0.1)
 add_insets = plot_settings.get('add_insets')
 
 
+def get_experiment_title(image_spec):
+    experiment_title = experiment_title_dict[image_spec['experiment']]
+    if image_spec.get('name_title'):
+        experiment_title = '{} [{}]'.format(
+                experiment_title, image_spec['name_title'])
+    return experiment_title
+
 def get_title(image_spec):
     image_type = image_spec['type']
 
@@ -353,26 +368,26 @@ def get_title(image_spec):
     elif image_type == 'fbp':
         title = 'FBP'  # if 'lotus' in data else 'FDK'
     elif image_type == 'init_reco':
-        experiment_title = experiment_title_dict[image_spec['experiment']]
+        experiment_title = get_experiment_title(image_spec)
         title =  '{} initial'.format(experiment_title)
     elif image_type == 'best_reco':
-        experiment_title = experiment_title_dict[image_spec['experiment']]
+        experiment_title = get_experiment_title(image_spec)
         title = experiment_title
     elif image_type == 'iterate':
-        experiment_title = experiment_title_dict[image_spec['experiment']]
+        experiment_title = get_experiment_title(image_spec)
         title = '{} iter. {:d}'.format(
                 experiment_title, image_spec['iterate_iter'])
     elif image_type == 'init_reco_std':
-        experiment_title = experiment_title_dict[image_spec['experiment']]
+        experiment_title = get_experiment_title(image_spec)
         title = 'Std. of {} initial'.format(experiment_title)
     elif image_type == 'best_reco_std':
-        experiment_title = experiment_title_dict[image_spec['experiment']]
+        experiment_title = get_experiment_title(image_spec)
         title = 'Std. of {}'.format(experiment_title)
     elif image_type == 'mean_reco_error':
-        experiment_title = experiment_title_dict[image_spec['experiment']]
+        experiment_title = get_experiment_title(image_spec)
         title = 'Mean error of {}'.format(experiment_title)
     elif image_type == 'uncertainty':
-        experiment_title = experiment_title_dict[image_spec['experiment']]
+        experiment_title = get_experiment_title(image_spec)
         title = 'Calibration of {}'.format(experiment_title)
     else:
         raise ValueError(

@@ -109,6 +109,12 @@ elif data == 'brain_walnut_120':
         'name_title': '',
         'name_filename': None,
         },
+        {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_repeated_epochs1',
+        'name_title': '1 epoch',
+        'name_filename': 'repeated_epochs1',
+        },
     ]
 
 elif data == 'ellipses_walnut_120':
