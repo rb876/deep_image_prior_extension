@@ -677,7 +677,7 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
     for loss_history in loss_histories:
         h = ax_loss.plot(loss_history, label=label, color=color,
                         linestyle=linestyle, linewidth=2,
-                        zorder=zorder, alpha=0.075)
+                        zorder=zorder, alpha=0.15)
     x_stop_times = sorted([
             (stop_time if stop_time is not None else
              cfgs[0].mdl.optim.iterations + 1)
