@@ -961,6 +961,8 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
     eval_results = {}
     eval_results['run_spec'] = run_spec
     eval_results['rise_time_to_baseline'] = rise_time_to_baseline
+    eval_results['PSNR_best'] = float(np.max(median_psnr_history))
+    eval_results['PSNR_best_iter'] = int(np.argmax(median_psnr_history))
     eval_results['PSNR_steady'] = get_psnr_steady(
             psnr_histories,
             start=eval_settings_dict[data]['psnr_steady_start'],

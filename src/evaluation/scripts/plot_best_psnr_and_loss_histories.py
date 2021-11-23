@@ -7,13 +7,14 @@ from evaluation.utils import (
         get_multirun_cfgs, get_multirun_experiment_names,
         get_multirun_histories, uses_swa_weights)
 from evaluation.evaluation import (
-        get_median_psnr_history, get_psnr_steady)
+        get_rise_time_to_baseline, get_psnr_steady)
 from evaluation.display_utils import (
     data_title_dict, experiment_color_dict, get_title_from_run_spec)
 from copy import copy
 from math import ceil
 
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 from matplotlib.patches import Rectangle
 from matplotlib.legend_handler import HandlerLine2D
 
@@ -399,10 +400,10 @@ elif data == 'ellipses_walnut_120':
         ]
 
 
-# if not variant or variant == 'all':
-#     baseline_run_idx = 0
-# elif variant == 'checkpoints' or variant == 'checkpoints_epochs':
-#     baseline_run_idx = -1
+if not variant or variant == 'all':
+    baseline_run_idx = 0
+elif variant == 'checkpoints' or variant == 'checkpoints_epochs':
+    baseline_run_idx = -1
 
 title = None
 runs_title = ''  # None -> auto from run_specs
@@ -415,34 +416,66 @@ runs_filename = 'comparison'  # None -> auto from run_specs
 
 plot_settings_dict = {
     'ellipses_lotus_20': {
-        'xlim': (-60, 6000),
-        'ylim': (None, 35.95),
-        'ylim_loss': None,
-        'stop_time_y_pos': 32.5,
+        'xlim': (-65, 6500),
+        'xlim_loss_diff': (-99.99, 9999),
+        'ylim_psnr': (14., 36.95),
+        'ylim_loss': (2e-3, 2.),
+        'ylim_loss_diff': (None, None),
+        'stop_time_y_pos': 1.5e-1,
         'stop_time_y_shift_per_run_idx': {
-            0: 3.,
-            1: 1.,
-            2: 2.,
-            3: 0.,
-            4: 7.,
-            5: 5.,
-            6: 6.,
-            7: 4.,
+            0: 0.3,
+            1: 0.1,
+            2: 0.2,
+            3: 0.0,
+            4: 0.7,
+            5: 0.5,
+            6: 0.6,
+            7: 0.4,
         } if variant == 'all' else ({
-            0: 1.,
-            1: 0.,
-            2: 3.,
-            3: 2.,
+            0: 0.2,
+            1: 0.0,
+            2: 0.6,
+            3: 0.4,
+        } if (not variant) else {}),
+        'rise_time_to_baseline_y_pos': 33.,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
+            0: 4.5,
+            1: 1.5,
+            2: 3.0,
+            3: 0.0,
+            4: 10.5,
+            5: 7.5,
+            6: 9.0,
+            7: 6.0,
+        } if variant == 'all' else ({
+            0: 2.0,
+            1: 0.0,
+            2: 3.0,
+            3: 1.0,
         } if (not variant) else {}),
         'zorder_per_run_idx': {
+            0: 2.2,
+            1: 2.1,
+            2: 2.4,
+            3: 2.3,
         },
-        'run_legend_bbox_to_anchor': (0.5, -0.125),
-        'run_legend_loc': 'upper center',
+        'hist_num_bins': 25,
+        'hist_num_k_retained': 5,
+        'hist_opacity': 0.3,
+        'hist_linewidth': 2.,
+        'hist_xticks': [1e-6, 1e-3, 1e0],
+        'hist_ylim': [1e-5, 5e5],
+        'hist_iteration_slices': [
+                slice(0, 2000), slice(2000, 5000), slice(5000, 10000)],
+        'run_legend_bbox_to_anchor': (0.5, -0.14),
+        'run_legend_loc': 'lower center',
         'run_legend_ncol': (
             len(runs_to_compare) if not variant else
             len(runs_to_compare) // 2),
-        'symbol_legend_bbox_to_anchor': (1., 0.825),
-        'symbol_legend_loc': 'upper right',
+        'symbol_legend_loss_bbox_to_anchor': (1., 1.),
+        'symbol_legend_loss_loc': 'upper right',
+        'symbol_legend_psnr_bbox_to_anchor': (1., 0.),
+        'symbol_legend_psnr_loc': 'lower right',
     },
     'ellipses_lotus_limited_45': {
     },
@@ -450,33 +483,65 @@ plot_settings_dict = {
     },
     'ellipses_walnut_120': {
         'xlim': (-300, 30000),
-        'ylim': (None, 39.25),
-        'ylim_loss': None,
-        'stop_time_y_pos': 35.5,
+        'xlim_loss_diff': (-299.99, 29999),
+        'ylim_psnr': (14., 43.25),
+        'ylim_loss': (1.5e-4, 5e-1),
+        'ylim_loss_diff': (None, None),
+        'stop_time_y_pos': 1.5e-2,
         'stop_time_y_shift_per_run_idx': {
-            0: 3.,
-            1: 1.,
-            2: 2.,
-            3: 0.,
-            4: 7.,
-            5: 5.,
-            6: 6.,
-            7: 4.,
+            0: 0.3,
+            1: 0.1,
+            2: 0.2,
+            3: 0.0,
+            4: 0.7,
+            5: 0.5,
+            6: 0.6,
+            7: 0.4,
         } if variant == 'all' else ({
-            0: 1.,
-            1: 0.,
-            2: 3.,
-            3: 2.,
+            0: 0.2,
+            1: 0.0,
+            2: 0.6,
+            3: 0.4,
+        } if (not variant) else {}),
+        'rise_time_to_baseline_y_pos': 36.,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
+            0: 6.0,
+            1: 2.0,
+            2: 4.0,
+            3: 0.0,
+            4: 14.0,
+            5: 10.0,
+            6: 12.0,
+            7: 8.0,
+        } if variant == 'all' else ({
+            0: 2.0,
+            1: 0.0,
+            2: 6.0,
+            3: 4.0,
         } if (not variant) else {}),
         'zorder_per_run_idx': {
+            0: 2.2,
+            1: 2.1,
+            2: 2.4,
+            3: 2.3,
         },
-        'run_legend_bbox_to_anchor': (0.5, -0.125),
-        'run_legend_loc': 'upper center',
+        'hist_num_bins': 25,
+        'hist_num_k_retained': 5,
+        'hist_opacity': 0.3,
+        'hist_linewidth': 2.,
+        'hist_xticks': [1e-6, 1e-3, 1e0],
+        'hist_ylim': [1e-5, 1e7],
+        'hist_iteration_slices': [
+                slice(0, 5000), slice(5000, 10000), slice(10000, 30000)],
+        'run_legend_bbox_to_anchor': (0.5, -0.14),
+        'run_legend_loc': 'lower center',
         'run_legend_ncol': (
             len(runs_to_compare) if not variant else
             len(runs_to_compare) // 2),
-        'symbol_legend_bbox_to_anchor': (1., 0.85),
-        'symbol_legend_loc': 'upper right',
+        'symbol_legend_loss_bbox_to_anchor': (1., 1.),
+        'symbol_legend_loss_loc': 'upper right',
+        'symbol_legend_psnr_bbox_to_anchor': (1., 0.),
+        'symbol_legend_psnr_loc': 'lower right',
     }
 }
 
@@ -486,33 +551,59 @@ eval_settings_dict = {
         'psnr_steady_stop': None,
         'stop_threshold': 5e-6,
         'stop_avg_interval': 100,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
     },
     'ellipses_lotus_limited_45': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
         'stop_threshold': 1e-8,
         'stop_avg_interval': 100,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
     },
     'brain_walnut_120': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
         'stop_threshold': 1e-8,
         'stop_avg_interval': 100,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
     },
     'ellipses_walnut_120': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
         'stop_threshold': 5e-8,
         'stop_avg_interval': 100,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
     },
 }
 
 data_title = data_title_dict[data]
 
-fig, ax = plt.subplots(figsize=plot_settings_dict[data].get('figsize', (8, 5)),
-                       gridspec_kw={'bottom': 0.2})
+fig = plt.figure(
+        figsize=plot_settings_dict[data].get('figsize', (8, 6.5)))
+gs = gridspec.GridSpec(2, 2, figure=fig,
+        **{'bottom': 0., 'hspace': 0.33, 'wspace': 0.25})
 
-ax_loss = ax.twinx()
+dummy_gs11 = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=gs[1, 1], wspace=0, height_ratios=[0.025, 0.975])
+gs11 = gridspec.GridSpecFromSubplotSpec(1, 3, subplot_spec=dummy_gs11[1], wspace=0)
+fake11 = fig.add_subplot(gs[1, 1])
+fake11.set_axis_off()
+
+ax_loss = fig.add_subplot(gs[0, 0])
+ax_psnr = fig.add_subplot(gs[1, 0])
+ax_loss_diff = fig.add_subplot(gs[0, 1])
+ax_loss_diff_hists = [fig.add_subplot(gs11[i]) for i in range(3)]
+
+ax_loss.set_yscale('log')
+ax_loss_diff.set_yscale('log')
+for i, ax_ in enumerate(ax_loss_diff_hists):
+    ax_.grid(alpha=0.3)
+    ax_.set_xscale('log')
+    ax_.set_yscale('log')
+    ax_.set_xticks(plot_settings_dict[data]['hist_xticks'])
+    ax_.tick_params(axis='x', labelrotation=45.)
+    if i != 0:
+        ax_.set_yticklabels([])
+    ax_.set_ylim(plot_settings_dict[data]['hist_ylim'])
 
 def get_color(run_spec, cfg):
     color = run_spec.get('color')
@@ -533,6 +624,13 @@ def get_label(run_spec, cfg):
 
     label = ', '.join(label_parts)
     return label
+
+def hex_to_rgb(value, alpha):
+    value = value.lstrip('#')
+    lv = len(value)
+    out = tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+    out = [el / 255 for el in out] + [alpha]
+    return tuple(out)
 
 xlim = plot_settings_dict[data]['xlim']
 
@@ -610,12 +708,20 @@ def get_best_loss_history(histories):
     best_loss_history = np.minimum.accumulate(histories['loss'])
     return best_loss_history
 
-def get_stop_time(histories, threshold, avg_interval=1):
-    loss_abs_diff = np.abs(np.diff(histories['loss']))
+def get_loss_abs_diff_running_avg_history(
+        histories, avg_interval=1, normalize_loss=False):
+    loss_abs_diff = np.abs(
+            np.diff(histories['loss'] / histories['loss'][0]
+            if normalize_loss else histories['loss']))
     loss_abs_diff_running_avg = np.pad(
             np.convolve(loss_abs_diff, np.ones(avg_interval),
                         mode='valid') / avg_interval,
             (avg_interval - 1, 0), constant_values=np.inf)
+    return loss_abs_diff_running_avg
+
+def get_stop_time(histories, threshold, avg_interval=1):
+    loss_abs_diff_running_avg = get_loss_abs_diff_running_avg_history(
+            histories, avg_interval=avg_interval)
     argwhere_stop = np.argwhere(loss_abs_diff_running_avg < threshold)
     stop_time = int(argwhere_stop[0][0]) if len(argwhere_stop) > 0 else None
     return stop_time
@@ -634,8 +740,23 @@ def get_stop_time(histories, threshold, avg_interval=1):
 # h = ax.axhline(baseline_psnr_steady, color='gray', linestyle='--', zorder=1.5)
 # baseline_handle = h
 
+baseline_histories = histories_list[baseline_run_idx]
+baseline_psnr_histories = [
+        h['psnr'] for h in baseline_histories]
+baseline_psnr_steady = get_psnr_steady(
+        baseline_psnr_histories,
+        start=eval_settings_dict[data]['psnr_steady_start'],
+        stop=eval_settings_dict[data]['psnr_steady_stop'])
+
+print('baseline steady PSNR',
+        baseline_psnr_steady)
+
+h = ax_psnr.axhline(baseline_psnr_steady, color='gray', linestyle='--', zorder=1.5)
+baseline_handle = h
+
 run_handles = []
 stop_time_handles = []
+rise_time_handles = []
 
 eval_results_list = []
 
@@ -645,12 +766,32 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
     best_psnr_histories = [get_best_output_psnr_history(h) for h in histories]
     loss_histories = [h['loss'] for h in histories]
     best_loss_histories = [get_best_loss_history(h) for h in histories]
+    psnr_histories = [h['psnr'] for h in histories]
+    loss_abs_diff_histories = [np.abs(np.diff(h['loss'])) for h in histories]
+    mean_loss_abs_diff_history = np.mean(loss_abs_diff_histories, axis=0)
+    loss_abs_diff_running_avg_histories = [
+            get_loss_abs_diff_running_avg_history(h,
+                    avg_interval=eval_settings_dict[data]['stop_avg_interval'],
+                    normalize_loss=False)
+            for h in histories]
+    mean_loss_abs_diff_running_avg_history = np.mean(
+            loss_abs_diff_running_avg_histories, axis=0)
 
     stop_times = [
             get_stop_time(h,
                     threshold=eval_settings_dict[data]['stop_threshold'],
                     avg_interval=eval_settings_dict[data]['stop_avg_interval'])
             for h in histories]
+
+    rise_times_to_baseline = []
+    for psnr_history in psnr_histories:
+        try:
+            rise_times_to_baseline.append(get_rise_time_to_baseline(
+                    [psnr_history], baseline_psnr_steady,
+                    remaining_psnr=eval_settings_dict[data][
+                            'rise_time_to_baseline_remaining_psnr']))
+        except IndexError:
+            rise_times_to_baseline.append(None)
 
     eval_results = {}
     eval_results['run_spec'] = run_spec
@@ -663,10 +804,10 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
     linestyle = run_spec.get('linestyle', 'solid')
 
     zorder = plot_settings_dict[data].get('zorder_per_run_idx', {}).get(
-            2 + 0.1 * i)
+            i, 2 + 0.1 * i)
 
     for best_psnr_history in best_psnr_histories:
-        h = ax.plot(best_psnr_history, label=label, color=color,
+        h = ax_psnr.plot(best_psnr_history, label=label, color=color,
                         linestyle=linestyle, linewidth=2,
                         zorder=zorder)
     run_handles += h
@@ -682,33 +823,92 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
             (stop_time if stop_time is not None else
              cfgs[0].mdl.optim.iterations + 1)
             for stop_time in stop_times])
-    stop_time_y_pos_shifted = (
-            plot_settings_dict[data]['stop_time_y_pos'] +
+    stop_time_y_pos_shifted = ax_loss.transData.inverted().transform(
+            ax_loss.transAxes.transform(
+                (0., ax_loss.transAxes.inverted().transform(
+                    ax_loss.transData.transform(
+                        (0., plot_settings_dict[data]['stop_time_y_pos'])))[1] +
                     plot_settings_dict[data][
-                            'stop_time_y_shift_per_run_idx']
-                            .get(i, 0))
-    h = ax.plot(x_stop_times,
+                            'stop_time_y_shift_per_run_idx'].get(i, 0))))[1]
+
+    h = ax_loss.plot(x_stop_times,
             [stop_time_y_pos_shifted] * len(x_stop_times),
             color=color, linestyle='-', solid_capstyle='butt', linewidth=2,
             marker='|', markersize=4, zorder=zorder)
     stop_time_handles += h
 
-ax.grid(True, linestyle='-')
-ax.set_xlim(xlim)
-ax.set_xlabel('Iteration')
-ax.set_ylabel('PSNR [dB]', labelpad=plot_settings_dict[data].get('ylabel_pad'))
-ax.set_ylim(plot_settings_dict[data]['ylim'])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
+    x_rise_times_to_baseline = sorted([
+            (rise_time_to_baseline if rise_time_to_baseline is not None else
+             cfgs[0].mdl.optim.iterations + 1)
+            for rise_time_to_baseline in rise_times_to_baseline])
+    rise_time_to_baseline_y_pos_shifted = (
+            plot_settings_dict[data]['rise_time_to_baseline_y_pos'] +
+                    plot_settings_dict[data][
+                            'rise_time_to_baseline_y_shift_per_run_idx']
+                            .get(i, 0))
+    h = ax_psnr.plot(x_rise_times_to_baseline,
+            [rise_time_to_baseline_y_pos_shifted] * len(
+                    x_rise_times_to_baseline),
+            color=color, linestyle='-', solid_capstyle='butt', linewidth=2,
+            marker='*', markersize=8, zorder=zorder)
+    rise_time_handles += h
+        # ax_psnr.plot([rise_time_to_baseline, rise_time_to_baseline],
+        #         [median_psnr_history[rise_time_to_baseline],
+        #             rise_time_to_baseline_y_pos_shifted],
+        #         color=color, linestyle='--',
+        #         zorder=zorder)
 
-ax_loss.set_ylabel('DIP+TV loss $l_t(\\theta)$')
-ax_loss.set_yscale('log')
+    # for loss_abs_diff_running_avg in loss_abs_diff_running_avg_histories:
+    #     h = ax_loss_diff.plot(loss_abs_diff_running_avg,
+    #             label=label, color=color, linestyle=linestyle, linewidth=2,
+    #             zorder=zorder, alpha=0.1)
+    ax_loss_diff.plot(mean_loss_abs_diff_running_avg_history,
+            label=label, color=color, linestyle=linestyle, linewidth=2,
+            zorder=zorder)
+
+    for i, iteration_slice in enumerate(plot_settings_dict[data]['hist_iteration_slices']):
+        ax_loss_diff_hists[i].hist(
+                mean_loss_abs_diff_history[iteration_slice],
+                bins=np.logspace(np.log10(np.min(mean_loss_abs_diff_history)),
+                                 np.log10(np.max(mean_loss_abs_diff_history)),
+                                 plot_settings_dict[data]['hist_num_bins']),
+                # bins=plot_settings_dict[data]['hist_num_bins'],
+                label=label,
+                histtype='stepfilled',
+                linewidth=plot_settings_dict[data]['hist_linewidth'],
+                linestyle='dashed', density=True, zorder=zorder,
+                facecolor=hex_to_rgb(
+                        color, alpha=plot_settings_dict[data]['hist_opacity']),
+                edgecolor=hex_to_rgb(color, alpha=1))
+        ax_loss_diff_hists[i].set_title(('It. ' if i == 0 else '') + '{}$-${}'.format(
+                iteration_slice.start, iteration_slice.stop), fontsize=8)
+
+for ax in (ax_psnr, ax_loss, ax_loss_diff):
+    ax.grid(True, linestyle='-')
+    ax.set_xlabel('Iteration')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+ax_psnr.set_xlim(xlim)
+ax_loss.set_xlim(xlim)
+ax_loss_diff.set_xlim(plot_settings_dict[data].get(
+        'xlim_loss_diff', (None, None)))
+
+ax_psnr.set_title('PSNR of min-loss reconstruction [dB]')
+ax_loss.set_title('DIP+TV loss $l_t(\\theta^{[i]}_{\\mathrm{min\u2010loss}})$')
+ax_loss_diff.set_title(
+        'Moving average of $|l_t(\\theta^{[i+1]})-l_t(\\theta^{[i]})|$',
+        loc='right')
+fake11.set_title(
+        'Histogram of $|l_t(\\theta^{[i+1]})-l_t(\\theta^{[i]})|$')
+ax_psnr.set_ylim(plot_settings_dict[data].get('ylim_psnr', (None, None)))
 ax_loss.set_ylim(plot_settings_dict[data].get('ylim_loss', (None, None)))
-ax_loss.spines['left'].set_visible(False)
-ax_loss.spines['top'].set_visible(False)
+ax_loss_diff.set_ylim(plot_settings_dict[data].get(
+        'ylim_loss_diff', (None, None)))
 
-run_legend = ax.legend(
+run_legend = ax_psnr.legend(
         handles=run_handles,
+        bbox_transform=fig.transFigure,
         bbox_to_anchor=plot_settings_dict[data].get(
                 'run_legend_bbox_to_anchor', (0.5, -0.125)),
         loc=plot_settings_dict[data].get('run_legend_loc', 'upper center'),
@@ -717,10 +917,10 @@ run_legend = ax.legend(
         framealpha=1.,
         handletextpad=plot_settings_dict[data].get('run_legend_handletextpad'),
         columnspacing=plot_settings_dict[data].get('run_legend_columnspacing'))
-ax.add_artist(run_legend)
+ax_psnr.add_artist(run_legend)
 stop_time_handle = copy(stop_time_handles[0])
 stop_time_handle.set_color('gray')
-symbol_legend = ax_loss.legend(
+symbol_legend_loss = ax_loss.legend(
         [stop_time_handle],
         ['Stop times'  # (moving avg. size {:d}, threshold {:g})'.format(
                 #  eval_settings_dict[data]['stop_avg_interval'],
@@ -728,11 +928,23 @@ symbol_legend = ax_loss.legend(
         ],
         handler_map={stop_time_handle: HandlerLine2D(numpoints=5)},
         bbox_to_anchor=plot_settings_dict[data].get(
-                'symbol_legend_bbox_to_anchor', (1., 0.825)),
-        loc=plot_settings_dict[data].get('symbol_legend_loc', 'upper right'),
+                'symbol_legend_loss_bbox_to_anchor', (1., 0.825)),
+        loc=plot_settings_dict[data].get('symbol_legend_loss_loc', 'upper right'),
         ncol=1, framealpha=1.,
         )
-symbol_legend.set_zorder(50.)
+symbol_legend_loss.set_zorder(50.)
+rise_time_handle = copy(rise_time_handles[0])
+rise_time_handle.set_color('gray')
+symbol_legend_psnr = ax_psnr.legend(
+        [rise_time_handle],
+        ['Rise times'],
+        handler_map={rise_time_handle: HandlerLine2D(numpoints=3)},
+        bbox_to_anchor=plot_settings_dict[data].get(
+                'symbol_legend_psnr_bbox_to_anchor', (1., 0.825)),
+        loc=plot_settings_dict[data].get('symbol_legend_psnr_loc', 'upper right'),
+        ncol=1, framealpha=1.,
+        )
+symbol_legend_psnr.set_zorder(50.)
 
 if title is None:
     if runs_title is None:
@@ -740,7 +952,7 @@ if title is None:
                 [get_title_from_run_spec(r) for r in runs_to_compare])
     title = ('{} on {}'.format(runs_title, data_title) if runs_title != '' else
              data_title)
-ax.set_title(title)
+fig.suptitle(title)
 
 if runs_filename is None:
     runs_filename = '_vs_'.join(
