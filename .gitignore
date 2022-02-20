@@ -134,3 +134,9 @@ outputs/
 FIPS_Lotus/
 reference_params/
 multirun/
+src/evaluation/scripts/images/
+
+#.pdf file
+*.pdf
+*.png
+*.json
