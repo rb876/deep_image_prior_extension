@@ -14,7 +14,7 @@ experiment_title_dict = {
 data_title_dict = {
     'ellipses_lotus_20': 'Ellipses-Lotus (Sparse 20)',
     'ellipses_lotus_40': 'Ellipses-Lotus (Sparse 40)',
-    'ellipses_lotus_limited_30': 'Ellipses-Lotus (Limited 30)',
+    'ellipses_lotus_limited_45': 'Ellipses-Lotus (Limited 45)',
     'brain_walnut_120': 'Brain-Walnut (Sparse 120)',
     'ellipses_walnut_120': 'Ellipses-Walnut (Sparse 120)',
 }
@@ -53,7 +53,7 @@ def get_data_title_full(data, validation_run):
         part = {
                 'ellipses_lotus_20': 'Shepp-Logan',
                 'ellipses_lotus_40': 'Shepp-Logan',
-                'ellipses_lotus_limited_30': 'Shepp-Logan',
+                'ellipses_lotus_limited_45': 'Shepp-Logan',
                 'brain_walnut_120': 'Shepp-Logan',
                 'ellipses_walnut_120': 'Shepp-Logan',
                 }[data]
@@ -62,7 +62,7 @@ def get_data_title_full(data, validation_run):
         part = {
                 'ellipses_lotus_20': 'Lotus',
                 'ellipses_lotus_40': 'Lotus',
-                'ellipses_lotus_limited_30': 'Lotus',
+                'ellipses_lotus_limited_45': 'Lotus',
                 'brain_walnut_120': 'Walnut',
                 'ellipses_walnut_120': 'Walnut',
                 }[data]

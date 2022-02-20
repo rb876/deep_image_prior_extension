@@ -140,3 +140,5 @@ src/evaluation/scripts/images/
 *.pdf
 *.png
 *.json
+events.out.tf*
+*.txt
