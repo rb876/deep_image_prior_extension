@@ -11,8 +11,8 @@ mdl_overrides:
   optim.iterations: 15000
 psnr_steady_start: -5000
 psnr_steady_stop: null
-rise_time_remaining_psnr: 0.5
-rise_time_to_baseline_remaining_psnr: 0.5
+rise_time_remaining_psnr: 0.1
+rise_time_to_baseline_remaining_psnr: 0.1
 tolerated_diff_to_max_psnr_steady: 0.25
 select_gamma_multirun_base_paths: null
 select_gamma_run_paths_filename: select_gamma_run_paths.json

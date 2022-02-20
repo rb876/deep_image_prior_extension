@@ -15,7 +15,9 @@ def get_unet_model(in_ch=1, out_ch=1, scales=5,
 
 class UNet(nn.Module):
     def __init__(self, in_ch, out_ch, channels, skip_channels,
-                 use_sigmoid=True, use_norm=True, use_scale_layer=False, scaling_kwargs=None):
+                 use_sigmoid=True, use_norm=True,
+                 use_scale_in_layer=False, use_scale_out_layer=False,
+                 scaling_kwargs=None):
         super(UNet, self).__init__()
         assert (len(channels) == len(skip_channels))
         self.scales = len(channels)
@@ -34,13 +36,14 @@ class UNet(nn.Module):
                                    use_norm=use_norm))
         self.outc = OutBlock(in_ch=channels[0],
                              out_ch=out_ch)
-        self.use_scale_layer = use_scale_layer
-        if self.use_scale_layer:
+        self.use_scale_in_layer = use_scale_in_layer
+        self.use_scale_out_layer = use_scale_out_layer
+        if self.use_scale_in_layer or self.use_scale_out_layer:
             self.scale_in, self.scale_out = get_scale_modules(1, out_ch,
                                                               **scaling_kwargs)
 
     def forward(self, x0):
-        if self.use_scale_layer:
+        if self.use_scale_in_layer:
             if x0.shape[1] == 1:
                 x0 = self.scale_in(x0)
             elif x0.shape[1] == 2:
@@ -54,10 +57,19 @@ class UNet(nn.Module):
         for i in range(self.scales - 1):
             x = self.up[i](x, xs[-2 - i])
 
-        if self.use_scale_layer:
-            return self.scale_out(torch.sigmoid(self.outc(x)) if self.use_sigmoid else self.outc(x))
+        x = self.outc(x)
+
+        if self.use_sigmoid and self.use_scale_out_layer:
+            raise ValueError('Cannot use both output scaling layer and sigmoid '
+                             'output activation; please set either '
+                             'use_scale_out_layer=False or use_sigmoid=False.')
+
+        if self.use_sigmoid:
+            return torch.sigmoid(x)
+        elif self.use_scale_out_layer:
+            return self.scale_out(x)
         else:
-            return torch.sigmoid(self.outc(x)) if self.use_sigmoid else self.outc(x)
+            return x
 
 class DownBlock(nn.Module):
     def __init__(self, in_ch, out_ch, kernel_size=3, num_groups=4, use_norm=True):

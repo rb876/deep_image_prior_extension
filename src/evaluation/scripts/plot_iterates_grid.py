@@ -16,12 +16,12 @@ save_fig = True
 
 # titles = [
 #     'EDIP (FBP)',
-#     'EDIP (noise)',
+#     'EDIP (noise) [warm-up]',
 #     'DIP (noise)',
 # ]
 # iterates_paths = [
 #     'multirun/2021-10-28/04-32-17/0/results/pretrainingonlyfbp/iterates.npz',
-#     'multirun/2021-10-27/23-27-39/0/results/pretraining/iterates.npz',
+#     'multirun/2021-11-05/16-47-01/0/results/pretraining/iterates.npz',
 #     'multirun/2021-10-28/04-30-33/0/results/nopretrainingnoise/iterates.npz',
 # ]
 
