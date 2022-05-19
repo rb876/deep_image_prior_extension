@@ -88,9 +88,13 @@ def coordinator(cfg : DictConfig) -> None:
     diff = differ.compare(OmegaConf.to_yaml(baseline_cfg).splitlines(),
                           OmegaConf.to_yaml(cfg).splitlines())
     print('\n'.join(diff))
-    with open(os.path.join(cfg.val.baseline_run_path, baseline_cfg.val.results_filename), 'r') as f:
-        infos['baseline'] = json.load(f)['baseline']
-    baseline_psnr_steady = infos['baseline']['PSNR_steady']
+    dummy_baseline_PSNR_steady = cfg.val.get('dummy_baseline_PSNR_steady', None)
+    if dummy_baseline_PSNR_steady is None:
+        with open(os.path.join(cfg.val.baseline_run_path, baseline_cfg.val.results_filename), 'r') as f:
+            infos['baseline'] = json.load(f)['baseline']
+        baseline_psnr_steady = infos['baseline']['PSNR_steady']
+    else:
+        baseline_psnr_steady = dummy_baseline_PSNR_steady
 
     os.makedirs(os.path.dirname(os.path.abspath(cfg.val.results_filename)), exist_ok=True)
 

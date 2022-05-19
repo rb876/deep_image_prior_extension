@@ -2,6 +2,7 @@ import os
 import json
 import socket
 import datetime
+import contextlib
 import odl
 import h5py
 import torch
@@ -17,6 +18,7 @@ from warnings import warn
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CyclicLR, OneCycleLR
 from torch.optim.swa_utils import AveragedModel, SWALR
+from torch.cuda.amp import autocast, GradScaler
 from deep_image_prior import PSNR, SSIM
 from util.transforms import random_brightness_contrast
 from functools import partial
@@ -110,6 +112,11 @@ class Trainer():
         if self.cfg.perform_swa:
             self.swa_model = AveragedModel(self.model)
 
+        assert not (self.cfg.perform_swa and self.cfg.use_mixed)
+
+        if self.cfg.use_mixed:
+            scaler = GradScaler()
+
         num_iter = 0
         for epoch in range(self.cfg.epochs):
             # Each epoch has a training and validation phase
@@ -154,20 +161,36 @@ class Trainer():
                         # forward
                         # track gradients only if in train phase
                         with torch.set_grad_enabled(phase == 'train'):
-                            outputs = self.model(fbp)
-                            loss = criterion(outputs, gt)
+                            with autocast() if self.cfg.use_mixed else contextlib.nullcontext():
+                                outputs = self.model(fbp)
+                                loss = criterion(outputs, gt)
 
                             # backward + optimize only if in training phase
                             if phase == 'train':
-                                loss.backward()
+                                if self.cfg.use_mixed:
+                                    scaler.scale(loss).backward()
+                                    scaler.unscale_(self._optimizer)
+                                else:
+                                    loss.backward()
                                 torch.nn.utils.clip_grad_norm_(
                                     self.model.parameters(), max_norm=1)
-                                self._optimizer.step()
+                                if self.cfg.use_mixed:
+                                    scaler.step(self._optimizer)
+                                    scale = scaler.get_scale()
+                                    scaler.update()
+                                else:
+                                    self._optimizer.step()
                                 if (self._scheduler is not None and
                                         schedule_every_batch and
                                         not (self.cfg.perform_swa and
-                                             epoch >= self.cfg.swa.start_epoch)):
-                                    self._scheduler.step()
+                                            epoch >= self.cfg.swa.start_epoch)):
+                                    if self.cfg.use_mixed:
+                                        # avoid calling scheduler before optimizer in case of nan/inf values
+                                        # https://discuss.pytorch.org/t/optimizer-step-before-lr-scheduler-step-error-using-gradscaler/92930/8
+                                        if scaler.get_scale() == scale:
+                                            self._scheduler.step()
+                                    else:
+                                        self._scheduler.step()
 
                         for i in range(outputs.shape[0]):
                             gt_ = gt[i, 0].detach().cpu().numpy()
@@ -188,6 +211,12 @@ class Trainer():
                             self.writer.add_scalar('psnr', running_psnr/running_size, num_iter)
                             self.writer.add_scalar('lr', self.optimizer.param_groups[0]['lr'], num_iter)
 
+                        if (phase == 'train' and
+                                self.cfg.get('save_learned_params_base_path') is not None and
+                                (ceil(running_size / self.cfg.batch_size)) % (self.cfg.get('save_learned_params_during_epoch_interval', np.inf) // self.cfg.batch_size) == 0):
+                            self.save_learned_params(
+                                '{}_epochs{:d}_steps{:d}'.format(self.cfg.save_learned_params_base_path, epoch, ceil(running_size / self.cfg.batch_size)))
+
                     if phase == 'train':
                         if (self.cfg.perform_swa
                                 and epoch >= self.cfg.swa.start_epoch):
@@ -195,7 +224,13 @@ class Trainer():
                             self.swa_scheduler.step()
                         elif (self._scheduler is not None
                                 and not schedule_every_batch):
-                            self._scheduler.step()
+                            if self.cfg.use_mixed:
+                                # avoid calling scheduler before optimizer in case of nan/inf values
+                                # https://discuss.pytorch.org/t/optimizer-step-before-lr-scheduler-step-error-using-gradscaler/92930/8
+                                if scaler.get_scale() == scale:
+                                    self._scheduler.step()
+                            else:
+                                self._scheduler.step()
 
                     epoch_loss = running_loss / dataset_sizes[phase]
                     epoch_psnr = running_psnr / dataset_sizes[phase]

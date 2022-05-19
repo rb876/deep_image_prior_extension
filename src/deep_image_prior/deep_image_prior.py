@@ -1,18 +1,20 @@
 import os
 import socket
 import datetime
+import contextlib
 import torch
 import numpy as np
 import tensorboardX
 from torch.optim import Adam
 from torch.nn import MSELoss
+from torch.cuda.amp import autocast, GradScaler
 from warnings import warn
 from functools import partial
 from copy import deepcopy
 from tqdm import tqdm
 
-from .network import UNet
-from .utils import poisson_loss, tv_loss, PSNR, normalize, extract_learnable_params
+from .network import UNet, UNet3D
+from .utils import poisson_loss, tv_loss, tv_loss_3d, PSNR, normalize, extract_learnable_params
 
 
 class LRPolicy():
@@ -114,19 +116,40 @@ class DeepImagePriorReconstructor():
             'std_out': self.cfg.stats.std_gt
             } if self.cfg.normalize_by_stats else {}
 
-        self.model = UNet(
-            input_depth,
-            output_depth,
-            channels=self.cfg.arch.channels[:self.cfg.arch.scales],
-            skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
-            use_sigmoid=self.cfg.arch.use_sigmoid,
-            use_norm=self.cfg.arch.use_norm,
-            use_scale_in_layer = (self.cfg.normalize_by_stats and
-                    ((not self.cfg.recon_from_randn) or
-                     self.cfg.add_init_reco)),
-            use_scale_out_layer = self.cfg.normalize_by_stats,
-            scaling_kwargs = scaling_kwargs
-            ).to(self.device)
+        if len(self.reco_space.shape) == 2:
+            self.model = UNet(
+                input_depth,
+                output_depth,
+                channels=self.cfg.arch.channels[:self.cfg.arch.scales],
+                skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
+                use_sigmoid=self.cfg.arch.use_sigmoid,
+                use_norm=self.cfg.arch.use_norm,
+                use_scale_in_layer = (self.cfg.normalize_by_stats and
+                        ((not self.cfg.recon_from_randn) or
+                        self.cfg.add_init_reco)),
+                use_scale_out_layer = self.cfg.normalize_by_stats,
+                scaling_kwargs = scaling_kwargs
+                ).to(self.device)
+        elif len(self.reco_space.shape) == 3:
+            self.model = UNet3D(
+                input_depth,
+                output_depth,
+                channels=self.cfg.arch.channels[:self.cfg.arch.scales],
+                skip_channels=self.cfg.arch.skip_channels[:self.cfg.arch.scales],
+                down_channel_overrides=self.cfg.arch.down_channel_overrides,
+                down_single_conv=self.cfg.arch.down_single_conv,
+                use_sigmoid=self.cfg.arch.use_sigmoid,
+                use_norm=self.cfg.arch.use_norm,
+                use_relu_out=self.cfg.arch.use_relu_out == 'model',
+                out_kernel_size=self.cfg.arch.out_kernel_size,
+                pre_out_channels=self.cfg.arch.pre_out_channels,
+                pre_out_kernel_size=self.cfg.arch.pre_out_kernel_size,
+                insert_res_blocks_before=self.cfg.arch.insert_res_blocks_before,
+                approx_conv3d_at_scales=self.cfg.arch.approx_conv3d_at_scales,
+                approx_conv3d_low_rank_dim=self.cfg.arch.approx_conv3d_low_rank_dim
+                ).to(self.device)
+        else:
+            raise ValueError
 
         current_time = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
         comment = 'DIP+TV'
@@ -226,6 +249,9 @@ class DeepImagePriorReconstructor():
         self.init_scheduler()
         y_delta = noisy_observation.to(self.device)
 
+        if self.cfg.use_mixed:
+            scaler = GradScaler()
+
         if self.cfg.optim.loss_function == 'mse':
             criterion = MSELoss()
         elif self.cfg.optim.loss_function == 'poisson':
@@ -235,6 +261,8 @@ class DeepImagePriorReconstructor():
         else:
             warn('Unknown loss function, falling back to MSE')
             criterion = MSELoss()
+
+        tv_loss_fun = tv_loss if len(self.reco_space.shape) == 2 else tv_loss_3d
 
         iterates_iters = []
         if return_iterates:
@@ -252,6 +280,8 @@ class DeepImagePriorReconstructor():
 
         best_loss = np.inf
         best_output = self.apply_model_on_test_data(self.net_input).detach()
+        if self.cfg.arch.use_relu_out == 'post':
+            best_output = torch.nn.functional.relu(best_output)
 
         loss_history = []
         psnr_history = []
@@ -263,15 +293,25 @@ class DeepImagePriorReconstructor():
         with tqdm(range(self.cfg.optim.iterations), desc='DIP', disable= not self.cfg.show_pbar) as pbar:
             for i in pbar:
                 self.optimizer.zero_grad()
-                output = self.apply_model_on_test_data(self.net_input)
-                loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.optim.gamma * tv_loss(output)
+                with autocast() if self.cfg.use_mixed else contextlib.nullcontext():
+                    output = self.apply_model_on_test_data(self.net_input)
+                    loss = criterion(self.ray_trafo_module(output), y_delta) + self.cfg.optim.gamma * tv_loss_fun(output)
 
                 if i in iterates_params_iters:
                     iterates_params.append(deepcopy(self.model.state_dict()))
 
-                loss.backward()
+                if self.cfg.use_mixed:
+                    scaler.scale(loss).backward()
+                    scaler.unscale_(self.optimizer)
+                else:
+                    loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
-                self.optimizer.step()
+                if self.cfg.use_mixed:
+                    scaler.step(self.optimizer)
+                    scale = scaler.get_scale()
+                    scaler.update()
+                else:
+                    self.optimizer.step()
 
                 if return_histories:
                     lr_encoder_history.append(self.optimizer.param_groups[0]['lr'])
@@ -279,13 +319,21 @@ class DeepImagePriorReconstructor():
                 self.writer.add_scalar('lr_encoder', self.optimizer.param_groups[0]['lr'], i)
                 self.writer.add_scalar('lr_decoder', self.optimizer.param_groups[1]['lr'], i)
 
-                self.scheduler.step()
+                if self.cfg.use_mixed:
+                    # avoid calling scheduler before optimizer in case of nan/inf values
+                    # https://discuss.pytorch.org/t/optimizer-step-before-lr-scheduler-step-error-using-gradscaler/92930/8
+                    if scaler.get_scale() == scale:
+                        self.scheduler.step()
+                else:
+                    self.scheduler.step()
                 for p in self.model.parameters():
                     p.data.clamp_(-1000, 1000) # MIN,MAX
 
                 if loss.item() < best_loss:
                     best_loss = loss.item()
                     best_output = output.detach()
+                    if self.cfg.arch.use_relu_out == 'post':
+                        best_output = torch.nn.functional.relu(best_output)
 
                 if self.cfg.optim.use_adaptive_lr or return_histories:
                     loss_history.append(loss.item())
@@ -301,7 +349,7 @@ class DeepImagePriorReconstructor():
 
                 if ground_truth is not None:
                     best_output_psnr = PSNR(best_output.detach().cpu(), ground_truth.cpu())
-                    output_psnr = PSNR(output.detach().cpu(), ground_truth.cpu())
+                    output_psnr = PSNR((torch.nn.functional.relu(output) if self.cfg.arch.use_relu_out == 'post' else output).detach().cpu(), ground_truth.cpu())
                     if return_histories:
                         psnr_history.append(output_psnr)
                     pbar.set_postfix({'output_psnr': output_psnr})
@@ -310,9 +358,13 @@ class DeepImagePriorReconstructor():
 
                 self.writer.add_scalar('loss', loss.item(),  i)
                 if i in iterates_iters:
-                    iterates.append(output[0, ...].detach().cpu().numpy())
+                    iterates.append((torch.nn.functional.relu(output) if self.cfg.arch.use_relu_out == 'post' else output)[0, ...].detach().cpu().numpy())
                 if i % 1000 == 0:
-                    self.writer.add_image('reco', normalize(best_output[0, ...]).cpu().numpy(), i)
+                    if len(self.reco_space.shape) == 2:
+                        self.writer.add_image('reco', normalize(best_output[0, ...]).cpu().numpy(), i)
+                    else:  # 3d
+                        self.writer.add_image('reco_mid_slice',
+                                normalize(best_output[0, :, best_output.shape[2] // 2, ...]).cpu().numpy(), i)
 
         self.writer.close()
 

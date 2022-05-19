@@ -23,6 +23,7 @@ trn:
   save_best_learned_params_path: params/model_with_noise_${data.name}
   save_learned_params_base_path: params/model_with_noise_${data.name}
   save_learned_params_interval: 20
+  save_learned_params_during_epoch_interval: .inf
   save_swa_learned_params_path: params/model_with_noise_${data.name}_swa
   add_randn_mask: ${mdl.add_init_reco}
   log_path: ./runs/pretraining2inputs/

@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from evaluation.utils import (
         get_multirun_cfgs, get_multirun_experiment_names,
+        get_run_cfg, get_run_experiment_name,
         get_multirun_histories, uses_swa_weights)
 from evaluation.evaluation import (
         get_median_psnr_history, get_psnr_steady, get_rise_time_to_baseline)
@@ -42,10 +43,12 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_20'
 # data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
+# data = 'ellipsoids_walnut_3d'
+data = 'ellipsoids_walnut_3d_60'
 
 
 if data in ('ellipses_lotus_20', 'ellipses_lotus_limited_45',
@@ -93,6 +96,15 @@ elif data == 'ellipses_lotus_limited_45':
         'color': '#409940',
         },
     ]
+elif data in ['ellipsoids_walnut_3d', 'ellipsoids_walnut_3d_60']:
+    runs_to_compare = [
+        {
+        'experiment': 'pretrain',
+        'name': 'default',
+        'name_title': 'Run 0',
+        'color': '#404099',
+        }
+    ]
 
 title = None
 runs_title = 'Pretraining convergence'
@@ -116,6 +128,16 @@ plot_settings_dict = {
     'ellipses_walnut_120': {
         'ylim': (25., 36.),
         'zorders_per_run_idx': {0: {0: 2.3}, 1: {0: 2.2}, 2: {0: 2.1}},
+        'lr_legend_loc': 'upper right',
+    },
+    'ellipsoids_walnut_3d': {
+        'ylim': (25., 35.),
+        'zorders_per_run_idx': {0: {0: 2.1}},
+        'lr_legend_loc': 'upper right',
+    },
+    'ellipsoids_walnut_3d_60': {
+        'ylim': (25., 38.5),
+        'zorders_per_run_idx': {0: {0: 2.1}},
         'lr_legend_loc': 'upper right',
     },
 }
@@ -146,22 +168,33 @@ for run_spec in runs_to_compare:
                          data, experiment))
         run = available_runs[0]
 
-    if run.get('run_path') is None:
+    if run.get('run_path') is None and run.get('single_run_path') is None:
         raise ValueError('Missing run_path specification for reconstruction '
                          'with data={}, experiment={}. Please insert it in '
                          '`runs.yaml`.'.format(data, experiment))
 
-    run_path_multirun = os.path.join(PATH, run['run_path'])
-    sub_runs = run_spec.get('sub_runs')
+    run_path_multirun = None
+    run_path_single_run = None
+    if run.get('run_path') is not None:
+        run_path_multirun = os.path.join(PATH, run['run_path'])
+        sub_runs = run_spec.get('sub_runs')
 
-    cfgs = get_multirun_cfgs(
-            run_path_multirun, sub_runs=sub_runs)
-    experiment_names = get_multirun_experiment_names(
-            run_path_multirun, sub_runs=sub_runs)
-    trn_log_paths = [
-            os.path.join(run_path_multirun, '{:d}'.format(sub_runs[i] if sub_runs is not None else i),
-                         cfg['trn']['log_path'])
-            for i, cfg in enumerate(cfgs)]
+        cfgs = get_multirun_cfgs(
+                run_path_multirun, sub_runs=sub_runs)
+        experiment_names = get_multirun_experiment_names(
+                run_path_multirun, sub_runs=sub_runs)
+        trn_log_paths = [
+                os.path.join(run_path_multirun, '{:d}'.format(sub_runs[i] if sub_runs is not None else i),
+                            cfg['trn']['log_path'])
+                for i, cfg in enumerate(cfgs)]
+    else:
+        run_path_single_run = os.path.join(PATH, run['single_run_path'])
+
+        cfgs = [get_run_cfg(run_path_single_run)]
+        experiment_names = [get_run_experiment_name(run_path_single_run)]
+        trn_log_paths = [
+                os.path.join(run_path_single_run, cfgs[0]['trn']['log_path'])]
+
     trn_log_filepaths = []
     for cfg, trn_log_path in zip(cfgs, trn_log_paths):
         dir_candidates = [
@@ -191,7 +224,7 @@ for run_spec in runs_to_compare:
              num_steps_per_epoch for cfg in cfgs))
 
     num_runs = len(cfgs)
-    print('Found {:d} runs at path "{}".'.format(num_runs, run_path_multirun))
+    print('Found {:d} runs at path "{}".'.format(num_runs, run_path_multirun if run_path_multirun is not None else run_path_single_run))
 
     cfgs_list.append(cfgs)
     experiment_names_list.append(experiment_names)

@@ -3,7 +3,7 @@ import odl
 from odl.contrib.torch import OperatorModule
 import torch
 import numpy as np
-from .ellipses import EllipsesDataset, DiskDistributedEllipsesDataset
+from .ellipses import EllipsesDataset, DiskDistributedEllipsesDataset, DiskDistributedNoiseMasksDataset, EllipsoidsInBallDataset
 from .brain import ACRINFMISOBrainDataset
 from . import lotus
 from . import walnuts
@@ -11,6 +11,7 @@ from util.matrix_ray_trafo import MatrixRayTrafo
 from util.matrix_ray_trafo_torch import get_matrix_ray_trafo_module
 from util.matrix_fbp_torch import get_matrix_fbp_module
 from util.fbp import FBP
+from util.torch_linked_ray_trafo import TorchLinkedRayTrafoModule
 
 
 def subsample_angles_ray_trafo_matrix(matrix, cfg, proj_shape, order='C'):
@@ -36,7 +37,7 @@ def load_ray_trafo_matrix(name, cfg):
                                         # matrix impl for the walnut ray trafo,
                                         # because the filtering for FDK is not
                                         # implemented
-    #     matrix = walnuts.get_ray_trafo_matrix(cfg.ray_trafo_filename)
+    #     matrix = walnuts.get_masked_ray_trafo_matrix(cfg.ray_trafo_filename)
     else:
         raise NotImplementedError
 
@@ -142,6 +143,35 @@ def get_ray_trafos(name, cfg, return_torch_module=True):
                             get_matrix_ray_trafo_module(
                                     matrix, (cfg.im_shape, cfg.im_shape),
                                     (matrix.shape[0],), sparse=True))
+                # ray_trafos['smooth_pinv_ray_trafo_module'] not implemented
+        elif custom_cfg.name == 'walnut_3d':
+            vol_down_sampling = cfg.vol_down_sampling
+            angles_subsampling = cfg.geometry_specs.angles_subsampling
+            angular_sub_sampling = angles_subsampling.get('step', 1)
+            # the walnuts module only supports choosing the step
+            assert range(walnuts.MAX_NUM_ANGLES)[
+                    angles_subsampling.get('start'):
+                    angles_subsampling.get('stop'):
+                    angles_subsampling.get('step')] == range(
+                            0, walnuts.MAX_NUM_ANGLES, angular_sub_sampling)
+            proj_row_sub_sampling = cfg.geometry_specs.det_row_sub_sampling
+            proj_col_sub_sampling = cfg.geometry_specs.det_col_sub_sampling
+            walnut_ray_trafo = walnuts.WalnutRayTrafo(
+                    data_path=custom_cfg.data_path,
+                    walnut_id=custom_cfg.walnut_id,
+                    orbit_id=custom_cfg.orbit_id,
+                    vol_down_sampling=vol_down_sampling,
+                    angular_sub_sampling=angular_sub_sampling,
+                    proj_row_sub_sampling=proj_row_sub_sampling,
+                    proj_col_sub_sampling=proj_col_sub_sampling)
+            ray_trafos['ray_trafo'] = walnut_ray_trafo.apply
+
+            # FIXME FDK is not smooth
+            ray_trafos['smooth_pinv_ray_trafo'] = walnut_ray_trafo.apply_fdk
+
+            if return_torch_module:
+                ray_trafos['ray_trafo_module'] = TorchLinkedRayTrafoModule(
+                        walnut_ray_trafo.vol_geom, walnut_ray_trafo.proj_geom)
                 # ray_trafos['smooth_pinv_ray_trafo_module'] not implemented
         else:
             raise ValueError('Unknown custom ray trafo \'{}\''.format(
@@ -271,6 +301,39 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
                 specs_kwargs=specs_kwargs,
                 noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
                 'test': cfg.seed + 2})
+    elif name == 'noise_masks_walnut_120':
+        dataset_specs = {'in_circle_axis': cfg.in_circle_axis, 'use_mask': cfg.use_mask,
+                        'image_size': cfg.im_shape, 'train_len': cfg.train_len,
+                        'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
+        ellipses_dataset = DiskDistributedNoiseMasksDataset(**dataset_specs)
+        space = ellipses_dataset.space
+        proj_numel = cfg.geometry_specs.num_angles * cfg.geometry_specs.num_det_pixels
+        proj_space = odl.rn(proj_numel, dtype=np.float32)
+        dataset = ellipses_dataset.create_pair_dataset(ray_trafo=ray_trafo,
+                pinv_ray_trafo=smooth_pinv_ray_trafo,
+                domain=space, proj_space=proj_space,
+                noise_type=cfg.noise_specs.noise_type,
+                specs_kwargs=specs_kwargs,
+                noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
+                'test': cfg.seed + 2})
+    elif name in ['ellipsoids_walnut_3d', 'ellipsoids_walnut_3d_60', 'ellipsoids_walnut_3d_down5']:
+        dataset_specs = {'in_ball_axis': cfg.in_ball_axis,
+                         'image_size': cfg.im_shape, 'train_len': cfg.train_len,
+                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
+        ellipsoids_dataset = EllipsoidsInBallDataset(**dataset_specs)
+        space = ellipsoids_dataset.space
+        proj_space = odl.uniform_discr(  # use astra vau order
+                min_pt=[-1., -np.pi, -1.], max_pt=[1., np.pi, 1.],  # dummy values
+                shape=(cfg.geometry_specs.num_det_rows,
+                       cfg.geometry_specs.num_angles,
+                       cfg.geometry_specs.num_det_cols))
+        dataset = ellipsoids_dataset.create_pair_dataset(ray_trafo=ray_trafo,
+                pinv_ray_trafo=smooth_pinv_ray_trafo,
+                domain=space, proj_space=proj_space,
+                noise_type=cfg.noise_specs.noise_type,
+                specs_kwargs=specs_kwargs,
+                noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
+                'test': cfg.seed + 2})
     else:
         raise NotImplementedError
 
@@ -300,6 +363,11 @@ def get_test_data(name, cfg, return_torch_dataset=True):
                               else None)
     elif cfg.test_data == 'walnut':
         sinogram, fbp, ground_truth = get_walnut_data(name, cfg)
+        sinogram_array = sinogram[None]
+        fbp_array = fbp[None]  # FDK, actually
+        ground_truth_array = ground_truth[None]
+    elif cfg.test_data == 'walnut_3d':
+        sinogram, fbp, ground_truth = get_walnut_3d_data(name, cfg)
         sinogram_array = sinogram[None]
         fbp_array = fbp[None]  # FDK, actually
         ground_truth_array = ground_truth[None]
@@ -404,7 +472,7 @@ def get_walnut_data(name, cfg):
             walnut_id=cfg.walnut_id, orbit_id=cfg.orbit_id,
             angular_sub_sampling=angular_sub_sampling)
 
-    # WalnutRayTrafo instance needed for selecting and masking the projections
+    # MaskedWalnutRayTrafo instance needed for selecting and masking the projections
     walnut_ray_trafo = walnuts.get_single_slice_ray_trafo(
             cfg.geometry_specs.ray_trafo_custom.data_path,
             walnut_id=cfg.geometry_specs.ray_trafo_custom.walnut_id,
@@ -427,6 +495,49 @@ def get_walnut_data(name, cfg):
     return sinogram, fbp, ground_truth
 
 
+def get_walnut_3d_data(name, cfg):
+
+    ray_trafos = get_ray_trafos(name, cfg,
+                                return_torch_module=False)
+    smooth_pinv_ray_trafo = ray_trafos['smooth_pinv_ray_trafo']
+
+    angles_subsampling = cfg.geometry_specs.angles_subsampling
+    angular_sub_sampling = angles_subsampling.get('step', 1)
+    # the walnuts module only supports choosing the step
+    assert range(walnuts.MAX_NUM_ANGLES)[
+            angles_subsampling.get('start'):
+            angles_subsampling.get('stop'):
+            angles_subsampling.get('step')] == range(
+                    0, walnuts.MAX_NUM_ANGLES, angular_sub_sampling)
+
+    sinogram = walnuts.get_projection_data(
+            data_path=cfg.data_path_test,
+            walnut_id=cfg.walnut_id, orbit_id=cfg.orbit_id,
+            angular_sub_sampling=angular_sub_sampling,
+            proj_row_sub_sampling=cfg.geometry_specs.det_row_sub_sampling,
+            proj_col_sub_sampling=cfg.geometry_specs.det_col_sub_sampling)
+
+    # MaskedWalnutRayTrafo instance needed for selecting and masking the projections
+    walnut_ray_trafo = walnuts.WalnutRayTrafo(
+            cfg.geometry_specs.ray_trafo_custom.data_path,
+            walnut_id=cfg.geometry_specs.ray_trafo_custom.walnut_id,
+            orbit_id=cfg.geometry_specs.ray_trafo_custom.orbit_id,
+            angular_sub_sampling=angular_sub_sampling,
+            proj_row_sub_sampling=cfg.geometry_specs.det_row_sub_sampling,
+            proj_col_sub_sampling=cfg.geometry_specs.det_col_sub_sampling,
+            vol_down_sampling=cfg.vol_down_sampling)
+
+    fbp = np.asarray(smooth_pinv_ray_trafo(sinogram))
+
+    ground_truth_orig_res = walnuts.get_ground_truth_3d(
+            data_path=cfg.data_path_test,
+            walnut_id=cfg.walnut_id, orbit_id=cfg.orbit_id)
+    ground_truth = walnuts.down_sample_vol(ground_truth_orig_res,
+            down_sampling=cfg.vol_down_sampling)
+
+    return sinogram, fbp, ground_truth
+
+
 def get_shepp_logan_data(name, cfg, modified=True, seed=30):
 
     dataset, ray_trafos = get_standard_dataset(
@@ -439,19 +550,41 @@ def get_shepp_logan_data(name, cfg, modified=True, seed=30):
                                                modified=modified)
     else:
         full_shape = dataset.space[1].shape
-        inner_shape = (int(zoom * dataset.space[1].shape[0]),
-                       int(zoom * dataset.space[1].shape[1]))
-        inner_space = odl.uniform_discr(
-                min_pt=[-inner_shape[0] / 2, -inner_shape[1] / 2],
-                max_pt=[inner_shape[0] / 2, inner_shape[1] / 2],
-                shape=inner_shape)
-        inner_ground_truth = odl.phantom.shepp_logan(inner_space,
-                                                     modified=modified)
-        ground_truth = dataset.space[1].zero()
-        i0_start = (full_shape[0] - inner_shape[0]) // 2
-        i1_start = (full_shape[1] - inner_shape[1]) // 2
-        ground_truth[i0_start:i0_start+inner_shape[0],
-                     i1_start:i1_start+inner_shape[1]] = inner_ground_truth
+        if len(full_shape) == 2:
+            inner_shape = (int(zoom * dataset.space[1].shape[0]),
+                           int(zoom * dataset.space[1].shape[1]))
+            inner_space = odl.uniform_discr(
+                    min_pt=[-inner_shape[0] / 2, -inner_shape[1] / 2],
+                    max_pt=[inner_shape[0] / 2, inner_shape[1] / 2],
+                    shape=inner_shape)
+            inner_ground_truth = odl.phantom.shepp_logan(
+                    inner_space, modified=modified)
+            ground_truth = dataset.space[1].zero()
+            i0_start = (full_shape[0] - inner_shape[0]) // 2
+            i1_start = (full_shape[1] - inner_shape[1]) // 2
+            ground_truth[i0_start:i0_start+inner_shape[0],
+                        i1_start:i1_start+inner_shape[1]] = inner_ground_truth
+        elif len(full_shape) == 3:
+            # dataset.space[1] uses zyx order (ASTRA convention);
+            # for inner_space_odl, use xyz instead (ODL convention)
+            inner_shape = (int(zoom * dataset.space[1].shape[0]),
+                           int(zoom * dataset.space[1].shape[1]),
+                           int(zoom * dataset.space[1].shape[2]))
+            inner_space_odl = odl.uniform_discr(
+                    min_pt=[-inner_shape[2] / 2, -inner_shape[1] / 2, -inner_shape[0] / 2],
+                    max_pt=[inner_shape[2] / 2, inner_shape[1] / 2, inner_shape[0] / 2],
+                    shape=inner_shape[::-1])
+            inner_ground_truth = np.transpose(
+                    odl.phantom.shepp_logan(inner_space_odl, modified=modified), (2,1,0))
+            ground_truth = dataset.space[1].zero()
+            i0_start = (full_shape[0] - inner_shape[0]) // 2
+            i1_start = (full_shape[1] - inner_shape[1]) // 2
+            i2_start = (full_shape[2] - inner_shape[2]) // 2
+            ground_truth[i0_start:i0_start+inner_shape[0],
+                         i1_start:i1_start+inner_shape[1],
+                         i2_start:i2_start+inner_shape[2]] = inner_ground_truth
+        else:
+            raise ValueError
     ground_truth = (
             ground_truth /
             cfg.get('implicit_scaling_except_for_test_data', 1.)).asarray()

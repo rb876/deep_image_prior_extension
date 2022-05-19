@@ -20,13 +20,17 @@ FIG_PATH = os.path.dirname(__file__)
 
 save_fig = True
 
-data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_20'
 # data = 'ellipses_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
+# data = 'ellipsoids_walnut_3d'
+data = 'ellipsoids_walnut_3d_60'
 
 plot_name = 'images'
 # plot_name = 'uncertainty'
+
+is_3d = '_3d' in data
 
 METRICS_PATH = os.path.join(
         IMAGES_PATH, '{}_metrics.json'.format(data))
@@ -133,6 +137,37 @@ if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_45',
             },
         ]
 
+elif data in ['ellipsoids_walnut_3d', 'ellipsoids_walnut_3d_60']:
+
+    if plot_name == 'images':
+        images_to_plot = [
+            {
+                'type': 'gt',
+            },
+            {
+                'type': 'best_reco',
+                'experiment': 'no_pretrain',
+                'repetition': 'median_psnr',
+                'show_metrics': True,
+            },
+            {
+                'type': 'best_reco',
+                'experiment': 'pretrain_only_fbp',
+                'repetition': 'median_psnr',
+                'show_metrics': True,
+            },
+            {
+                'type': 'init_reco',
+                'experiment': 'pretrain_only_fbp',
+                'repetition': 'median_psnr',
+                'show_metrics': True,
+            },
+            {
+                'type': 'fbp',
+                'show_metrics': True,
+            }
+        ]
+
 
 if runs_filename is None:
     runs_filename = 'comparison'
@@ -176,7 +211,7 @@ plot_settings_dict = {
                      'kwargs': {
                          'ha': 'right',
                          'va': 'top',
-                     }
+                     },
                  },
                  'axes_rect': [0.82, 0.64, 0.18, 0.36],
                  'frame_path': [[0., 1.], [0., 0.], [1., 0.]],
@@ -198,7 +233,117 @@ plot_settings_dict = {
                  'clip_path_closing': [[0., 0.]],
                 },
             ] if data.endswith('walnut_120') and plot_name == 'images'
-            else [])
+            else ([
+                {
+                 'on_images': [0, 1, 2, 3, 4],
+                 'on_3d_slice_views': [0],
+                 'rect': [71, 19, 26, 32],
+                 'add_metrics': {
+                     'gt_idx': 0,
+                     'pos': (1.05, 0.95),
+                     'kwargs': {
+                         'ha': 'left',
+                         'va': 'top',
+                         'bbox': {'pad': 0.2, 'facecolor': 'black'},
+                     },
+                 },
+                 'axes_rect': [0., 1.-26/(46/0.35), 32/(46/0.35), 26/(46/0.35)],
+                 'frame_path': [[1., 1.], [1., 0.], [0., 0.]],
+                 'clip_path_closing': [[0., 1.]],
+                 'frame_color_overrides': {4: '#EEEEEE'},
+                },
+                {
+                 'on_images': [0, 1, 2, 3, 4],
+                 'on_3d_slice_views': [0],
+                 'rect': [84, 108, 22, 48],
+                 'add_metrics': {
+                     'gt_idx': 0,
+                     'pos': (-0.05, 0.05),
+                     'kwargs': {
+                         'ha': 'right',
+                         'va': 'bottom',
+                         'bbox': {'pad': 0.2, 'facecolor': 'black'},
+                     },
+                 },
+                 'axes_rect': [1.-48/(46/0.35), 0., 48/(46/0.35), 22/(46/0.35)],
+                 'frame_path': [[1., 1.], [0., 1.], [0., 0.]],
+                 'clip_path_closing': [[1., 0.]],
+                 'frame_color_overrides': {4: '#EEEEEE'},
+                },
+                {
+                 'on_images': [0, 1, 2, 3, 4],
+                 'on_3d_slice_views': [1],
+                 'rect': [62, 17, 39, 26],
+                 'add_metrics': {
+                     'gt_idx': 0,
+                     'pos': (1.05, 0.95),
+                     'kwargs': {
+                         'ha': 'left',
+                         'va': 'top',
+                         'bbox': {'pad': 0.2, 'facecolor': 'black'},
+                     },
+                 },
+                 'axes_rect': [0., 1.-39/(46/0.35), 26/(46/0.35), 39/(46/0.35)],
+                 'frame_path': [[1., 1.], [1., 0.35], [.7, 0.], [0., 0.]],
+                 'clip_path_closing': [[0., 1.]],
+                 'frame_color_overrides': {4: '#EEEEEE'},
+                },
+                {
+                 'on_images': [0, 1, 2, 3, 4],
+                 'on_3d_slice_views': [1],
+                 'rect': [114, 32, 23, 46],
+                 'add_metrics': {
+                     'gt_idx': 0,
+                     'pos': (1.05, 0.05),
+                     'kwargs': {
+                         'ha': 'left',
+                         'va': 'bottom',
+                         'bbox': {'pad': 0.2, 'facecolor': 'black'},
+                     },
+                 },
+                 'axes_rect': [0., 0., 46/(46/0.35), 23/(46/0.35)],
+                 'frame_path': [[0., 1.], [1., 1.], [1., 0.]],
+                 'clip_path_closing': [[0., 0.]],
+                 'frame_color_overrides': {4: '#EEEEEE'},
+                },
+                {
+                 'on_images': [0, 1, 2, 3, 4],
+                 'on_3d_slice_views': [2],
+                 'rect': [26, 87, 44, 24],
+                 'add_metrics': {
+                     'gt_idx': 0,
+                     'pos': (-0.05, 0.95),
+                     'kwargs': {
+                         'ha': 'right',
+                         'va': 'top',
+                         'bbox': {'pad': 0.2, 'facecolor': 'black'},
+                     },
+                 },
+                 'axes_rect': [1.-24/(46/0.35), 1.-44/(46/0.35), 24/(46/0.35), 44/(46/0.35)],
+                 'frame_path': [[0., 1.], [0., 0.], [1., 0.]],
+                 'clip_path_closing': [[1., 1.]],
+                 'frame_color_overrides': {4: '#EEEEEE'},
+                },
+                {
+                 'on_images': [0, 1, 2, 3, 4],
+                 'on_3d_slice_views': [2],
+                 'rect': [63, 62, 36, 50],
+                 'add_metrics': {
+                     'gt_idx': 0,
+                     'pos': (1.05, 0.05),
+                     'kwargs': {
+                         'ha': 'left',
+                         'va': 'bottom',
+                         'bbox': {'pad': 0.2, 'facecolor': 'black'},
+                     },
+                 },
+                 'axes_rect': [0., 0., 50/(46/0.35), 36/(46/0.35)],
+                 'frame_path': [[0., 1.], [0.5, 1.], [1., 0.7], [1., 0.]],
+                 'clip_path_closing': [[0., 0.]],
+                 'frame_color_overrides': {4: '#EEEEEE'},
+                },
+            ] if data in ['ellipsoids_walnut_3d', 'ellipsoids_walnut_3d_60'] and plot_name == 'images'
+            else [])),
         },
         'uncertainty': {
             'nrows': 2,
@@ -222,6 +367,32 @@ plot_settings_dict = {
     # },
     # 'ellipses_walnut_120': {
     # },
+    'ellipsoids_walnut_3d': {
+        'images': {
+            'nrows': 3,
+            'norm_group_inds': [
+                    1 if (image_spec['type'] == 'init_reco' and
+                            image_spec['experiment'] == 'no_pretrain')
+                    else 0
+                    for image_spec in images_to_plot],
+            'norm_groups_use_vrange_from_images': {0: [2]},
+            'figsize': (13.5, 8.),
+            'gridspec_kw': {'hspace': 0.025, 'wspace': 0.025},
+        },
+    },
+    'ellipsoids_walnut_3d_60': {
+        'images': {
+            'nrows': 3,
+            'norm_group_inds': [
+                    1 if (image_spec['type'] == 'init_reco' and
+                            image_spec['experiment'] == 'no_pretrain')
+                    else 0
+                    for image_spec in images_to_plot],
+            'norm_groups_use_vrange_from_images': {0: [2]},
+            'figsize': (13.5, 8.),
+            'gridspec_kw': {'hspace': 0.025, 'wspace': 0.025},
+        },
+    },
 }
 
 try:
@@ -316,7 +487,7 @@ images = [
 plot_settings = plot_settings_dict['default'][plot_name]
 plot_settings.update(plot_settings_dict.get(data, {}).get(plot_name, {}))
 
-nrows = plot_settings.get('nrows', 1)
+nrows = plot_settings.get('nrows', 3 if is_3d else 1)
 
 norm_group_inds = plot_settings.get('norm_group_inds', 'global')
 if norm_group_inds == 'global':
@@ -450,21 +621,32 @@ vranges_per_norm_group = [
 vranges = [vranges_per_norm_group[g_ind] if g_ind is not None else None
            for g_ind in norm_group_inds]
 
-ncols = ceil(len(images_to_plot) / nrows)
+ncols = ceil(len(images_to_plot) * (3 if is_3d else 1) / nrows)
 fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize,
                         gridspec_kw=gridspec_kw)
+
+axs_list = list(axs.T.flat)
+if is_3d:
+    axs_list = [axs_list[i*3:(i+1)*3] for i in range(len(images_to_plot))]
+    label_fontsize = plt.rcParams['axes.titlesize']
+    axs_list[0][0].set_ylabel('yz-slice', fontsize=label_fontsize)
+    axs_list[0][1].set_ylabel('xz-slice', fontsize=label_fontsize)
+    axs_list[0][2].set_ylabel('xy-slice', fontsize=label_fontsize)
 
 image_axes_list = []
 
 for i, (image_spec, image, vrange, ax) in enumerate(zip(
-        images_to_plot, images, vranges, axs.flat)):
+        images_to_plot, images, vranges, axs_list)):
 
     image_type = image_spec['type']
 
     image_axes = None
 
+    ax_or_first_ax = (ax[0] if is_3d else ax)
+    ax_or_last_ax = (ax[-1] if is_3d else ax)
+
     title = get_title(image_spec)
-    ax.set_title(title, pad=titlepad)
+    ax_or_first_ax.set_title(title, pad=titlepad)
 
     if SUBPLOT_TYPES[image_type] in ('image', 'std_image', 'error_image'):
         # plot image
@@ -476,74 +658,105 @@ for i, (image_spec, image, vrange, ax) in enumerate(zip(
 
         vmin, vmax = vrange
 
-        image_axes = ax.imshow(image.T, cmap=cmap, vmin=vmin, vmax=vmax,
-                               interpolation='none')
+        imshow_kwargs = {
+                'cmap': cmap, 'vmin': vmin, 'vmax': vmax,
+                'interpolation': 'none'}
+
+        if image.ndim == 2:
+            image_axes = ax.imshow(image.T, **imshow_kwargs)
+        elif image.ndim == 3:
+            image_3d_slice_view0 = image.T[image.shape[0] // 2, :, :]
+            image_3d_slice_view1 = image.T[:, image.shape[1] // 2, :]
+            image_3d_slice_view2 = image.T[:, :, image.shape[1] // 2]
+            image_axes0 = ax[0].imshow(image_3d_slice_view0, **imshow_kwargs)
+            image_axes1 = ax[1].imshow(image_3d_slice_view1, **imshow_kwargs)
+            image_axes2 = ax[2].imshow(image_3d_slice_view2, **imshow_kwargs)
+            image_axes = image_axes2  # only use one of the subplots (vrange is the same for all three)
+            image_3d_slice_views = (image_3d_slice_view0, image_3d_slice_view1, image_3d_slice_view2)
 
         if image_spec.get('show_metrics'):
             image_metrics = get_image_metrics(image_spec)
-            ax.set_xlabel('PSNR: ${:.2f}\,$dB, SSIM: ${:.4f}$'.format(
+            ax_or_last_ax.set_xlabel('PSNR: ${:.2f}\,$dB, SSIM: ${:.4f}$'.format(
                     image_metrics['psnr'], image_metrics['ssim']),
                     fontsize=metrics_fontsize)
 
-        ax.set_xticks([])
-        ax.set_yticks([])
-        for spine in ax.spines.values():
-            spine.set_visible(False)
+        for ax_ in ax if is_3d else [ax]:
+            ax_.set_xticks([])
+            ax_.set_yticks([])
+            for spine in ax_.spines.values():
+                spine.set_visible(False)
 
         if add_insets:
             for add_inset in add_insets:
                 if i in add_inset['on_images']:
-                    ip = InsetPosition(ax, add_inset['axes_rect'])
-                    axins = Axes(fig, [0., 0., 1., 1.])
-                    axins.set_axes_locator(ip)
-                    fig.add_axes(axins)
-                    rect = add_inset['rect']
-                    slice0 = slice(rect[0], rect[0]+rect[2])
-                    slice1 = slice(rect[1], rect[1]+rect[3])
-                    inset_image = image[slice0, slice1]
-                    inset_image_handle = axins.imshow(
-                            inset_image.T, cmap=cmap, vmin=vmin, vmax=vmax,
-                            interpolation='none')
-                    add_metrics = add_inset.get('add_metrics')
-                    if add_metrics:
-                        gt_idx = add_metrics['gt_idx']
-                        assert images_to_plot[gt_idx]['type'] == 'gt'
-                        if i != gt_idx:
-                            gt = images[gt_idx]
-                            inset_gt = gt[slice0, slice1]
-                            inset_psnr = PSNR(inset_image, inset_gt,
-                                    data_range=np.max(gt)-np.min(gt))
-                            inset_ssim = SSIM(inset_image, inset_gt,
-                                    data_range=np.max(gt)-np.min(gt))
-                            axins.text(
-                                    *add_metrics.get('pos', [0., 0.]),
-                                    'PSNR: ${:.2f}\,$dB\nSSIM: ${:.4f}$'.format(
-                                            inset_psnr, inset_ssim),
+                    for j in (add_inset['on_3d_slice_views'] if is_3d else (None,)):
+                        add_metrics = add_inset.get('add_metrics')
+                        if add_metrics:
+                            gt_idx = add_metrics['gt_idx']
+                            assert images_to_plot[gt_idx]['type'] == 'gt'
+                        if is_3d:
+                            ax_ = ax[j]
+                            image_2d = image_3d_slice_views[j]
+                            if add_metrics:
+                                gt = images[gt_idx]
+                                gt_2d = [
+                                    gt.T[image.shape[0] // 2, :, :],
+                                    gt.T[:, image.shape[0] // 2, :],
+                                    gt.T[:, :, image.shape[0] // 2]][j]
+                        else:
+                            ax_ = ax
+                            image_2d = image
+                            if add_metrics:
+                                gt_2d = images[gt_idx]
+                        ip = InsetPosition(ax_, add_inset['axes_rect'])
+                        axins = Axes(fig, [0., 0., 1., 1.])
+                        axins.set_axes_locator(ip)
+                        fig.add_axes(axins)
+                        rect = add_inset['rect']
+                        slice0 = slice(rect[0], rect[0]+rect[2])
+                        slice1 = slice(rect[1], rect[1]+rect[3])
+                        inset_image = image_2d[slice0, slice1]
+                        inset_image_handle = axins.imshow(
+                                inset_image, cmap=cmap, vmin=vmin, vmax=vmax,
+                                interpolation='none')
+                        add_metrics = add_inset.get('add_metrics')
+                        if add_metrics:
+                            if i != gt_idx:
+                                inset_gt = gt_2d[slice0, slice1]
+                                inset_psnr = PSNR(inset_image, inset_gt,
+                                        data_range=np.max(gt_2d)-np.min(gt_2d))
+                                inset_ssim = SSIM(inset_image, inset_gt,
+                                        data_range=np.max(gt_2d)-np.min(gt_2d))
+                                axins.text(
+                                        *add_metrics.get('pos', [0., 0.]),
+                                        'PSNR: {:.2f}$\,$dB\nSSIM: {:.4f}'.format(
+                                                inset_psnr, inset_ssim),
+                                        transform=axins.transAxes,
+                                        fontsize=add_metrics.get('fontsize', 6),
+                                        color=add_metrics.get('color', '#cccccc'),
+                                        **add_metrics.get('kwargs', {}),
+                                        )
+                        axins.set_xticks([])
+                        axins.set_yticks([])
+                        axins.patch.set_visible(False)
+                        for spine in axins.spines.values():
+                            spine.set_visible(False)
+                        frame_path = add_inset.get(
+                                'frame_path', [[0., 0.], [1., 0.], [0., 1.], [1., 1]])
+                        if frame_path:
+                            axins.plot(
+                                    *np.array(frame_path).T,
                                     transform=axins.transAxes,
-                                    fontsize=add_metrics.get('fontsize', 6),
-                                    color=add_metrics.get('color', '#cccccc'),
-                                    **add_metrics.get('kwargs', {}),
-                                    )
-                    axins.set_xticks([])
-                    axins.set_yticks([])
-                    axins.patch.set_visible(False)
-                    for spine in axins.spines.values():
-                        spine.set_visible(False)
-                    frame_path = add_inset.get(
-                            'frame_path', [[0., 0.], [1., 0.], [0., 1.], [1., 1]])
-                    if frame_path:
-                        axins.plot(
-                                *np.array(frame_path).T,
-                                transform=axins.transAxes,
-                                color=add_inset.get('frame_color', '#555555'),
-                                solid_capstyle='butt')
-                        inset_image_handle.set_clip_path(Path(
-                                frame_path + add_inset.get(
-                                        'clip_path_closing', [])),
-                                transform=axins.transAxes)
-                        inset_image_handle.set_clip_on(True)
+                                    color=add_inset.get('frame_color_overrides', {}).get(i) or add_inset.get('frame_color', '#555555'),
+                                    solid_capstyle='butt')
+                            inset_image_handle.set_clip_path(Path(
+                                    frame_path + add_inset.get(
+                                            'clip_path_closing', [])),
+                                    transform=axins.transAxes)
+                            inset_image_handle.set_clip_on(True)
 
     elif SUBPLOT_TYPES[image_type] == 'plot':
+        assert not is_3d
         if image_type == 'uncertainty':
             squared_err, squared_std = get_uncertainty_infos(image_spec)
             min_val = min([np.min(squared_std), np.min(squared_err)])

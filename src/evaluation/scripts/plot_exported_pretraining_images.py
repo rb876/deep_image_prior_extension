@@ -12,10 +12,14 @@ FIG_PATH = os.path.dirname(__file__)
 
 save_fig = True
 
-data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_20'
 # data = 'ellipses_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
+# data = 'ellipsoids_walnut_3d'
+data = 'ellipsoids_walnut_3d_60'
+
+is_3d = '_3d' in data
 
 fold = 'train'
 
@@ -30,7 +34,8 @@ CMAP = 'gray'
 # 'gt', 'fbp', 'reco'
 
 if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_45',
-            'brain_walnut_120', 'ellipses_walnut_120']:
+            'brain_walnut_120', 'ellipses_walnut_120',
+            'ellipsoids_walnut_3d', 'ellipsoids_walnut_3d_60']:
 
     images_to_plot = []
     for k in samples:
@@ -56,7 +61,7 @@ if data in ['ellipses_lotus_20', 'ellipses_lotus_limited_45',
 
 plot_settings_dict = {
     'default': {
-        'nrows': len(samples),
+        'nrows': len(samples) * (3 if is_3d else 1),
         'only_top_row_titles': True,
         'norm_group_inds': 'global',
         'norm_groups_use_vrange_from_images': {0: [len(images_to_plot)-1]},
@@ -72,6 +77,14 @@ plot_settings_dict = {
     # },
     # 'ellipses_walnut_120': {
     # },
+    'ellipsoids_walnut_3d': {
+        'figsize': (9, 9),
+        'gridspec_kw': {'hspace': 0.02, 'wspace': 0.02},
+    },
+    'ellipsoids_walnut_3d_60': {
+        'figsize': (9, 9),
+        'gridspec_kw': {'hspace': 0.02, 'wspace': 0.02},
+    }
 }
 
 
@@ -113,7 +126,7 @@ images = [
 plot_settings = plot_settings_dict['default']
 plot_settings.update(plot_settings_dict.get(data, {}))
 
-nrows = plot_settings.get('nrows', len(samples))
+nrows = plot_settings.get('nrows', len(samples) * (3 if is_3d else 1))
 only_top_row_titles = plot_settings.get('only_top_row_titles', False)
 
 norm_group_inds = plot_settings.get('norm_group_inds', 'global')
@@ -188,41 +201,66 @@ vranges_per_norm_group = [
 vranges = [vranges_per_norm_group[g_ind] if g_ind is not None else None
            for g_ind in norm_group_inds]
 
-ncols = ceil(len(images_to_plot) / nrows)
+ncols = ceil(len(images_to_plot) * (3 if is_3d else 1) / nrows)
 fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize,
                         gridspec_kw=gridspec_kw)
+
+axs_list = list(axs.T.flat)
+if is_3d:
+    axs_list = [axs_list[i*3:(i+1)*3] for i in range(len(images_to_plot))]
+    label_fontsize = plt.rcParams['axes.titlesize']
+    axs_list[0][0].set_ylabel('yz-slice', fontsize=label_fontsize)
+    axs_list[0][1].set_ylabel('xz-slice', fontsize=label_fontsize)
+    axs_list[0][2].set_ylabel('xy-slice', fontsize=label_fontsize)
 
 image_axes_list = []
 
 for i, (image_spec, image, vrange, ax) in enumerate(zip(
-        images_to_plot, images, vranges, axs.flat)):
+        images_to_plot, images, vranges, axs_list)):
 
     image_type = image_spec['type']
 
     image_axes = None
 
+    ax_or_first_ax = (ax[0] if is_3d else ax)
+    ax_or_last_ax = (ax[-1] if is_3d else ax)
+
     title = get_title(image_spec)
     if not (only_top_row_titles and i // ncols > 0):
-        ax.set_title(title, pad=titlepad)
+        ax_or_first_ax.set_title(title, pad=titlepad)
 
     vmin, vmax = vrange
 
-    image_axes = ax.imshow(image.T, cmap=CMAP, vmin=vmin, vmax=vmax,
-                            interpolation='none')
+    imshow_kwargs = {
+            'cmap': CMAP, 'vmin': vmin, 'vmax': vmax,
+            'interpolation': 'none'}
 
-    if image_spec.get('ylabel'):
+    if image.ndim == 2:
+        image_axes = ax.imshow(image.T, **imshow_kwargs)
+    elif image.ndim == 3:
+        image_3d_slice_view0 = image.T[image.shape[0] // 2, :, :]
+        image_3d_slice_view1 = image.T[:, image.shape[1] // 2, :]
+        image_3d_slice_view2 = image.T[:, :, image.shape[1] // 2]
+        image_axes0 = ax[0].imshow(image_3d_slice_view0, **imshow_kwargs)
+        image_axes1 = ax[1].imshow(image_3d_slice_view1, **imshow_kwargs)
+        image_axes2 = ax[2].imshow(image_3d_slice_view2, **imshow_kwargs)
+        image_axes = image_axes2  # only use one of the subplots (vrange is the same for all three)
+        image_3d_slice_views = (image_3d_slice_view0, image_3d_slice_view1, image_3d_slice_view2)
+
+    if image_spec.get('ylabel') and not is_3d:
         ax.set_ylabel(image_spec['ylabel'])
 
     if image_spec.get('show_metrics'):
         image_metrics = get_image_metrics(image_spec)
-        ax.set_xlabel('PSNR: ${:.2f}\,$dB, SSIM: ${:.4f}\,$'.format(
+        ax_or_last_ax.set_xlabel('PSNR: ${:.2f}\,$dB, SSIM: ${:.4f}\,$'.format(
                 image_metrics['psnr'], image_metrics['ssim']),
                 fontsize=metrics_fontsize)
 
-    ax.set_xticks([])
-    ax.set_yticks([])
-    for spine in ax.spines.values():
-        spine.set_visible(False)
+    for ax_ in ax if is_3d else [ax]:
+        ax_.set_xticks([])
+        ax_.set_yticks([])
+        for spine in ax_.spines.values():
+            spine.set_visible(False)
 
     image_axes_list.append(image_axes)
 

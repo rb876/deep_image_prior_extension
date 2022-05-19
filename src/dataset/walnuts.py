@@ -15,11 +15,16 @@ import os
 import imageio
 from math import ceil
 import torch
-import scipy
+import scipy.sparse
+import scipy.io
+import scipy.interpolate
 from tqdm import tqdm
 
 VOXEL_PER_MM = 10
 DEFAULT_ANGULAR_SUB_SAMPLING = 10
+DEFAULT_PROJ_COL_SUB_SAMPLING = 1
+DEFAULT_PROJ_ROW_SUB_SAMPLING = 1
+DEFAULT_VOL_DOWN_SAMPLING = (1, 1, 1)
 PROJS_NAME = 'scan_{:06}.tif'
 DARK_NAME = 'di000000.tif'
 FLAT_NAME = ['io000000.tif', 'io000001.tif']
@@ -40,48 +45,238 @@ SINGLE_SLICE_CONFIGS = {  # first key: walnut_id; second key: orbit_id
             'num_proj_rows': 9,
             'first_proj_row': 474,
         }
-    }
+    },
+    2: {  # walnut_id
+        2: {  # orbit_id
+            'num_slices': 25,
+            'slice_offset': -11,  # source is shifted by ~ -1.1 mm = -11 px
+            'num_proj_rows': 9,
+            'first_proj_row': 474,
+        }
+    },
+    3: {  # walnut_id
+        2: {  # orbit_id
+            'num_slices': 25,
+            'slice_offset': -11,  # source is shifted by ~ -1.1 mm = -11 px
+            'num_proj_rows': 9,
+            'first_proj_row': 474,
+        }
+    },
+    4: {  # walnut_id
+        2: {  # orbit_id
+            'num_slices': 25,
+            'slice_offset': -11,  # source is shifted by ~ -1.1 mm = -11 px
+            'num_proj_rows': 9,
+            'first_proj_row': 475,
+        }
+    },
+    5: {  # walnut_id
+        2: {  # orbit_id
+            'num_slices': 25,
+            'slice_offset': -11,  # source is shifted by ~ -1.1 mm = -11 px
+            'num_proj_rows': 9,
+            'first_proj_row': 474,
+        }
+    },
 }
 
 DEFAULT_SINGLE_SLICE_WALNUT_ID = 1
 DEFAULT_SINGLE_SLICE_ORBIT_ID = 2
 
+def get_first_proj_col_for_sub_sampling(factor=DEFAULT_PROJ_COL_SUB_SAMPLING):
+    num_proj_cols = ceil(PROJS_COLS / factor)
+    first_proj_col = (PROJS_COLS - ((num_proj_cols - 1) * factor + 1)) // 2
+    return first_proj_col
 
-def get_vol_geom(num_slices=-1):
+def get_first_proj_row_for_sub_sampling(factor=DEFAULT_PROJ_ROW_SUB_SAMPLING, num_orig=PROJS_ROWS, num=-1):
+    max_num_proj_rows = ceil(num_orig / factor)
+    if num == -1:
+        num_proj_rows = max_num_proj_rows
+    else:
+        assert num <= max_num_proj_rows
+        num_proj_rows = num
+    first_proj_row = (num_orig - ((num_proj_rows - 1) * factor + 1)) // 2
+    return first_proj_row
+
+def sub_sample_proj(
+        projs,
+        factor_row=DEFAULT_PROJ_ROW_SUB_SAMPLING, first_row=-1, num_rows=-1,
+        factor_col=DEFAULT_PROJ_COL_SUB_SAMPLING, first_col=-1):
+
+    if first_row == -1:
+        first_row = get_first_proj_row_for_sub_sampling(factor=factor_row, num_orig=projs.shape[0])
+    max_num_proj_rows = len(range(
+            first_row, PROJS_ROWS, factor_row))
+    if num_rows == -1:
+        num_rows = max_num_proj_rows
+    else:
+        assert num_rows <= max_num_proj_rows
+
+    if first_col == -1:
+        first_col = get_first_proj_col_for_sub_sampling(factor=factor_col)
+
+    out = projs[first_row:(first_row+num_rows*factor_row):factor_row, :, first_col::factor_col]
+    return out
+
+def up_sample_proj(
+        projs,
+        factor_row=DEFAULT_PROJ_ROW_SUB_SAMPLING, first_row=-1,
+        factor_col=DEFAULT_PROJ_COL_SUB_SAMPLING, first_col=-1,
+        num_rows_orig=None,
+        kind='linear'):
+
+    if factor_row != 1:
+        if first_row == -1:
+            assert num_rows_orig is not None, (
+                'either first_row or num_rows_orig must be specified if '
+                'sub-sampling rows')
+            first_row = get_first_proj_row_for_sub_sampling(factor=factor_row, num_orig=num_rows_orig)
+        x_row = np.arange(first_row, PROJS_ROWS, factor_row)
+        projs_interp1d_row = scipy.interpolate.interp1d(
+                x_row, projs, kind=kind, axis=0, bounds_error=False,
+                fill_value=(projs[0, :, :], projs[-1, :, :]), assume_sorted=True)
+        projs = projs_interp1d_row(np.arange(PROJS_ROWS))
+
+    if factor_col != 1:
+        if first_col == -1:
+            first_col = get_first_proj_col_for_sub_sampling(factor=factor_col)
+        x_col = np.arange(first_col, PROJS_COLS, factor_col)
+        projs_interp1d_col = scipy.interpolate.interp1d(
+                x_col, projs, kind=kind, axis=2, bounds_error=False,
+                fill_value=(projs[:, :, 0], projs[:, :, -1]), assume_sorted=True)
+        projs = projs_interp1d_col(np.arange(PROJS_COLS))
+
+    return projs
+
+# Note from ASTRA documentation:
+#   For usage with GPU code, the volume must be centered around the origin
+#   and pixels must be square. This is not always explicitly checked in all
+#   functions, so not following these requirements may have unpredictable
+#   results.
+# We therefore always select a centered volume down-sampling, letting
+# ``WindowMinX == -WindowMaxX``, and so on.
+# In order to obtain an aligned pixel grid (under the constraint to be central),
+# only odd down-sampling factors are supported (because the image shape is odd,
+# 501^3), and the number of voxels for each dimension is selected to be odd, so
+# the central pixel is always located at the origin.
+
+def get_down_sampled_vol_shape(
+        down_sampling=DEFAULT_VOL_DOWN_SAMPLING):
+
+    if np.isscalar(down_sampling):
+        down_sampling = (down_sampling,) * 3
+    down_sampling = np.asarray(down_sampling)
+    # must be odd since VOL_SZ is odd for an aligned pixel grid
+    assert np.all(np.mod(down_sampling, 2) == 1)
+
+    down_sampled_vol_shape = np.floor(
+            np.asarray(VOL_SZ) / down_sampling).astype(int)
+    # make down_sampled_vol_shape odd, yielding an aligned pixel grid
+    down_sampled_vol_shape -= np.mod(down_sampled_vol_shape + 1, 2)
+
+    return tuple(down_sampled_vol_shape.tolist())
+
+def down_sample_vol(
+        vol_x, down_sampling=DEFAULT_VOL_DOWN_SAMPLING, kind='mean_pooling'):
+
+    if np.isscalar(down_sampling):
+        down_sampling = (down_sampling,) * 3
+    down_sampling = np.asarray(down_sampling)
+    assert np.array_equal(vol_x.shape, VOL_SZ)
+    assert np.all(np.mod(down_sampling, 2) == 1)
+
+    down_sampled_vol_shape = np.asarray(get_down_sampled_vol_shape(
+            down_sampling=down_sampling))
+
+    margin = vol_x.shape - down_sampled_vol_shape * down_sampling
+    assert np.all(np.mod(margin, 2) == 0), 'cannot split margin evenly'
+
+    if kind == 'mean_pooling':
+        vol_x_cropped = vol_x[
+                margin[0]//2:vol_x.shape[0]-(margin[0]//2),
+                margin[1]//2:vol_x.shape[1]-(margin[1]//2),
+                margin[2]//2:vol_x.shape[2]-(margin[2]//2)]
+        vol_x_cropped_reshaped = vol_x_cropped.reshape(
+                (down_sampled_vol_shape[0], down_sampling[0],
+                 down_sampled_vol_shape[1], down_sampling[1],
+                 down_sampled_vol_shape[2], down_sampling[2]))
+        vol_x_down_sampled = np.mean(vol_x_cropped_reshaped, axis=(1, 3, 5))
+
+    else:
+        raise NotImplementedError(
+                'Unknown down-sampling method \'{}\''.format(kind))
+
+    return vol_x_down_sampled
+
+def get_vol_geom(down_sampling=DEFAULT_VOL_DOWN_SAMPLING, num_slices=-1):
+
+    if np.isscalar(down_sampling):
+        down_sampling = (down_sampling,) * 3
+    down_sampled_vol_shape = np.asarray(get_down_sampled_vol_shape(
+            down_sampling=down_sampling))
+
     vol_geom = astra.create_vol_geom(
-            (VOL_SZ[1],
-             VOL_SZ[2],
-             VOL_SZ[0] if num_slices == -1 else num_slices))
-    vol_geom['option']['WindowMinX'] = vol_geom['option']['WindowMinX'] * VOX_SZ
-    vol_geom['option']['WindowMaxX'] = vol_geom['option']['WindowMaxX'] * VOX_SZ
-    vol_geom['option']['WindowMinY'] = vol_geom['option']['WindowMinY'] * VOX_SZ
-    vol_geom['option']['WindowMaxY'] = vol_geom['option']['WindowMaxY'] * VOX_SZ
-    vol_geom['option']['WindowMinZ'] = vol_geom['option']['WindowMinZ'] * VOX_SZ
-    vol_geom['option']['WindowMaxZ'] = vol_geom['option']['WindowMaxZ'] * VOX_SZ
+            (down_sampled_vol_shape[1],
+             down_sampled_vol_shape[2],
+             down_sampled_vol_shape[0] if num_slices == -1 else num_slices))
+    vol_geom['option']['WindowMinX'] = vol_geom['option']['WindowMinX'] * VOX_SZ * down_sampling[2]
+    vol_geom['option']['WindowMaxX'] = vol_geom['option']['WindowMaxX'] * VOX_SZ * down_sampling[2]
+    vol_geom['option']['WindowMinY'] = vol_geom['option']['WindowMinY'] * VOX_SZ * down_sampling[1]
+    vol_geom['option']['WindowMaxY'] = vol_geom['option']['WindowMaxY'] * VOX_SZ * down_sampling[1]
+    vol_geom['option']['WindowMinZ'] = vol_geom['option']['WindowMinZ'] * VOX_SZ * down_sampling[0]
+    vol_geom['option']['WindowMaxZ'] = vol_geom['option']['WindowMaxZ'] * VOX_SZ * down_sampling[0]
 
     return vol_geom
 
 def get_proj_geom(data_path, walnut_id, orbit_id,
                   angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING,
-                  num_proj_rows=-1, first_proj_row=-1, rotation=None,
-                  shift_z=0., return_vecs=False):
+                  proj_row_sub_sampling=DEFAULT_PROJ_ROW_SUB_SAMPLING,
+                  proj_col_sub_sampling=DEFAULT_PROJ_COL_SUB_SAMPLING,
+                  first_proj_row=-1, first_proj_col=-1,
+                  num_proj_rows=-1,
+                  rotation=None, shift_z=0., return_vecs=False):
     data_path_full = os.path.join(data_path, 'Walnut{}'.format(walnut_id),
                                   'Projections', 'tubeV{}'.format(orbit_id))
 
-    if num_proj_rows == -1:
-        num_proj_rows = PROJS_ROWS
-
     if first_proj_row == -1:
-        first_proj_row = (PROJS_ROWS - num_proj_rows) // 2
+        first_proj_row = get_first_proj_row_for_sub_sampling(
+                factor=proj_row_sub_sampling, num=num_proj_rows)
+    max_num_proj_rows = len(range(
+            first_proj_row, PROJS_ROWS, proj_row_sub_sampling))
+    if num_proj_rows == -1:
+        num_proj_rows = max_num_proj_rows
+    else:
+        assert num_proj_rows <= max_num_proj_rows
+
+    if first_proj_col == -1:
+        first_proj_col = get_first_proj_col_for_sub_sampling(
+                factor=proj_col_sub_sampling)
+
+    num_proj_cols = len(range(
+            first_proj_col, PROJS_COLS, proj_col_sub_sampling))
 
     vecs_all = np.loadtxt(os.path.join(data_path_full, VECS_NAME))
     vecs = vecs_all[range(0, MAX_NUM_ANGLES, angular_sub_sampling)]
 
-    # determine the detector center, such that the first detector row in this
-    # geometry coincides with row `first_proj_row` of the full geometry with
-    # num_proj_rows=PROJS_ROWS
-    vecs[:, 3:6] += (-(PROJS_ROWS - 1) / 2 + first_proj_row -
-                     (-(num_proj_rows - 1) / 2)) * vecs[:, 9:12]
+    # determine the detector center, such that the first detector row in the
+    # sub-sampled geometry coincides with row `first_proj_row` of the full
+    # geometry with PROJS_ROWS rows
+    row_margin_end = (PROJS_ROWS - 1) - (
+            first_proj_row + (num_proj_rows - 1) * proj_row_sub_sampling)
+    vecs[:, 3:6] += (first_proj_row - row_margin_end) / 2 * vecs[:, 9:12]
+
+    # determine the detector center, such that the first detector column in the
+    # sub-sampled geometry coincides with column `first_proj_col` of the full
+    # geometry with PROJS_COLS columns
+    col_margin_end = (PROJS_COLS - 1) - (
+            first_proj_col + (num_proj_cols - 1) * proj_col_sub_sampling)
+    vecs[:, 3:6] += (first_proj_col - col_margin_end) / 2 * vecs[:, 6:9]
+
+    # multiply step between detector rows by proj_row_sub_sampling
+    vecs[:, 9:12] *= proj_row_sub_sampling
+
+    # multiply step between detector columns by proj_col_sub_sampling
+    vecs[:, 6:9] *= proj_col_sub_sampling
 
     # apply a scipy rotation (globally) if specified
     if rotation is not None:
@@ -93,12 +288,16 @@ def get_proj_geom(data_path, walnut_id, orbit_id,
     vecs[:, 5] += shift_z
 
     proj_geom = astra.create_proj_geom(
-            'cone_vec', num_proj_rows, PROJS_COLS, vecs)
+            'cone_vec', num_proj_rows, num_proj_cols, vecs)
 
     return proj_geom if not return_vecs else (proj_geom, vecs)
 
 def get_projection_data(data_path, walnut_id, orbit_id,
-                        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING):
+                        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING,
+                        proj_row_sub_sampling=DEFAULT_PROJ_ROW_SUB_SAMPLING,
+                        proj_col_sub_sampling=DEFAULT_PROJ_COL_SUB_SAMPLING,
+                        first_proj_row=-1, first_proj_col=-1,
+                        num_proj_rows=-1):
     data_path_full = os.path.join(data_path, 'Walnut{}'.format(walnut_id),
                                   'Projections', 'tubeV{}'.format(orbit_id))
 
@@ -139,6 +338,11 @@ def get_projection_data(data_path, walnut_id, orbit_id,
     np.negative(projs, out=projs)
     # permute data to ASTRA convention
     projs = np.transpose(projs, (1, 0, 2))
+    # sub-sample
+    projs = sub_sample_proj(
+            projs,
+            factor_row=proj_row_sub_sampling, first_row=first_proj_row, num_rows=num_proj_rows,
+            factor_col=proj_col_sub_sampling, first_col=first_proj_col)
     projs = np.ascontiguousarray(projs)
 
     return projs
@@ -150,6 +354,13 @@ def get_ground_truth(data_path, walnut_id, orbit_id, slice_ind):
     gt = imageio.imread(slice_path)
 
     return gt
+
+def get_ground_truth_3d(data_path, walnut_id, orbit_id):
+    gt_slices = [get_ground_truth(data_path, walnut_id, orbit_id, slice_ind)
+            for slice_ind in range(VOL_SZ[0])]
+    gt_3d = np.stack(gt_slices, axis=0)
+
+    return gt_3d
 
 def get_single_slice_ind(
         data_path,
@@ -170,7 +381,8 @@ def get_single_slice_ray_trafo(
         data_path,
         walnut_id=DEFAULT_SINGLE_SLICE_WALNUT_ID,
         orbit_id=DEFAULT_SINGLE_SLICE_ORBIT_ID,
-        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING):
+        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING,
+        proj_col_sub_sampling=DEFAULT_PROJ_COL_SUB_SAMPLING):
 
     single_slice_config = SINGLE_SLICE_CONFIGS.get(walnut_id, {}).get(orbit_id)
     if single_slice_config is None:
@@ -182,10 +394,11 @@ def get_single_slice_ray_trafo(
     num_proj_rows = single_slice_config['num_proj_rows']
     first_proj_row = single_slice_config['first_proj_row']
 
-    walnut_ray_trafo = WalnutRayTrafo(
+    walnut_ray_trafo = MaskedWalnutRayTrafo(
             data_path=data_path,
             walnut_id=walnut_id, orbit_id=orbit_id,
             angular_sub_sampling=angular_sub_sampling,
+            proj_col_sub_sampling=proj_col_sub_sampling,
             num_slices=num_slices, num_proj_rows=num_proj_rows,
             first_proj_row=first_proj_row,
             vol_mask_slice=(num_slices - 1) // 2 + slice_offset,
@@ -194,52 +407,333 @@ def get_single_slice_ray_trafo(
 
     return walnut_ray_trafo
 
+def astra_fp3d_cuda(vol_x, vol_geom, proj_geom, projs_out):
+
+    vol_x = np.ascontiguousarray(vol_x, dtype=np.float32)
+    vol_id = astra.data3d.link('-vol', vol_geom, vol_x)
+    proj_id = astra.data3d.link('-sino', proj_geom, projs_out)
+
+    cfg_fp = astra.astra_dict('FP3D_CUDA')
+    cfg_fp['VolumeDataId'] = vol_id
+    cfg_fp['ProjectionDataId'] = proj_id
+    alg_id = astra.algorithm.create(cfg_fp)
+
+    astra.algorithm.run(alg_id)
+
+    astra.algorithm.delete(alg_id)
+    astra.data3d.delete(proj_id)
+    astra.data3d.delete(vol_id)
+
+def astra_bp3d_cuda(projs, vol_geom, proj_geom, vol_x_out):
+
+    projs = np.ascontiguousarray(projs, dtype=np.float32)
+    proj_id = astra.data3d.link('-sino', proj_geom, projs)
+    vol_id = astra.data3d.link('-vol', vol_geom, vol_x_out)
+
+    cfg_bp = astra.astra_dict('BP3D_CUDA')
+    cfg_bp['ReconstructionDataId'] = vol_id
+    cfg_bp['ProjectionDataId'] = proj_id
+    alg_id = astra.algorithm.create(cfg_bp)
+
+    astra.algorithm.run(alg_id)
+
+    astra.algorithm.delete(alg_id)
+    astra.data3d.delete(proj_id)
+    astra.data3d.delete(vol_id)
+
+def astra_fdk_cuda(projs, vol_geom, proj_geom, vol_x_out):
+
+    projs = np.ascontiguousarray(projs, dtype=np.float32)
+    proj_id = astra.data3d.link('-sino', proj_geom, projs)
+    vol_id = astra.data3d.link('-vol', vol_geom, vol_x_out)
+
+    cfg_fdk = astra.astra_dict('FDK_CUDA')
+    cfg_fdk['ReconstructionDataId'] = vol_id
+    cfg_fdk['ProjectionDataId'] = proj_id
+    cfg_fdk['option'] = {}
+    cfg_fdk['option']['ShortScan'] = False
+    alg_id = astra.algorithm.create(cfg_fdk)
+
+    astra.algorithm.run(alg_id, 1)
+
+    astra.algorithm.delete(alg_id)
+    astra.data3d.delete(proj_id)
+    astra.data3d.delete(vol_id)
+
 class WalnutRayTrafo:
     def __init__(self, data_path, walnut_id, orbit_id,
                  angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING,
-                 num_slices=VOL_SZ[0], num_proj_rows=PROJS_ROWS,
-                 first_proj_row=0, rotation=None, shift_z=0.,
-                 vol_mask_slice=None, proj_mask_select_k_rows=None):
+                 proj_row_sub_sampling=DEFAULT_PROJ_ROW_SUB_SAMPLING,
+                 proj_col_sub_sampling=DEFAULT_PROJ_COL_SUB_SAMPLING,
+                 vol_down_sampling=DEFAULT_VOL_DOWN_SAMPLING,
+                 first_proj_row=-1, first_proj_col=-1,
+                 rotation=None, shift_z=0.,
+                 proj_sub_sampling_via_geom=True,
+                 proj_up_sampling_via_geom=True,
+                 proj_up_sampling_kind_if_not_via_geom='linear'):
         self.data_path = data_path
         self.walnut_id = walnut_id
         self.orbit_id = orbit_id
         self.angular_sub_sampling = angular_sub_sampling
-        assert num_slices % 2 == 1  # each slice then matches one in full volume
-        self.num_slices = num_slices
-        self.num_proj_rows = num_proj_rows
-        self.first_proj_row = first_proj_row
+        self.proj_row_sub_sampling = proj_row_sub_sampling
+        self.proj_col_sub_sampling = proj_col_sub_sampling
+        self.vol_down_sampling = (
+                (vol_down_sampling,) * 3 if np.isscalar(vol_down_sampling)
+                else vol_down_sampling)
+        self.first_proj_row = (
+                get_first_proj_row_for_sub_sampling(
+                        factor=self.proj_row_sub_sampling)
+                if first_proj_row == -1 else first_proj_row)
+        self.first_proj_col = (
+                get_first_proj_col_for_sub_sampling(
+                        factor=self.proj_col_sub_sampling)
+                if first_proj_col == -1 else first_proj_col)
         self.rotation = rotation
         self.shift_z = shift_z
-        if isinstance(vol_mask_slice, int):
-            self.vol_mask_slice = slice(vol_mask_slice, vol_mask_slice+1)
+        self.proj_sub_sampling_via_geom = (proj_sub_sampling_via_geom or
+                (proj_row_sub_sampling == 1 and proj_col_sub_sampling == 1))
+        self.proj_up_sampling_via_geom = (proj_up_sampling_via_geom or
+                (proj_row_sub_sampling == 1 and proj_col_sub_sampling == 1))
+        self.proj_up_sampling_kind_if_not_via_geom = (
+                proj_up_sampling_kind_if_not_via_geom)
+
+        self.num_angles = ceil(MAX_NUM_ANGLES / self.angular_sub_sampling)
+        self.num_proj_rows = len(range(
+                self.first_proj_row, PROJS_ROWS, self.proj_row_sub_sampling))
+        self.num_proj_cols = len(range(
+                self.first_proj_col, PROJS_COLS, self.proj_col_sub_sampling))
+
+        self.vol_shape = get_down_sampled_vol_shape(
+                down_sampling=self.vol_down_sampling)
+        self.proj_shape = (
+                self.num_proj_rows, self.num_angles, self.num_proj_cols)
+
+        self.vol_geom = get_vol_geom(down_sampling=self.vol_down_sampling)
+
+        proj_geom_kwargs = dict(
+                data_path=self.data_path,
+                walnut_id=self.walnut_id, orbit_id=self.orbit_id,
+                angular_sub_sampling=self.angular_sub_sampling,
+                rotation=self.rotation, shift_z=self.shift_z,
+        )
+
+        # geometry with projection sub-sampling
+        self.proj_geom, self.vecs = get_proj_geom(
+                **proj_geom_kwargs,
+                proj_row_sub_sampling=self.proj_row_sub_sampling,
+                proj_col_sub_sampling=self.proj_col_sub_sampling,
+                first_proj_row=self.first_proj_row,
+                first_proj_col=self.first_proj_col,
+                num_proj_rows=self.num_proj_rows,
+                return_vecs=True)
+
+        # geometry with all projection values (no sub-sampling)
+        if self.proj_row_sub_sampling != 1 or self.proj_col_sub_sampling != 1:
+            self.proj_geom_no_sub_sampling, self.vecs_no_sub_sampling = get_proj_geom(
+                    **proj_geom_kwargs,
+                    proj_row_sub_sampling=1,
+                    proj_col_sub_sampling=1,
+                    return_vecs=True)
+            self.proj_shape_no_sub_sampling = (PROJS_ROWS, self.proj_shape[1], PROJS_COLS)
         else:
-            assert vol_mask_slice.step is None or vol_mask_slice.step == 1
-            self.vol_mask_slice = vol_mask_slice
-        self.proj_mask_select_k_rows = proj_mask_select_k_rows
+            self.proj_geom_no_sub_sampling = None
+            self.vecs_no_sub_sampling = None
+            self.proj_shape_no_sub_sampling = None
+
+    def fp3d(self, vol_x, vol_geom=None):
+        if vol_geom is None:
+            vol_geom = self.vol_geom
+
+        if self.proj_sub_sampling_via_geom:
+            proj_shape = self.proj_shape
+            proj_geom = self.proj_geom
+        else:
+            proj_shape = self.proj_shape_no_sub_sampling
+            proj_geom = self.proj_geom_no_sub_sampling
+        projs = np.zeros(proj_shape, dtype=np.float32)
+
+        astra_fp3d_cuda(vol_x=vol_x, vol_geom=vol_geom, proj_geom=proj_geom,
+                projs_out=projs)
+
+        if not self.proj_sub_sampling_via_geom:
+            projs = sub_sample_proj(
+                    projs,
+                    factor_row=self.proj_row_sub_sampling,
+                    factor_col=self.proj_col_sub_sampling,
+                    first_row=self.first_proj_row,
+                    first_col=self.first_proj_col)
+
+        return projs
+
+    def bp3d(self, projs, proj_geom=None, proj_geom_no_sub_sampling=None):
+
+        if self.proj_up_sampling_via_geom:
+            proj_geom = proj_geom if proj_geom is not None else self.proj_geom
+        else:
+            proj_geom = (proj_geom_no_sub_sampling if proj_geom_no_sub_sampling is not None
+                         else self.proj_geom_no_sub_sampling)
+            projs = up_sample_proj(
+                    projs,
+                    factor_row=self.proj_row_sub_sampling,
+                    factor_col=self.proj_col_sub_sampling,
+                    first_row=self.first_proj_row,
+                    first_col=self.first_proj_col,
+                    num_rows_orig=self.proj_shape_no_sub_sampling[0],
+                    kind=self.proj_up_sampling_kind_if_not_via_geom)
+        vol_x = np.zeros(self.vol_shape, dtype=np.float32)
+
+        astra_bp3d_cuda(projs=projs, vol_geom=self.vol_geom, proj_geom=proj_geom,
+                vol_x_out=vol_x)
+
+        return vol_x
+
+    def fdk(self, projs, proj_geom=None, proj_geom_no_sub_sampling=None):
+
+        if self.proj_up_sampling_via_geom:
+            proj_geom = proj_geom if proj_geom is not None else self.proj_geom
+        else:
+            proj_geom = (proj_geom_no_sub_sampling if proj_geom_no_sub_sampling is not None
+                         else self.proj_geom_no_sub_sampling)
+            projs = up_sample_proj(
+                    projs,
+                    factor_row=self.proj_row_sub_sampling,
+                    factor_col=self.proj_col_sub_sampling,
+                    first_row=self.first_proj_row,
+                    first_col=self.first_proj_col,
+                    num_rows_orig=self.proj_shape_no_sub_sampling[0],
+                    kind=self.proj_up_sampling_kind_if_not_via_geom)
+        vol_x = np.zeros(self.vol_shape, dtype=np.float32)
+
+        astra_fdk_cuda(projs=projs, vol_geom=self.vol_geom, proj_geom=proj_geom,
+                vol_x_out=vol_x)
+
+        return vol_x
+
+    # alternative function names
+    apply = fp3d
+    apply_adjoint = bp3d
+    apply_fdk = fdk
+
+
+class MaskedWalnutRayTrafo:
+    def __init__(self, data_path, walnut_id, orbit_id,
+                 angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING,
+                 proj_row_sub_sampling=DEFAULT_PROJ_ROW_SUB_SAMPLING,
+                 proj_col_sub_sampling=DEFAULT_PROJ_COL_SUB_SAMPLING,
+                 first_proj_row=-1, first_proj_col=-1, num_proj_rows=-1,
+                 num_slices=VOL_SZ[0],
+                 rotation=None, shift_z=0.,
+                 vol_mask_slice=None, proj_mask_select_k_rows=None,
+                 proj_sub_sampling_via_geom=True,
+                 proj_up_sampling_via_geom=True,
+                 proj_up_sampling_kind_if_not_via_geom='linear'):
+
+        assert num_slices % 2 == 1  # each slice then matches one in full volume
+
+        self.data_path = data_path
+        self.walnut_id = walnut_id
+        self.orbit_id = orbit_id
+        self.angular_sub_sampling = angular_sub_sampling
+        self.proj_row_sub_sampling = proj_row_sub_sampling
+        self.proj_col_sub_sampling = proj_col_sub_sampling
+
+        self.rotation = rotation
+        self.shift_z = shift_z
+
+        # here we support restriction to some rows via first_proj_row and
+        # num_proj_rows, so it makes sense for first_proj_row to take values
+        # greater than or equal to proj_row_sub_sampling; for WalnutRayTrafo on
+        # the other hand, we start with first_proj_row % proj_row_sub_sampling.
+        self.first_proj_row = (
+                get_first_proj_row_for_sub_sampling(
+                        factor=proj_row_sub_sampling, num=num_proj_rows)
+                if first_proj_row == -1 else first_proj_row)
+        # choose matching row grid for full (non-restricted) geometry
+        first_proj_row_full = self.first_proj_row % proj_row_sub_sampling
+
+        self.ray_trafo_full = WalnutRayTrafo(data_path, walnut_id, orbit_id,
+                 angular_sub_sampling=angular_sub_sampling,
+                 proj_row_sub_sampling=proj_row_sub_sampling,
+                 proj_col_sub_sampling=proj_col_sub_sampling,
+                 first_proj_row=first_proj_row_full,
+                 first_proj_col=first_proj_col,
+                 rotation=rotation, shift_z=shift_z,
+                 proj_sub_sampling_via_geom=proj_sub_sampling_via_geom,
+                 proj_up_sampling_via_geom=proj_up_sampling_via_geom,
+                 proj_up_sampling_kind_if_not_via_geom=proj_up_sampling_kind_if_not_via_geom)
+
+        self.first_proj_col = (  # same as self.ray_trafo_full.first_proj_col
+                get_first_proj_col_for_sub_sampling(
+                        factor=self.proj_col_sub_sampling)
+                if first_proj_col == -1 else first_proj_col)
+        self.proj_sub_sampling_via_geom = (proj_sub_sampling_via_geom or
+                (proj_row_sub_sampling == 1 and proj_col_sub_sampling == 1))
+        self.proj_up_sampling_via_geom = (proj_up_sampling_via_geom or
+                (proj_row_sub_sampling == 1 and proj_col_sub_sampling == 1))
+        self.proj_up_sampling_kind_if_not_via_geom = (
+                proj_up_sampling_kind_if_not_via_geom)
 
         self.num_angles = ceil(MAX_NUM_ANGLES / self.angular_sub_sampling)
 
-        self.vol_geom = get_vol_geom(num_slices=self.num_slices)
-        self.proj_geom, self.vecs = get_proj_geom(
-                data_path=self.data_path,
-                walnut_id=self.walnut_id, orbit_id=self.orbit_id,
-                angular_sub_sampling=self.angular_sub_sampling,
-                num_proj_rows=self.num_proj_rows,
-                first_proj_row=self.first_proj_row,
-                rotation=self.rotation, shift_z=self.shift_z,
-                return_vecs=True)
+        max_num_proj_rows = len(range(
+                self.first_proj_row, PROJS_ROWS, self.proj_row_sub_sampling))
+        self.num_proj_rows = max_num_proj_rows if num_proj_rows == -1 else num_proj_rows
+        assert self.num_proj_rows <= max_num_proj_rows
 
-        self.vol_geom_full = get_vol_geom(num_slices=VOL_SZ[0])
-        self.proj_geom_full = get_proj_geom(
-                data_path=self.data_path,
-                walnut_id=self.walnut_id, orbit_id=self.orbit_id,
-                angular_sub_sampling=self.angular_sub_sampling,
-                num_proj_rows=PROJS_ROWS,
-                first_proj_row=0,
-                rotation=self.rotation, shift_z=self.shift_z)
+        self.num_slices = num_slices
 
         self.vol_shape = (self.num_slices,) + VOL_SZ[1:]
-        self.proj_shape = (self.num_proj_rows, self.num_angles, PROJS_COLS)
+
+        self.num_proj_cols = len(range(
+                self.first_proj_col, PROJS_COLS, self.proj_col_sub_sampling))
+        self.proj_shape = (
+                self.num_proj_rows, self.num_angles, self.num_proj_cols)
+
+        if isinstance(vol_mask_slice, int):
+            self.vol_mask_slice = slice(vol_mask_slice, vol_mask_slice+1)
+        else:
+            if vol_mask_slice is not None:
+                assert vol_mask_slice.step is None or vol_mask_slice.step == 1
+            self.vol_mask_slice = vol_mask_slice
+        self.proj_mask_select_k_rows = proj_mask_select_k_rows
+
+        self.vol_geom = get_vol_geom(num_slices=self.num_slices)
+
+        proj_geom_kwargs = dict(
+                data_path=self.data_path,
+                walnut_id=self.walnut_id, orbit_id=self.orbit_id,
+                angular_sub_sampling=self.angular_sub_sampling,
+                rotation=self.rotation, shift_z=self.shift_z,
+        )
+
+        ## geometries with projection sub-sampling
+        self.proj_geom, self.vecs = get_proj_geom(
+                **proj_geom_kwargs,
+                proj_row_sub_sampling=self.proj_row_sub_sampling,
+                proj_col_sub_sampling=self.proj_col_sub_sampling,
+                first_proj_row=self.first_proj_row,
+                first_proj_col=self.first_proj_col,
+                num_proj_rows=self.num_proj_rows,
+                return_vecs=True)
+
+        ## geometries with dense projection values (no sub-sampling)
+        if self.proj_row_sub_sampling != 1 or self.proj_col_sub_sampling != 1:
+            num_proj_rows_no_sub_sampling = (
+                    (self.num_proj_rows - 1) * self.proj_row_sub_sampling + 1)
+            self.proj_geom_no_sub_sampling, self.vecs_no_sub_sampling = (
+                    get_proj_geom(
+                            **proj_geom_kwargs,
+                            proj_row_sub_sampling=1,
+                            proj_col_sub_sampling=1,
+                            first_proj_row=self.first_proj_row,
+                            num_proj_rows=num_proj_rows_no_sub_sampling,
+                            return_vecs=True))
+            self.proj_shape_no_sub_sampling = (
+                    num_proj_rows_no_sub_sampling, self.proj_shape[1], PROJS_COLS)
+        else:
+            self.proj_geom_no_sub_sampling = None
+            self.vecs_no_sub_sampling = None
+            self.proj_shape_no_sub_sampling = None
 
         self.build_proj_mask()
 
@@ -263,7 +757,7 @@ class WalnutRayTrafo:
 
                 vol_test_full[:] = 1.
                 projs_sum = self.fp3d(vol_test_full,
-                                                    full_input=True)
+                        vol_geom=self.ray_trafo_full.vol_geom)
 
                 fraction = np.zeros(self.proj_shape)
                 valid = projs_sum > 0.
@@ -290,18 +784,22 @@ class WalnutRayTrafo:
                     np.argmax(self.proj_mask[::-1], axis=0))
 
     def assert_proj_rows_suffice(self):
-        projs_test_full = np.ones((PROJS_ROWS, self.num_angles, PROJS_COLS),
-                                  dtype=np.float32)
+        projs_test_full = np.ones(self.ray_trafo_full.proj_shape, dtype=np.float32)
+        first_proj_row_in_full = (  # offset on sub-sampled row grid
+                (self.first_proj_row - self.ray_trafo_full.first_proj_row) //
+                self.proj_row_sub_sampling)
         projs_test_full[
-                self.first_proj_row:self.first_proj_row+self.num_proj_rows] = 0.
-        vol_x = self.bp3d(projs_test_full, full_input=True)
+                first_proj_row_in_full:first_proj_row_in_full+self.num_proj_rows] = 0.
+        vol_x = self.bp3d(projs_test_full,
+                proj_geom=self.ray_trafo_full.proj_geom,
+                proj_geom_no_sub_sampling=self.ray_trafo_full.proj_geom_no_sub_sampling)
         assert np.all(vol_x[self.vol_mask_slice] == 0.)
 
     def assert_vol_slices_suffice(self):
         vol_test_full = np.ones(VOL_SZ, dtype=np.float32)
         first = (VOL_SZ[0] - self.num_slices) // 2
         vol_test_full[first:first+self.num_slices] = 0.
-        projs = self.fp3d(vol_test_full, full_input=True)
+        projs = self.fp3d(vol_test_full, vol_geom=self.ray_trafo_full.vol_geom)
         assert np.all(projs[self.proj_mask] == 0.)
 
     def get_proj_slice_contributing_to_masked_vol(self):
@@ -363,8 +861,11 @@ class WalnutRayTrafo:
         return vol_x
 
     def projs_from_full(self, projs_full):
+        first_proj_row_in_full = (  # offset on sub-sampled row grid
+                (self.first_proj_row - self.ray_trafo_full.first_proj_row) //
+                self.proj_row_sub_sampling)
         projs = projs_full[
-                self.first_proj_row:self.first_proj_row+self.num_proj_rows]
+                first_proj_row_in_full:first_proj_row_in_full+self.num_proj_rows]
         return projs
 
     def vol_in_mask(self, vol_x, full_input=False, squeeze=False):
@@ -436,73 +937,75 @@ class WalnutRayTrafo:
 
         return projs_padded
 
-    def fp3d(self, vol_x, full_input=False):
-        vol_geom = self.vol_geom_full if full_input else self.vol_geom
+    def fp3d(self, vol_x, vol_geom=None):
+        if vol_geom is None:
+            vol_geom = self.vol_geom
 
-        vol_x = np.ascontiguousarray(vol_x, dtype=np.float32)
-        vol_id = astra.data3d.link('-vol', vol_geom, vol_x)
+        if self.proj_sub_sampling_via_geom:
+            proj_shape = self.proj_shape
+            proj_geom = self.proj_geom
+        else:
+            proj_shape = self.proj_shape_no_sub_sampling
+            proj_geom = self.proj_geom_no_sub_sampling
+        projs = np.zeros(proj_shape, dtype=np.float32)
 
-        projs = np.zeros(self.proj_shape, dtype=np.float32)
-        proj_id = astra.data3d.link('-sino', self.proj_geom, projs)
+        astra_fp3d_cuda(vol_x=vol_x, vol_geom=vol_geom, proj_geom=proj_geom,
+                projs_out=projs)
 
-        cfg_fp = astra.astra_dict('FP3D_CUDA')
-        cfg_fp['VolumeDataId'] = vol_id
-        cfg_fp['ProjectionDataId'] = proj_id
-        alg_id = astra.algorithm.create(cfg_fp)
-
-        astra.algorithm.run(alg_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data3d.delete(proj_id)
-        astra.data3d.delete(vol_id)
+        if not self.proj_sub_sampling_via_geom:
+            projs = sub_sample_proj(
+                    projs,
+                    factor_row=self.proj_row_sub_sampling,
+                    factor_col=self.proj_col_sub_sampling,
+                    first_row=0,  # rows in self.proj_geom_no_sub_sampling are
+                                  # bounding tightly
+                    first_col=self.first_proj_col)
 
         return projs
 
-    def bp3d(self, projs, full_input=False):
-        proj_geom = self.proj_geom_full if full_input else self.proj_geom
+    def bp3d(self, projs, proj_geom=None, proj_geom_no_sub_sampling=None):
 
-        projs = np.ascontiguousarray(projs, dtype=np.float32)
-        proj_id = astra.data3d.link('-sino', proj_geom, projs)
-
+        if self.proj_up_sampling_via_geom:
+            proj_geom = proj_geom if proj_geom is not None else self.proj_geom
+        else:
+            proj_geom = (proj_geom_no_sub_sampling if proj_geom_no_sub_sampling is not None
+                         else self.proj_geom_no_sub_sampling)
+            projs = up_sample_proj(
+                    projs,
+                    factor_row=self.proj_row_sub_sampling,
+                    factor_col=self.proj_col_sub_sampling,
+                    first_row=0,  # rows in self.proj_geom_no_sub_sampling are
+                                  # bounding tightly
+                    first_col=self.first_proj_col,
+                    num_rows_orig=self.proj_shape_no_sub_sampling[0],
+                    kind=self.proj_up_sampling_kind_if_not_via_geom)
         vol_x = np.zeros(self.vol_shape, dtype=np.float32)
-        vol_id = astra.data3d.link('-vol', self.vol_geom, vol_x)
 
-        cfg_bp = astra.astra_dict('BP3D_CUDA')
-        cfg_bp['ReconstructionDataId'] = vol_id
-        cfg_bp['ProjectionDataId'] = proj_id
-        alg_id = astra.algorithm.create(cfg_bp)
-
-        astra.algorithm.run(alg_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data3d.delete(proj_id)
-        astra.data3d.delete(vol_id)
+        astra_bp3d_cuda(projs=projs, vol_geom=self.vol_geom, proj_geom=proj_geom,
+                vol_x_out=vol_x)
 
         return vol_x
 
-    def fdk(self, projs, full_input=False):
-        proj_geom = self.proj_geom_full if full_input else self.proj_geom
+    def fdk(self, projs, proj_geom=None, proj_geom_no_sub_sampling=None):
 
-        projs = np.ascontiguousarray(projs, dtype=np.float32)
-        proj_id = astra.data3d.link('-sino', proj_geom, projs)
-
+        if self.proj_up_sampling_via_geom:
+            proj_geom = proj_geom if proj_geom is not None else self.proj_geom
+        else:
+            proj_geom = (proj_geom_no_sub_sampling if proj_geom_no_sub_sampling is not None
+                         else self.proj_geom_no_sub_sampling)
+            projs = up_sample_proj(
+                    projs,
+                    factor_row=self.proj_row_sub_sampling,
+                    factor_col=self.proj_col_sub_sampling,
+                    first_row=0,  # rows in self.proj_geom_no_sub_sampling are
+                                  # bounding tightly
+                    first_col=self.first_proj_col,
+                    num_rows_orig=self.proj_shape_no_sub_sampling[0],
+                    kind=self.proj_up_sampling_kind_if_not_via_geom)
         vol_x = np.zeros(self.vol_shape, dtype=np.float32)
-        vol_id = astra.data3d.link('-vol', self.vol_geom, vol_x)
 
-        cfg_fdk = astra.astra_dict('FDK_CUDA')
-        cfg_fdk['ReconstructionDataId'] = vol_id
-        cfg_fdk['ProjectionDataId'] = proj_id
-        cfg_fdk['option'] = {}
-        cfg_fdk['option']['ShortScan'] = False
-        alg_id = astra.algorithm.create(cfg_fdk)
-
-        # run FDK algorithm
-        astra.algorithm.run(alg_id, 1)
-
-        # release memory allocated by ASTRA structures
-        astra.algorithm.delete(alg_id)
-        astra.data3d.delete(proj_id)
-        astra.data3d.delete(vol_id)
+        astra_fdk_cuda(projs=projs, vol_geom=self.vol_geom, proj_geom=proj_geom,
+                vol_x_out=vol_x)
 
         return vol_x
 
@@ -513,7 +1016,8 @@ class WalnutRayTrafo:
         flat_projs_in_mask = self.flat_projs_in_mask(projs)
         return flat_projs_in_mask
 
-    def apply_adjoint(self, flat_projs_in_mask, padding_mode='edge', squeeze=False):
+    def apply_adjoint(self, flat_projs_in_mask, padding_mode='edge',
+                      squeeze=False):
         projs = self.projs_from_flat_projs_in_mask(flat_projs_in_mask,
                                                    padding_mode=padding_mode)
         vol_x = self.bp3d(projs)
@@ -571,7 +1075,7 @@ class WalnutRayTrafoModule(torch.nn.Module):
         y = y.view(*x.shape[:2], *y.shape[1:])
         return y
 
-def save_ray_trafo_matrix(file_path, walnut_ray_trafo):
+def save_masked_ray_trafo_matrix(file_path, walnut_ray_trafo):
     assert walnut_ray_trafo.rotation is None
     assert walnut_ray_trafo.shift_z == 0.
 
@@ -599,6 +1103,8 @@ def save_ray_trafo_matrix(file_path, walnut_ray_trafo):
                 'walnut_id': walnut_ray_trafo.walnut_id,
                 'orbit_id': walnut_ray_trafo.orbit_id,
                 'angular_sub_sampling': walnut_ray_trafo.angular_sub_sampling,
+                'proj_col_sub_sampling': walnut_ray_trafo.proj_col_sub_sampling,
+                'first_proj_col': walnut_ray_trafo.first_proj_col + 1,  # matlab ind
                 'num_slices': walnut_ray_trafo.num_slices,
                 'num_proj_rows': walnut_ray_trafo.num_proj_rows,
                 'first_proj_row': walnut_ray_trafo.first_proj_row + 1,  # matlab ind
@@ -610,44 +1116,55 @@ def save_ray_trafo_matrix(file_path, walnut_ray_trafo):
                 'proj_mask': walnut_ray_trafo.proj_mask,
             })
 
-def get_ray_trafo_matrix(file_path):
+def get_masked_ray_trafo_matrix(file_path):
     matrix = scipy.io.loadmat(
             file_path, variable_names=['ray_trafo_matrix'])[
                     'ray_trafo_matrix'].astype('float32')
     return matrix
 
 def get_single_slice_ray_trafo_matrix_filename(
-        walnut_id, orbit_id, angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING):
+        walnut_id, orbit_id,
+        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING,
+        proj_col_sub_sampling=DEFAULT_PROJ_COL_SUB_SAMPLING):
     filename = (
-            'single_slice_ray_trafo_matrix_walnut{:d}_orbit{:d}_ass{:d}.mat'
+            'single_slice_ray_trafo_matrix_walnut{:d}_orbit{:d}_ass{:d}'
                     .format(walnut_id, orbit_id, angular_sub_sampling))
+    if proj_col_sub_sampling != 1:
+        filename = filename + '_css{:d}'.format(proj_col_sub_sampling)
+    filename = filename + '.mat'
     return filename
 
 def save_single_slice_ray_trafo_matrix(
         output_path, data_path,
         walnut_id=DEFAULT_SINGLE_SLICE_WALNUT_ID,
         orbit_id=DEFAULT_SINGLE_SLICE_ORBIT_ID,
-        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING):
+        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING,
+        proj_col_sub_sampling=DEFAULT_PROJ_COL_SUB_SAMPLING):
 
     walnut_ray_trafo = get_single_slice_ray_trafo(
             data_path=data_path, walnut_id=walnut_id, orbit_id=orbit_id,
-            angular_sub_sampling=angular_sub_sampling)
+            angular_sub_sampling=angular_sub_sampling,
+            proj_col_sub_sampling=proj_col_sub_sampling)
 
     filename = get_single_slice_ray_trafo_matrix_filename(
             walnut_id=walnut_id, orbit_id=orbit_id,
-            angular_sub_sampling=angular_sub_sampling)
+            angular_sub_sampling=angular_sub_sampling,
+            proj_col_sub_sampling=proj_col_sub_sampling)
 
-    save_ray_trafo_matrix(os.path.join(output_path, filename),
+    save_masked_ray_trafo_matrix(os.path.join(output_path, filename),
                           walnut_ray_trafo)
 
 def get_single_slice_ray_trafo_matrix(
         path, walnut_id, orbit_id,
-        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING):
+        angular_sub_sampling=DEFAULT_ANGULAR_SUB_SAMPLING,
+        proj_col_sub_sampling=DEFAULT_PROJ_COL_SUB_SAMPLING):
 
     filename = get_single_slice_ray_trafo_matrix_filename(
-            walnut_id, orbit_id, angular_sub_sampling)
+            walnut_id, orbit_id,
+            angular_sub_sampling=angular_sub_sampling,
+            proj_col_sub_sampling=proj_col_sub_sampling)
 
-    matrix = get_ray_trafo_matrix(os.path.join(path, filename))
+    matrix = get_masked_ray_trafo_matrix(os.path.join(path, filename))
     return matrix
 
 # def get_src_z(data_path, walnut_id, orbit_id):

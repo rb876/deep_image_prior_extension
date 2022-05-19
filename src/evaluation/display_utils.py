@@ -16,6 +16,8 @@ data_title_dict = {
     'ellipses_lotus_limited_45': 'Ellipses-Lotus (Limited 45)',
     'brain_walnut_120': 'Brain-Walnut (Sparse 120)',
     'ellipses_walnut_120': 'Ellipses-Walnut (Sparse 120)',
+    'ellipsoids_walnut_3d': 'Ellipsoids-Walnut (3D Sparse 20)',
+    'ellipsoids_walnut_3d_60': 'Ellipsoids-Walnut (3D Sparse 60)',
 }
 
 experiment_color_dict = {
@@ -54,6 +56,8 @@ def get_data_title_full(data, validation_run):
                 'ellipses_lotus_limited_45': 'Shepp-Logan',
                 'brain_walnut_120': 'Shepp-Logan',
                 'ellipses_walnut_120': 'Shepp-Logan',
+                'ellipsoids_walnut_3d': 'Shepp-Logan',
+                'ellipsoids_walnut_3d_60': 'Shepp-Logan',
                 }[data]
         data_title_part = 'Validation on {}'.format(part)
     else:
@@ -62,6 +66,8 @@ def get_data_title_full(data, validation_run):
                 'ellipses_lotus_limited_45': 'Lotus',
                 'brain_walnut_120': 'Walnut',
                 'ellipses_walnut_120': 'Walnut',
+                'ellipsoids_walnut_3d': 'Walnut 3D',
+                'ellipsoids_walnut_3d_60': 'Walnut 3D',
                 }[data]
         data_title_part = 'Test on {}'.format(part)
     data_title_full = u'{} \u2013 {}'.format(data_title_dict[data], data_title_part)

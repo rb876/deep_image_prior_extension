@@ -13,6 +13,12 @@ reconstruction:
         name: no_stats_no_sigmoid_train_run1_epochs100
       - run_path: multirun/2021-10-21/01-36-21/  # selected
         name: no_stats_no_sigmoid_train_run2_epochs100
+      - run_path: multirun/2022-05-17/09-37-44
+        name: no_stats_no_sigmoid_train_run0_epochs60
+      - run_path: multirun/2022-05-17/09-39-36
+        name: no_stats_no_sigmoid_train_run1_epochs60
+      - run_path: multirun/2022-05-17/09-42-12
+        name: no_stats_no_sigmoid_train_run2_epochs60
       - run_path: multirun/2021-10-21/02-02-13/
         name: no_stats_no_sigmoid_train_run0_epochs20
       - run_path: multirun/2021-10-21/02-30-55/
@@ -122,6 +128,34 @@ reconstruction:
         name: no_stats_no_sigmoid
       - run_path: multirun/2021-10-21/17-25-22/  # taken from ellipses_walnut_120
         name: no_stats_no_sigmoid_fixed_encoder
+  ellipsoids_walnut_3d:
+    pretrain_only_fbp:
+      - run_path: multirun/2022-04-06/11-30-07
+        name: epochs0_steps8000
+      - run_path: multirun/2022-04-08/08-29-36
+        name: epochs0_steps8000_fixed_encoder
+      - run_path: multirun/2022-04-07/22-08-38
+        name: other_checkpoints
+    no_pretrain:
+      - run_path: multirun/2022-04-08/02-55-32
+        name: default
+    no_pretrain_fbp:
+      - run_path: multirun/2022-04-05/11-11-12
+        name: default
+  ellipsoids_walnut_3d_60:
+    pretrain_only_fbp:
+      - run_path: multirun/2022-05-05/09-29-19
+        name: epochs0_steps8000
+      - run_path: multirun/2022-05-05/09-29-23
+        name: epochs0_steps8000_fixed_encoder
+      - run_path: multirun/2022-04-30/11-44-05
+        name: other_checkpoints
+    no_pretrain:
+      - run_path: multirun/2022-04-28/17-12-53
+        name: default
+    no_pretrain_fbp:
+      - run_path: multirun/2022-05-01/22-16-38
+        name: default
 
 # coordinator.py --multirun ...
 pretraining:
@@ -157,6 +191,14 @@ pretraining:
         name: no_stats_no_sigmoid_train_run2
       - run_path: multirun/2021-10-24/21-06-24/
         name: no_stats_no_sigmoid_save_checkpoints_every_epoch
+  ellipsoids_walnut_3d:
+    pretrain:  # same as pretrain_only_fbp
+      - single_run_path: outputs/2022-04-03/14-42-34/
+        name: default
+  ellipsoids_walnut_3d_60:
+    pretrain:  # same as pretrain_only_fbp
+      - single_run_path: outputs/2022-04-27/11-30-58/
+        name: default
 
 # validation_baseline.py ...
 validation_baseline:
@@ -176,7 +218,7 @@ validation_baseline:
     no_pretrain:
       - single_run_path: outputs/2021-10-21/17-12-21/  # taken from ellipses_walnut_120
         name: no_stats_no_sigmoid
-
+ 
 # validation.py ...
 validation:
   ellipses_lotus_20:

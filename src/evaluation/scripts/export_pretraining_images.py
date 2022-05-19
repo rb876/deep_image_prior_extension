@@ -1,6 +1,7 @@
 import os
 import json
 from warnings import warn
+import contextlib
 from itertools import islice
 import numpy as np
 import torch
@@ -10,6 +11,7 @@ from evaluation.utils import (
         get_multirun_cfgs, get_multirun_experiment_names, uses_swa_weights)
 from dataset import get_standard_dataset
 from deep_image_prior import DeepImagePriorReconstructor, PSNR, SSIM
+from torch.cuda.amp import autocast
 
 PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 CONFIG_PATH = os.path.join('..', '..', 'cfgs')
@@ -18,10 +20,12 @@ OUTPUT_PATH = os.path.join(os.path.dirname(__file__), 'images')
 
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
-data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_20'
 # data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
+# data = 'ellipsoids_walnut_3d'
+data = 'ellipsoids_walnut_3d_60'
 
 fold = 'train'
 
@@ -54,6 +58,18 @@ elif data == 'ellipses_walnut_120':
     run_spec = {
         'experiment': 'pretrain_only_fbp',
         'name': 'no_stats_no_sigmoid_train_run1',
+        'name_title': '',
+    }
+elif data == 'ellipsoids_walnut_3d':
+    run_spec = {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'epochs0_steps8000',
+        'name_title': '',
+    }
+elif data == 'ellipsoids_walnut_3d_60':
+    run_spec = {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'epochs0_steps8000',
         'name_title': '',
     }
 
@@ -145,9 +161,14 @@ for k, (_, fbp, gt) in enumerate(islice(data_loader, NUM_SAMPLES)):
             torch.load(path, map_location=reconstructor.device))
 
     with torch.no_grad():
-        reco = reconstructor.model(fbp.to(reconstructor.device)).detach().cpu()
+        with autocast() if reconstructor.cfg.use_mixed else contextlib.nullcontext():
+            reco = reconstructor.model(fbp.to(reconstructor.device)).detach().cpu()
 
     reco_np = np.asarray(reco[0, 0].detach().cpu().numpy())
+
+    if reconstructor.cfg.arch.use_relu_out == 'post':
+        for r in [fbp_np, reco_np]:
+            np.clip(r, 0., None, out=r)  # apply relu to reconstruction
 
     out_fbps.append(fbp_np)
     out_gts.append(gt_np)

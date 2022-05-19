@@ -35,17 +35,19 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_20'
 # data = 'ellipses_lotus_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
+# data = 'ellipsoids_walnut_3d'
+data = 'ellipsoids_walnut_3d_60'
 
 # variant = ''
 variant = 'all'
 # variant = 'checkpoints'
 # variant = 'checkpoints_epochs'
 
-show_tv_in_inset = variant == 'all'
+show_tv_in_inset = (variant == 'all' and not '3d' in data)
 
 use_best_output_psnr = False
 
@@ -121,6 +123,13 @@ if data == 'ellipses_lotus_20':
             'name_title': '',
             'color': '#404099',
             },
+            # {
+            # 'experiment': 'pretrain_only_fbp',
+            # 'name': 'no_stats_no_sigmoid_train_run0_epochs60',
+            # 'experiment_title': 'Run 0: 60 epochs',
+            # 'name_title': '',
+            # 'color': '#51518C',
+            # },
             {
             'experiment': 'pretrain_only_fbp',
             'name': 'no_stats_no_sigmoid_train_run0_epochs20',
@@ -135,6 +144,13 @@ if data == 'ellipses_lotus_20':
             'name_title': '',
             'color': '#994040',
             },
+            # {
+            # 'experiment': 'pretrain_only_fbp',
+            # 'name': 'no_stats_no_sigmoid_train_run1_epochs60',
+            # 'experiment_title': 'Run 1: 60 epochs',
+            # 'name_title': '',
+            # 'color': '#8C5151',
+            # },
             {
             'experiment': 'pretrain_only_fbp',
             'name': 'no_stats_no_sigmoid_train_run1_epochs20',
@@ -149,6 +165,13 @@ if data == 'ellipses_lotus_20':
             'name_title': '',
             'color': '#409940',
             },
+            # {
+            # 'experiment': 'pretrain_only_fbp',
+            # 'name': 'no_stats_no_sigmoid_train_run2_epochs60',
+            # 'experiment_title': 'Run 2: 60 epochs',
+            # 'name_title': '',
+            # 'color': '#518C51',
+            # },
             {
             'experiment': 'pretrain_only_fbp',
             'name': 'no_stats_no_sigmoid_train_run2_epochs20',
@@ -468,30 +491,159 @@ elif data == 'ellipses_walnut_120':
             }] if variant == 'all' else []),
         ]
     elif variant == 'checkpoints':
+        runs_to_compare = []
+
+elif data == 'ellipsoids_walnut_3d':
+    if (not variant) or variant == 'all':
+        runs_to_compare = [
+            {
+            'experiment': 'no_pretrain',
+            'name': 'default',
+            'name_title': '',
+            },
+            {
+            'experiment': 'no_pretrain_fbp',
+            'name': 'default',
+            'name_title': '',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'epochs0_steps8000',
+            'name_title': '',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'epochs0_steps8000_fixed_encoder',
+            'experiment_title': 'EDIP-FE (FBP)',
+            'name_title': '',
+            'color': '#EC2215',
+            'skip_psnr0': True,
+            },
+        ]
+    elif variant == 'checkpoints_epochs':
         runs_to_compare = [
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'no_stats_no_sigmoid_train_run0',
-            'experiment_title': 'Run 0: min. val. loss',
+            'name': 'other_checkpoints',
+            'sub_runs': [0],
+            'experiment_title': '0.125 epochs',
             'name_title': '',
-            'color': '#404099',
+            'color': plt.get_cmap('magma')(80),
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'no_stats_no_sigmoid_train_run1',
-            'experiment_title': 'Run 1: min. val. loss',
+            'name': 'epochs0_steps8000',
+            'sub_runs': [0],
+            'experiment_title': '0.250 epochs',
             'name_title': '',
-            'color': '#994040',
+            'color': plt.get_cmap('magma')(128),
             },
             {
             'experiment': 'pretrain_only_fbp',
-            'name': 'no_stats_no_sigmoid_train_run2',
-            'experiment_title': 'Run 2: min. val. loss',
+            'name': 'other_checkpoints',
+            'sub_runs': [1],
+            'experiment_title': '0.375 epochs',
             'name_title': '',
-            'color': '#409940',
+            'color': plt.get_cmap('magma')(160),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'other_checkpoints',
+            'sub_runs': [2],
+            'experiment_title': '0.500 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(192),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'other_checkpoints',
+            'sub_runs': [3],
+            'experiment_title': '1.000 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(208),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'other_checkpoints',
+            'sub_runs': [4],
+            'experiment_title': '2.000 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(232),
             },
             {
             'experiment': 'no_pretrain',
+            'name': 'default',
+            # 'sub_runs': [0],
+            'name_title': '',
+            },
+        ]
+
+elif data == 'ellipsoids_walnut_3d_60':
+    if (not variant) or variant == 'all':
+        runs_to_compare = [
+            {
+            'experiment': 'no_pretrain',
+            'name': 'default',
+            'name_title': '',
+            },
+            {
+            'experiment': 'no_pretrain_fbp',
+            'name': 'default',
+            'name_title': '',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'epochs0_steps8000',
+            'name_title': '',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'epochs0_steps8000_fixed_encoder',
+            'experiment_title': 'EDIP-FE (FBP)',
+            'name_title': '',
+            'color': '#EC2215',
+            'skip_psnr0': True,
+            },
+        ]
+    elif variant == 'checkpoints_epochs':
+        runs_to_compare = [
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'other_checkpoints',
+            'sub_runs': [0],
+            'experiment_title': '0.125 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(80),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'other_checkpoints',
+            'sub_runs': [1],
+            'experiment_title': '0.250 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(128),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'other_checkpoints',
+            'sub_runs': [2],
+            'experiment_title': '0.375 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(160),
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'other_checkpoints',
+            'sub_runs': [3],
+            'experiment_title': '0.500 epochs',
+            'name_title': '',
+            'color': plt.get_cmap('magma')(192),
+            },
+            {
+            'experiment': 'no_pretrain',
+            'name': 'default',
+            # 'sub_runs': [0],
+            'name_title': '',
             },
         ]
 
@@ -763,6 +915,165 @@ plot_settings_dict = {
         'run_legend_handletextpad': (0.4 if variant == 'checkpoints' else None),
         'run_legend_columnspacing': (1.2 if variant == 'checkpoints' else None),
     },
+    'ellipsoids_walnut_3d': {
+        'xlim': (
+            (-1875, 30000) if (not variant) or variant == 'all' else (
+            (-2625, 30000) if variant == 'checkpoints' else (
+            (-4725, 30000) if variant == 'checkpoints_epochs' else
+            (None, None)))
+        ),
+        'xlim_inset': (
+            (-600, 18500) if (not variant) or variant == 'all' else (
+            (-62.5, 6250) if variant == 'checkpoints' else (
+            (0., 11250) if variant == 'checkpoints_epochs' else
+            (None, None)))
+        ),
+        'ylim': (
+            (3.75, 34.) if (not variant) or variant == 'all' else (
+            (None, 34.) if variant == 'checkpoints' else
+            (3.5, 34.5) if variant == 'checkpoints_epochs' else (
+            (None, None)))
+        ),
+        'ylim_inset': (
+            (27.0, 32.25) if (not variant) or variant == 'all' else (
+            (27.0, 32.25) if variant == 'checkpoints' else (
+            (27.5, 31.9) if variant == 'checkpoints_epochs' else
+            (None, None)))
+        ),
+        'psnr0_x_pos': -562.5,
+        'psnr0_x_shift_per_run_idx': {
+            0: -750,
+        } if (not variant) or variant == 'all' else ({
+            0: -1500,
+            1: -750,
+            2: 0,
+        } if variant == 'checkpoints' else ({
+            0: -3500,
+            1: -3000,
+            2: -2250,
+            3: -1500,
+            4: -750,
+            5: 0,
+        }  if variant == 'checkpoints_epochs' else {})),
+        'rise_time_to_baseline_y_pos': 33.,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
+        } if not variant else ({
+        } if variant == 'all' else ({
+        } if variant == 'checkpoints' else ({
+            0: 1.,
+        } if variant == 'checkpoints_epochs' else {
+        }))),
+        'zorder_per_run_idx': {
+        } if (not variant) or variant == 'all' else ({
+            0: 2.5,
+            1: 2.3,
+            2: 2.6,
+            3: 2.2,
+            4: 2.4,
+            5: 2.1,
+        } if variant == 'checkpoints' else ({
+            0: 2.5,
+            1: 2.6,
+            2: 2.4,
+            3: 2.3,
+            4: 2.2,
+            5: 2.1,
+            6: 2.0,
+        } if variant == 'checkpoints_epochs' else {})),
+        'inset_axes_rect': [0.255, 0.175, 0.725, 0.475],
+        'inset_axes_rect_border': [0.0625, 0.0675],
+        'tv_text_shift': [80, 0.05],
+        'ylabel_pad': 0.,
+        'run_legend_ncol': (
+            ceil(len(runs_to_compare) / 2) if variant == 'checkpoints_epochs' else (
+                len(runs_to_compare))),
+        'run_legend_bbox_to_anchor': (
+            (0.5, -0.125) if (not variant) or variant == 'all' else (
+            (0.475, -0.125) if variant == 'checkpoints' else
+            (0.5, -0.125))
+        ),
+        'run_legend_loc': 'upper center',
+        'run_legend_handletextpad': (0.4 if variant == 'checkpoints' else None),
+        'run_legend_columnspacing': (1.2 if variant == 'checkpoints' else None),
+    },
+    'ellipsoids_walnut_3d_60': {
+        'xlim': (
+            (-3750, 60000) if (not variant) or variant == 'all' else (
+            (-5250, 60000) if variant == 'checkpoints' else (
+            (-6500, 60000) if variant == 'checkpoints_epochs' else
+            (None, None)))
+        ),
+        'xlim_inset': (
+            (-1200, 37000) if (not variant) or variant == 'all' else (
+            (-125, 12500) if variant == 'checkpoints' else (
+            (-250, 25250) if variant == 'checkpoints_epochs' else
+            (None, None)))
+        ),
+        'ylim': (
+            (3.5, 36.5) if (not variant) or variant == 'all' else (
+            (None, 36.5) if variant == 'checkpoints' else
+            (3.5, 36.5) if variant == 'checkpoints_epochs' else (
+            (None, None)))
+        ),
+        'ylim_inset': (
+            (27.0, 35.25) if (not variant) or variant == 'all' else (
+            (27.0, 35.25) if variant == 'checkpoints' else (
+            (27.0, 35.25) if variant == 'checkpoints_epochs' else
+            (None, None)))
+        ),
+        'psnr0_x_pos': -1000,
+        'psnr0_x_shift_per_run_idx': {
+            0: -1500,
+        } if (not variant) or variant == 'all' else ({
+            0: -3000,
+            1: -1500,
+            2: 0,
+        } if variant == 'checkpoints' else ({
+            0: -4500,
+            1: -3000,
+            2: -1500,
+            3: 0,
+        }  if variant == 'checkpoints_epochs' else {})),
+        'rise_time_to_baseline_y_pos': 35.75,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
+        } if not variant else ({
+        } if variant == 'all' else ({
+        } if variant == 'checkpoints' else ({
+        } if variant == 'checkpoints_epochs' else {
+        }))),
+        'zorder_per_run_idx': {
+        } if (not variant) or variant == 'all' else ({
+            0: 2.5,
+            1: 2.3,
+            2: 2.6,
+            3: 2.2,
+            4: 2.4,
+            5: 2.1,
+        } if variant == 'checkpoints' else ({
+            0: 2.5,
+            1: 2.6,
+            2: 2.4,
+            3: 2.3,
+            4: 2.2,
+            5: 2.1,
+            6: 2.0,
+        } if variant == 'checkpoints_epochs' else {})),
+        'inset_axes_rect': [0.255, 0.175, 0.725, 0.475],
+        'inset_axes_rect_border': [0.0625, 0.0675],
+        'tv_text_shift': [160, -0.6],
+        'ylabel_pad': 0.,
+        'run_legend_ncol': (
+            ceil(len(runs_to_compare) / 2) if variant == 'checkpoints_epochs' else (
+                len(runs_to_compare))),
+        'run_legend_bbox_to_anchor': (
+            (0.5, -0.125) if (not variant) or variant == 'all' else (
+            (0.475, -0.125) if variant == 'checkpoints' else
+            (0.5, -0.125))
+        ),
+        'run_legend_loc': 'upper center',
+        'run_legend_handletextpad': (0.4 if variant == 'checkpoints' else None),
+        'run_legend_columnspacing': (1.2 if variant == 'checkpoints' else None),
+    },
 }
 
 eval_settings_dict = {
@@ -782,6 +1093,16 @@ eval_settings_dict = {
         'rise_time_to_baseline_remaining_psnr': 0.1,
     },
     'ellipses_walnut_120': {
+        'psnr_steady_start': -5000,
+        'psnr_steady_stop': None,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
+    },
+    'ellipsoids_walnut_3d': {
+        'psnr_steady_start': -5000,
+        'psnr_steady_stop': None,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
+    },
+    'ellipsoids_walnut_3d_60': {
         'psnr_steady_start': -5000,
         'psnr_steady_stop': None,
         'rise_time_to_baseline_remaining_psnr': 0.1,

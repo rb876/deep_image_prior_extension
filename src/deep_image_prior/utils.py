@@ -4,11 +4,24 @@ from skimage.metrics import structural_similarity
 
 def tv_loss(x):
     """
-    Isotropic TV loss.
+    Anisotropic TV loss for 2D images.
     """
     dh = torch.abs(x[..., :, 1:] - x[..., :, :-1])
     dw = torch.abs(x[..., 1:, :] - x[..., :-1, :])
     return torch.sum(dh[..., :-1, :] + dw[..., :, :-1])
+
+def tv_loss_3d(x):
+    """
+    Anisotropic TV loss for 3D images.
+
+    Differences to 2D version (kept for backward comp., same as Baguer et al.):
+      - mean instead of sum (more natural to combine with an MSE loss)
+      - include last difference value in each dimension
+    """
+    dx = torch.abs(x[..., :, :, 1:] - x[..., :, :, :-1])
+    dy = torch.abs(x[..., :, 1:, :] - x[..., :, :-1, :])
+    dz = torch.abs(x[..., 1:, :, :] - x[..., :-1, :, :])
+    return torch.mean(dx) + torch.mean(dy) + torch.mean(dz)
 
 def poisson_loss(y_pred, y_true, photons_per_pixel, mu_water):
     """

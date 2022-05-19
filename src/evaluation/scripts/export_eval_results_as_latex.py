@@ -7,7 +7,9 @@ EVAL_RESULTS_PATH = os.path.dirname(__file__)
 # eval_results_filename = 'comparison_on_ellipses_lotus_20_all'
 # eval_results_filename = 'comparison_on_ellipses_lotus_limited_45_all'
 # eval_results_filename = 'comparison_on_brain_walnut_120_all'
-eval_results_filename = 'comparison_on_ellipses_walnut_120_all'
+# eval_results_filename = 'comparison_on_ellipses_walnut_120_all'
+# eval_results_filename = 'comparison_on_ellipsoids_walnut_3d_all'
+eval_results_filename = 'comparison_on_ellipsoids_walnut_3d_60_all'
 
 tex = ''
 

@@ -1,0 +1,41 @@
+# @package _group_
+name: noise_masks_walnut_120
+validation_data: shepp_logan
+test_data: walnut
+im_shape: 501
+train_len: 32000
+validation_len: 3200
+test_len: 3200
+data_path_test: null  # insert "/path/to/Walnuts/", which should contain a sub-folder "Walnut1/" extracted from Walnut1.zip, download from: https://zenodo.org/record/2686726/files/Walnut1.zip?download=1
+walnut_id: 1
+orbit_id: 2
+zoom: 0.73
+in_circle_axis: 0.7
+use_mask: False
+disk_diameter: 0.4745
+seed: 1
+geometry_specs:
+  num_angles: 120
+  angles_subsampling:
+    start: 0
+    stop: null
+    step: 10
+    num_angles_orig: 1200
+  num_det_pixels: 768
+  impl: 'custom'
+  ray_trafo_custom:
+    # name: walnut_single_slice
+    name: walnut_single_slice_matrix
+    matrix_path: ${data.data_path_test}
+    data_path: ${data.data_path_test}
+    walnut_id: ${data.walnut_id}
+    orbit_id: ${data.orbit_id}
+noise_specs:
+  noise_type: white
+  stddev: 0.05
+stats:
+  mean_fbp: null  
+  std_fbp: null 
+  mean_gt: null
+  std_gt: null
+implicit_scaling_except_for_test_data: 14.

@@ -1,0 +1,36 @@
+# @package _group_
+name: ellipsoids_walnut_3d
+validation_data: shepp_logan
+test_data: walnut_3d
+im_shape: 167
+vol_down_sampling: 3
+train_len: 32000
+validation_len: 3200
+test_len: 3200
+data_path_test: null  # insert "/path/to/Walnuts/", which should contain a sub-folder "Walnut1/" extracted from Walnut1.zip, download from: https://zenodo.org/record/2686726/files/Walnut1.zip?download=1
+walnut_id: 1
+orbit_id: 2
+zoom: 0.73
+in_ball_axis: 0.7
+seed: 1
+geometry_specs:
+  num_angles: 20
+  angles_subsampling:
+    start: 0
+    stop: null
+    step: 60
+    num_angles_orig: 1200
+  num_det_rows: 324
+  num_det_cols: 256
+  det_row_sub_sampling: 3
+  det_col_sub_sampling: 3
+  impl: 'custom'
+  ray_trafo_custom:
+    name: walnut_3d
+    data_path: ${data.data_path_test}
+    walnut_id: ${data.walnut_id}
+    orbit_id: ${data.orbit_id}
+noise_specs:
+  noise_type: white
+  stddev: 0.05
+implicit_scaling_except_for_test_data: 14.

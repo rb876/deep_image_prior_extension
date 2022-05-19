@@ -1,6 +1,7 @@
 import os
 import json
 from warnings import warn
+import contextlib
 import numpy as np
 import yaml
 import torch
@@ -13,6 +14,7 @@ from evaluation.utils import (
         get_multirun_reconstructions, get_multirun_iterates, uses_swa_weights)
 from dataset import get_standard_dataset, get_test_data
 from deep_image_prior import DeepImagePriorReconstructor, PSNR, SSIM
+from torch.cuda.amp import autocast
 
 PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 CONFIG_PATH = os.path.join('..', '..', 'cfgs')
@@ -23,10 +25,12 @@ os.makedirs(OUTPUT_PATH, exist_ok=True)
 
 SAVE_ONLY_MEDIAN_REP = True
 
-data = 'ellipses_lotus_20'
+# data = 'ellipses_lotus_20'
 # data = 'ellipses_limited_45'
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
+# data = 'ellipsoids_walnut_3d'
+data = 'ellipsoids_walnut_3d_60'
 
 OUTPUT_METRICS_PATH = os.path.join(
         OUTPUT_PATH, '{}_metrics.json'.format(data))
@@ -37,7 +41,7 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
         'r') as f:
     runs = yaml.load(f, Loader=yaml.FullLoader)
 
-NUM_REPEATS = 5
+NUM_REPEATS = 3 if '3d' in data else 5
 
 if data == 'ellipses_lotus_20':
     runs_to_export = [
@@ -149,6 +153,28 @@ elif data == 'ellipses_walnut_120':
         'export_iterates': [4500],
         'name_title': 'saved iterates',
         'name_filename': 'save_many_iterates',
+        },
+    ]
+
+elif data == 'ellipsoids_walnut_3d' or data == 'ellipsoids_walnut_3d_60':
+    runs_to_export = [
+        {
+        'experiment': 'no_pretrain',
+        'name': 'default',
+        'name_title': '',
+        'name_filename': None,
+        },
+        {
+        'experiment': 'no_pretrain_fbp',
+        'name': 'default',
+        'name_title': '',
+        'name_filename': None,
+        },
+        {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'epochs0_steps8000',
+        'name_title': '',
+        'name_filename': None,
         },
     ]
 
@@ -265,7 +291,8 @@ def get_init_reco(reconstructor, fbp):
     else:
         net_input = fbp.to(reconstructor.device)
 
-    output = reconstructor.apply_model_on_test_data(net_input)
+    with autocast() if reconstructor.cfg.get('use_mixed', False) else contextlib.nullcontext():
+        output = reconstructor.apply_model_on_test_data(net_input)
 
     return output[0]
 
@@ -341,6 +368,10 @@ for (run_spec, cfgs, experiment_names, reconstructions,
             gt = gt[0].detach().cpu().numpy()
             init_reco = init_reco[0].detach().cpu().numpy()
             best_reco = recos[k]
+
+            if reconstructor.cfg.arch.get('use_relu_out', False) == 'post':
+                for r in [init_reco, best_reco, *iterates]:
+                    np.clip(r, 0., None, out=r)  # apply relu to reconstruction
 
             cur_fbps.append(fbp)
             cur_gts.append(gt)

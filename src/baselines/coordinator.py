@@ -13,18 +13,18 @@ from scipy.io import savemat
 @hydra.main(config_path='../', config_name='baselines/tvadamconfg')
 def coordinator(cfg : DictConfig) -> None:
 
-    dataset, ray_trafos = get_standard_dataset(cfg.cfgs.data.name, cfg.cfgs.data)
-    dataset_test = get_test_data(cfg.cfgs.data.name, cfg.cfgs.data)
+    dataset, ray_trafos = get_standard_dataset(cfg.data.name, cfg.data)
+    dataset_test = get_test_data(cfg.data.name, cfg.data)
     ray_trafo = {'ray_trafo_module': ray_trafos['ray_trafo_module'],
                  'reco_space': dataset.space[1],
                  'observation_space': dataset.space[0]
                  }
-    reconstructor = TVAdamReconstructor(**ray_trafo, cfg=cfg)
+    reconstructor = TVAdamReconstructor(**ray_trafo, cfg=cfg.baselines)
 
-    if not os.path.exists(cfg.save_reconstruction_path):
-        os.makedirs(cfg.save_reconstruction_path)
+    if not os.path.exists(cfg.baselines.save_reconstruction_path):
+        os.makedirs(cfg.baselines.save_reconstruction_path)
 
-    filename = os.path.join(cfg.save_reconstruction_path,'recos.hdf5')
+    filename = os.path.join(cfg.baselines.save_reconstruction_path,'recos.hdf5')
     file = h5py.File(filename, 'w')
     dataset = file.create_dataset('recos', shape=(1, )
         + dataset.space[1].shape, maxshape=(1, ) + dataset.space[1].shape, dtype=np.float32, chunks=True)
@@ -37,7 +37,7 @@ def coordinator(cfg : DictConfig) -> None:
         reco = reconstructor.reconstruct(noisy_obs.float(), fbp, ground_truth=gt, log=True)
         dataset[i] = reco
 
-    # filename_mat = os.path.join(cfg.save_reconstruction_path,'TVGroundTruthLotus128.mat')
+    # filename_mat = os.path.join(cfg.baselines.save_reconstruction_path,'TVGroundTruthLotus128.mat')
     # dict_mat = {'recon': reco.T, 'label': 'ground_truth'}
     # savemat(filename_mat, dict_mat)
 if __name__ == '__main__':

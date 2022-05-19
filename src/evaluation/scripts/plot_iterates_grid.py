@@ -16,7 +16,7 @@ save_fig = True
 
 # titles = [
 #     'EDIP (FBP)',
-#     'EDIP (noise) [warm-up]',
+#     'EDIP (noise)',  # [warm-up]',
 #     'DIP (noise)',
 # ]
 # iterates_paths = [
@@ -25,7 +25,7 @@ save_fig = True
 #     'multirun/2021-10-28/04-30-33/0/results/nopretrainingnoise/iterates.npz',
 # ]
 
-# iterates_iters_inds = [70, 100, 150, 250]
+# iterates_iters_inds = [100, 150, 250]
 
 # scaling_fct = 14.  # implicit_scaling_except_for_test_data
 
@@ -36,7 +36,7 @@ save_fig = True
 # TITLE_HEIGHT = 35
 # SUP_TITLE_HEIGHT = 40
 
-# FIGSIZE = (8, 10.5)
+# FIGSIZE = (6, 6)
 # gridspec_kw = {'wspace': 0.01, 'hspace': 0.01}
 
 # grid_orientation_iterations = 'vertical'

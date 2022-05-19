@@ -12,7 +12,8 @@ ORBIT_ID = 2
 DATA_PATH = '/localdata/Walnuts/'
 
 walnut_ray_trafo = get_single_slice_ray_trafo(
-        data_path=DATA_PATH, angular_sub_sampling=ANGULAR_SUB_SAMPLING)
+        data_path=DATA_PATH, walnut_id=WALNUT_ID, orbit_id=ORBIT_ID,
+        angular_sub_sampling=ANGULAR_SUB_SAMPLING)
 
 print('vol_slice_contributing_to_masked_projs',
         walnut_ray_trafo.get_vol_slice_contributing_to_masked_projs())
@@ -75,7 +76,7 @@ flat_projs_in_mask = walnut_ray_trafo.flat_projs_in_mask(projs)
 projs_padded = walnut_ray_trafo.projs_from_flat_projs_in_mask(
         flat_projs_in_mask)
 reco_projs_full = walnut_ray_trafo.vol_in_mask(
-        walnut_ray_trafo.fdk(projs_full, full_input=True))[0]
+        walnut_ray_trafo.fdk(projs_full, proj_geom=walnut_ray_trafo.ray_trafo_full.proj_geom, proj_geom_no_sub_sampling=walnut_ray_trafo.ray_trafo_full.proj_geom_no_sub_sampling))[0]
 reco_projs = walnut_ray_trafo.vol_in_mask(
         walnut_ray_trafo.fdk(projs))[0]
 reco_projs_padded = walnut_ray_trafo.vol_in_mask(

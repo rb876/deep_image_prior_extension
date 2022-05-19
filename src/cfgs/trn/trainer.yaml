@@ -21,4 +21,5 @@ adversarial_attacks:
   log_interval: 500
 torch_manual_seed: 1
 num_data_loader_workers: 0
+use_mixed: False
 show_pbar: True
