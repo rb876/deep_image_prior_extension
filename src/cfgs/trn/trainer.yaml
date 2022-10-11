@@ -25,11 +25,10 @@ use_mixed: False
 show_pbar: True
 use_meta_trainer: False
 meta_trainer:
-  num_iters: 1e4
+  num_iters: 100000
   num_tasks_per_iter: 3
-  eval_every_num_iters: 10
-  save_learned_params_interval: 3000
+  eval_every_num_iters: 1000
   inner_loop_optim:
-    lr: 1e-3
+    lr: 1e-5
     weight_decay: 1e-5
   datasets_cfg_list: []

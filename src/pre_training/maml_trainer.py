@@ -14,6 +14,25 @@ from torch.optim.lr_scheduler import CyclicLR, OneCycleLR
 from deep_image_prior import PSNR
 from .maml_utils import one_step_gd_update_wtups
 
+# taken from https://gist.githubusercontent.com/MFreidank/821cc87b012c53fade03b0c7aba13958/raw/41ad2c08a019c72b278866e1b02b355f1fce44a4/infinite_dataloader.py
+class InfiniteDataLoader(DataLoader):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Initialize an iterator over the dataset.
+        self.dataset_iterator = super().__iter__()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            batch = next(self.dataset_iterator)
+        except StopIteration:
+            # Dataset exhausted, use a new fresh iterator.
+            self.dataset_iterator = super().__iter__()
+            batch = next(self.dataset_iterator)
+        return batch
+
 class MetaTrainer():
 
     """
@@ -45,16 +64,17 @@ class MetaTrainer():
             fold='validation', reshape=((1,) + dataset.space[0].shape,
                                         (1,) + dataset.space[1].shape,
                                         (1,) + dataset.space[1].shape)) for dataset in list_of_datasets]
-        
+
 
         num_tasks = len(list_datasets_train)
+
+        def _create_data_loader(dset):
+            return InfiniteDataLoader(dset, batch_size=self.cfg.batch_size,
+                    num_workers=self.cfg.num_data_loader_workers, shuffle=True,
+                    pin_memory=True)
         # create PyTorch dataloaders
-        data_loaders = {'train': [DataLoader(dataset_train, batch_size=self.cfg.batch_size,
-            num_workers=self.cfg.num_data_loader_workers, shuffle=True,
-            pin_memory=True) for dataset_train in list_datasets_train],
-                        'validation': [DataLoader(dataset_validation, batch_size=self.cfg.batch_size,
-            num_workers=self.cfg.num_data_loader_workers,
-            shuffle=True, pin_memory=True) for dataset_validation in list_datasets_validation]}
+        data_loaders = {'train': [_create_data_loader(dataset_train) for dataset_train in list_datasets_train],
+                        'validation': [_create_data_loader(dataset_validation) for dataset_validation in list_datasets_validation]}
 
         self.init_optimizer()
         self.init_scheduler()
@@ -73,12 +93,12 @@ class MetaTrainer():
                     ]
                 picked_dataloaders = [
                     data_loaders['train'][id_task] for id_task in id_tasks]
-                
+
                 self._optimizer.zero_grad()
                 # inner loop
                 inn_loop_data = []
                 for dataset in picked_dataloaders:
-                    _, fbp, gt = next(iter(dataset))
+                    _, fbp, gt = next(dataset)
                     fbp, gt= fbp.to(self.device), gt.to(self.device)
                     outputs = self.func_model_with_input(self.func_params, fbp)
                     loss = criterion(outputs, gt)
@@ -98,10 +118,10 @@ class MetaTrainer():
                 torch.nn.utils.clip_grad_norm_(
                     self.model.parameters(), max_norm=1)
                 self._optimizer.step()
-                
+
                 # overall training stats
                 all_psnrs = []
-                for data in inn_loop_data:           
+                for data in inn_loop_data:
                     _, fbp, gt = data
                     outputs = self.func_model_with_input(self.func_params, fbp)
                     all_psnrs.append(PSNR(outputs.detach().cpu(), gt.detach().cpu(), data_range=1))
@@ -112,7 +132,7 @@ class MetaTrainer():
                 self.writer.add_scalar('loss', all_loss.item(), it)
                 self.writer.add_scalar('psnr', np.mean(all_psnrs), it)
                 self.writer.add_scalar('lr', self.optimizer.param_groups[0]['lr'], it)
-                
+
                 pbar.update(it)
                 pbar.set_description(f'loss: {all_loss.item()}, psnr: {np.mean(all_psnrs)}')
                 if ( (it + 1) % self.cfg.meta_trainer.eval_every_num_iters) == 0:
@@ -136,19 +156,19 @@ class MetaTrainer():
                         best_model_func_params = deepcopy(self.func_params)
                         if self.cfg.save_best_learned_params_path is not None:
                             ftch._src.make_functional.load_state(
-                                self.model, 
-                                best_model_func_params, 
+                                self.model,
+                                best_model_func_params,
                                 [name for name, _ in self.model.named_parameters()]
                                 )
                             self.save_learned_params(
                                 self.cfg.save_best_learned_params_path)
 
         ftch._src.make_functional.load_state(
-                self.model, 
-                best_model_func_params, 
+                self.model,
+                best_model_func_params,
                 [name for name, _ in self.model.named_parameters()]
             )
-        
+
         print('Best val psnr: {:4f}'.format(best_psnr))
         self.writer.close()
 
