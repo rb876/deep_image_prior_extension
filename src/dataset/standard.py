@@ -4,6 +4,8 @@ from odl.contrib.torch import OperatorModule
 import torch
 import numpy as np
 from .ellipses import EllipsesDataset, DiskDistributedEllipsesDataset, DiskDistributedNoiseMasksDataset, EllipsoidsInBallDataset
+from .rectangles import RectanglesDataset
+from .pascal_voc import PascalVOCDataset
 from .brain import ACRINFMISOBrainDataset
 from . import lotus
 from . import walnuts
@@ -31,7 +33,9 @@ def subsample_angles_ray_trafo_matrix(matrix, cfg, proj_shape, order='C'):
 def load_ray_trafo_matrix(name, cfg):
 
     if name in ['ellipses_lotus', 'ellipses_lotus_20',
-                'ellipses_lotus_limited_45']:
+                'ellipses_lotus_limited_45',
+                'rectangles_lotus_20',
+                'pascal_voc_lotus_20']:
         matrix = lotus.get_ray_trafo_matrix(cfg.ray_trafo_filename)
     # elif name == 'brain_walnut_120':  # currently useless as we can't use the
                                         # matrix impl for the walnut ray trafo,
@@ -206,7 +210,7 @@ def get_ray_trafos(name, cfg, return_torch_module=True):
     return ray_trafos
 
 
-def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
+def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True, **image_dataset_kwargs):
     """
     Return a standard dataset by name.
     """
@@ -222,7 +226,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
     if cfg.noise_specs.noise_type == 'white':
         specs_kwargs = {'stddev': cfg.noise_specs.stddev}
     elif cfg.noise_specs.noise_type == 'poisson':
-        specs_kwargs = {'mu_water': cfg.noise_specs.mu_water,
+        specs_kwargs = {'mu_max': cfg.noise_specs.mu_max,
                         'photons_per_pixel': cfg.noise_specs.photons_per_pixel
                         }
     else:
@@ -231,7 +235,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
     if name == 'ellipses':
         dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                          'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
-        ellipses_dataset = EllipsesDataset(**dataset_specs)
+        ellipses_dataset = EllipsesDataset(**dataset_specs, **image_dataset_kwargs)
         dataset = ellipses_dataset.create_pair_dataset(ray_trafo=ray_trafo,
                 pinv_ray_trafo=smooth_pinv_ray_trafo, noise_type=cfg.noise_specs.noise_type,
                 specs_kwargs=specs_kwargs,
@@ -240,7 +244,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
     elif name == 'ellipses_lotus':
         dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                          'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
-        ellipses_dataset = EllipsesDataset(**dataset_specs)
+        ellipses_dataset = EllipsesDataset(**dataset_specs, **image_dataset_kwargs)
         space = lotus.get_domain128()
         proj_space = lotus.get_proj_space128()
         dataset = ellipses_dataset.create_pair_dataset(ray_trafo=ray_trafo,
@@ -250,10 +254,18 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
                 specs_kwargs=specs_kwargs,
                 noise_seeds={'train': cfg.seed, 'validation': cfg.seed + 1,
                 'test': cfg.seed + 2})
-    elif name == 'ellipses_lotus_20' or name == 'ellipses_lotus_limited_45':
+    elif name in ['ellipses_lotus_20', 'ellipses_lotus_limited_45', 'rectangles_lotus_20', 'pascal_voc_lotus_20']:
         dataset_specs = {'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                          'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
-        ellipses_dataset = EllipsesDataset(**dataset_specs)
+        if name in ['ellipses_lotus_20', 'ellipses_lotus_limited_45']:
+            image_dataset = EllipsesDataset(**dataset_specs, **image_dataset_kwargs)
+        elif name in ['rectangles_lotus_20']:
+            image_dataset = RectanglesDataset(**dataset_specs, **image_dataset_kwargs)
+        elif name in ['pascal_voc_lotus_20']:
+            image_dataset = PascalVOCDataset(
+                    data_path=cfg.data_path, **dataset_specs, **image_dataset_kwargs)
+        else:
+            raise NotImplementedError
         space = lotus.get_domain128()
         proj_space_orig = lotus.get_proj_space128()
         angles_coord_vector = proj_space_orig.grid.coord_vectors[0][
@@ -264,7 +276,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
                 odl.uniform_partition_fromgrid(
                         odl.RectGrid(angles_coord_vector,
                                      proj_space_orig.grid.coord_vectors[1])))
-        dataset = ellipses_dataset.create_pair_dataset(ray_trafo=ray_trafo,
+        dataset = image_dataset.create_pair_dataset(ray_trafo=ray_trafo,
                 pinv_ray_trafo=smooth_pinv_ray_trafo,
                 domain=space, proj_space=proj_space,
                 noise_type=cfg.noise_specs.noise_type,
@@ -275,7 +287,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
         dataset_specs = {'data_path': cfg.data_path, 'shuffle': cfg.shuffle,
                          'zoom': cfg.zoom, 'zoom_fit': cfg.zoom_fit,
                          'random_rotation': cfg.random_rotation}
-        brain_dataset = ACRINFMISOBrainDataset(**dataset_specs)
+        brain_dataset = ACRINFMISOBrainDataset(**dataset_specs, **image_dataset_kwargs)
         space = brain_dataset.space
         proj_numel = cfg.geometry_specs.num_angles * cfg.geometry_specs.num_det_pixels
         proj_space = odl.rn(proj_numel, dtype=np.float32)
@@ -290,7 +302,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
         dataset_specs = {'diameter': cfg.disk_diameter,
                          'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                          'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
-        ellipses_dataset = DiskDistributedEllipsesDataset(**dataset_specs)
+        ellipses_dataset = DiskDistributedEllipsesDataset(**dataset_specs, **image_dataset_kwargs)
         space = ellipses_dataset.space
         proj_numel = cfg.geometry_specs.num_angles * cfg.geometry_specs.num_det_pixels
         proj_space = odl.rn(proj_numel, dtype=np.float32)
@@ -305,7 +317,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
         dataset_specs = {'in_circle_axis': cfg.in_circle_axis, 'use_mask': cfg.use_mask,
                         'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                         'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
-        ellipses_dataset = DiskDistributedNoiseMasksDataset(**dataset_specs)
+        ellipses_dataset = DiskDistributedNoiseMasksDataset(**dataset_specs, **image_dataset_kwargs)
         space = ellipses_dataset.space
         proj_numel = cfg.geometry_specs.num_angles * cfg.geometry_specs.num_det_pixels
         proj_space = odl.rn(proj_numel, dtype=np.float32)
@@ -320,7 +332,7 @@ def get_standard_dataset(name, cfg, return_ray_trafo_torch_module=True):
         dataset_specs = {'in_ball_axis': cfg.in_ball_axis,
                          'image_size': cfg.im_shape, 'train_len': cfg.train_len,
                          'validation_len': cfg.validation_len, 'test_len': cfg.test_len}
-        ellipsoids_dataset = EllipsoidsInBallDataset(**dataset_specs)
+        ellipsoids_dataset = EllipsoidsInBallDataset(**dataset_specs, **image_dataset_kwargs)
         space = ellipsoids_dataset.space
         proj_space = odl.uniform_discr(  # use astra vau order
                 min_pt=[-1., -np.pi, -1.], max_pt=[1., np.pi, 1.],  # dummy values

@@ -1,0 +1,69 @@
+# @package _group_
+defaults:
+  - trainer
+
+meta_trainer:
+  datasets_cfg_list:
+    -
+      base_cfg_filepath: cfgs/data/standard_ellipses_lotus_20.yaml
+      overrides:
+        noise_specs.noise_type: white
+        noise_specs.stddev: 0.05
+        seed: 1
+      image_dataset_kwargs:
+        fixed_seeds:
+          train: 1
+          validation: 2
+    -
+      base_cfg_filepath: cfgs/data/standard_rectangles_lotus_20.yaml
+      overrides:
+        noise_specs.noise_type: white
+        noise_specs.stddev: 0.05
+        seed: 1
+      image_dataset_kwargs:
+        fixed_seeds:
+          train: 1
+          validation: 2
+    -
+      base_cfg_filepath: cfgs/data/standard_pascal_voc_lotus_20.yaml
+      overrides:
+        noise_specs.noise_type: white
+        noise_specs.stddev: 0.05
+        seed: 1
+      image_dataset_kwargs:
+        fixed_seeds:
+          train: 1
+          validation: 2
+    -
+      base_cfg_filepath: cfgs/data/standard_ellipses_lotus_20.yaml
+      overrides:
+        noise_specs.noise_type: poisson
+        noise_specs.mu_max: 0.15
+        noise_specs.photons_per_pixel: 50000000
+        seed: 4
+      image_dataset_kwargs:
+        fixed_seeds:
+          train: 4
+          validation: 5
+    -
+      base_cfg_filepath: cfgs/data/standard_rectangles_lotus_20.yaml
+      overrides:
+        noise_specs.noise_type: poisson
+        noise_specs.mu_max: 0.15
+        noise_specs.photons_per_pixel: 50000000
+        seed: 4
+      image_dataset_kwargs:
+        fixed_seeds:
+          train: 4
+          validation: 5
+    -
+      base_cfg_filepath: cfgs/data/standard_pascal_voc_lotus_20.yaml
+      overrides:
+        noise_specs.noise_type: poisson
+        noise_specs.mu_max: 0.15
+        noise_specs.photons_per_pixel: 50000000
+        seed: 4
+      image_dataset_kwargs:
+        fixed_seeds:
+          train: 4
+          validation: 5

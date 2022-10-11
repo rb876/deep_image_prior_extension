@@ -176,18 +176,18 @@ class ObservationGroundTruthPairDataset(Dataset):
 
         def poisson_forward_func(ground_truth, random_gen,
             photons_per_pixel,
-            mu_water):
+            mu_max):
 
             # apply forward operator
             obs = np.asarray(self.ray_trafo(ground_truth))
             # noise model
-            obs *= mu_water
+            obs *= mu_max
             obs *= -1
             np.exp(obs, out=obs)
             obs *= photons_per_pixel
             noisy_obs = random_gen.poisson(obs)
             noisy_obs = np.maximum(1, noisy_obs) / photons_per_pixel
-            post_log_noisy_obs = np.log(noisy_obs) * (-1. / mu_water)
+            post_log_noisy_obs = np.log(noisy_obs) * (-1. / mu_max)
             return post_log_noisy_obs
 
         if random_gen is None:
@@ -199,7 +199,7 @@ class ObservationGroundTruthPairDataset(Dataset):
         elif self.noise_type == 'poisson':
             forward_func = partial(poisson_forward_func, random_gen=random_gen,
                                   photons_per_pixel=self.specs_kwargs['photons_per_pixel'],
-                                  mu_water=self.specs_kwargs['mu_water'])
+                                  mu_max=self.specs_kwargs['mu_max'])
         else:
             raise NotImplementedError
 

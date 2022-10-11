@@ -77,10 +77,6 @@ class ACRINFMISOBrainDataset(GroundTruthDataset):
         super().__init__(space=space)
 
     def generator(self, fold='train'):
-        """
-        Yield random ellipse phantom images using
-        :meth:`odl.phantom.ellipsoid_phantom`.
-        """
         seed = self.fixed_seeds.get(fold)
         r = np.random.default_rng(seed)
         dcm_files = self.dcm_file_list[fold].copy()

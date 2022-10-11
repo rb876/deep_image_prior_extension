@@ -257,7 +257,7 @@ class DeepImagePriorReconstructor():
         elif self.cfg.optim.loss_function == 'poisson':
             criterion = partial(poisson_loss,
                                 photons_per_pixel=self.cfg.optim.photons_per_pixel,
-                                mu_water=self.cfg.optim.mu_water)
+                                mu_max=self.cfg.optim.mu_max)
         else:
             warn('Unknown loss function, falling back to MSE')
             criterion = MSELoss()

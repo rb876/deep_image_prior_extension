@@ -1,0 +1,30 @@
+# @package _group_
+name: pascal_voc_lotus_20
+validation_data: shepp_logan
+test_data: lotus
+im_shape: 128
+train_len: 32000
+validation_len: 3200
+test_len: 0
+data_path: null  # insert path to folder containing the VOCdevkit folder, download from http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html
+seed: 1
+geometry_specs:
+  src_radius: 540
+  det_radius: 90
+  num_angles: 20
+  angles_subsampling:
+    start: 0
+    stop: null
+    step: 6
+    num_angles_orig: 120
+  num_det_pixels: 429
+  impl: 'matrix'
+  ray_trafo_filename: null  # insert path to "LotusData128.mat", download from: https://zenodo.org/record/1254204/files/LotusData128.mat?download=1
+noise_specs:
+  noise_type: white
+  stddev: 0.05
+implicit_scaling_except_for_test_data: 41.
+fbp_scaling_factor: 0.019221008882481495
+fbp_filter_type: 'Hann'
+fbp_frequency_scaling: 0.6
+ground_truth_filename: null  # insert path to "TVGroundTruthLotus128.mat", download from: https://zenodo.org/record/5574587/files/TVGroundTruthLotus128.mat?download=1

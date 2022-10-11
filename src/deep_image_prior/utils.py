@@ -23,7 +23,7 @@ def tv_loss_3d(x):
     dz = torch.abs(x[..., 1:, :, :] - x[..., :-1, :, :])
     return torch.mean(dx) + torch.mean(dy) + torch.mean(dz)
 
-def poisson_loss(y_pred, y_true, photons_per_pixel, mu_water):
+def poisson_loss(y_pred, y_true, photons_per_pixel, mu_max):
     """
     Loss corresponding to Poisson regression.
     References
@@ -32,11 +32,11 @@ def poisson_loss(y_pred, y_true, photons_per_pixel, mu_water):
     """
 
     def get_photons(y):
-        y = torch.exp(-y * mu_water) * photons_per_pixel
+        y = torch.exp(-y * mu_max) * photons_per_pixel
         return y
 
     def get_photons_log(y):
-        y = -y * mu_water + np.log(photons_per_pixel)
+        y = -y * mu_max + np.log(photons_per_pixel)
         return y
 
     y_true_photons = get_photons(y_true)
