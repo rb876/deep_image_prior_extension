@@ -85,8 +85,8 @@ class MetaTrainer():
 
         best_model_func_params = deepcopy(self.func_params)
         best_psnr = -np.inf
-        with tqdm() as pbar:
-            for it in tqdm(range(int(self.cfg.meta_trainer.num_iters))):
+        with tqdm(range(int(self.cfg.meta_trainer.num_iters))) as pbar:
+            for it in pbar:
                 id_tasks = [
                         random.randint(0, num_tasks-1) for _ in range(
                             self.cfg.meta_trainer.num_tasks_per_iter)
@@ -133,7 +133,6 @@ class MetaTrainer():
                 self.writer.add_scalar('psnr', np.mean(all_psnrs), it)
                 self.writer.add_scalar('lr', self.optimizer.param_groups[0]['lr'], it)
 
-                pbar.update(it)
                 pbar.set_description(f'loss: {all_loss.item()}, psnr: {np.mean(all_psnrs)}')
                 if ( (it + 1) % self.cfg.meta_trainer.eval_every_num_iters) == 0:
                     all_val_loss, all_val_psnrs = [], []
