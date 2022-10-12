@@ -2,6 +2,7 @@ import os
 import random
 import socket
 import datetime
+from itertools import islice
 import torch
 import numpy as np
 import functorch as ftch
@@ -137,7 +138,7 @@ class MetaTrainer():
                 if ( (it + 1) % self.cfg.meta_trainer.eval_every_num_iters) == 0:
                     all_val_loss, all_val_psnrs = [], []
                     for val_loader in data_loaders['validation']:
-                        for _, fbp, gt in val_loader:
+                        for _, fbp, gt in islice(val_loader, self.cfg.meta_trainer.num_val_iters_per_task):
                             fbp, gt = fbp.to(self.device), gt.to(self.device)
                             outputs = self.func_model_with_input(self.func_params, fbp)
                             loss = criterion(outputs, gt)

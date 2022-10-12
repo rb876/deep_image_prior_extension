@@ -28,6 +28,7 @@ meta_trainer:
   num_iters: 100000
   num_tasks_per_iter: 3
   eval_every_num_iters: 1000
+  num_val_iters_per_task: 100
   inner_loop_optim:
     lr: 1e-5
     weight_decay: 1e-5
