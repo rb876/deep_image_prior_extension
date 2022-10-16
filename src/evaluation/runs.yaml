@@ -27,6 +27,8 @@ reconstruction:
         name: no_stats_no_sigmoid_train_run2_epochs20
       - run_path: multirun/2021-10-11/21-40-56/
         name: no_stats_no_sigmoid_train_run2_epochs100_fixed_encoder
+      - run_path: multirun/2022-10-11/18-34-15/
+        name: no_stats_no_sigmoid_adversarial_pretraining_epochs100
     no_pretrain:
       - run_path: multirun/2021-10-09/23-17-58/
         name: no_stats_no_sigmoid
@@ -156,6 +158,10 @@ reconstruction:
     no_pretrain_fbp:
       - run_path: multirun/2022-05-01/22-16-38
         name: default
+  meta_pretraining_lotus_20:
+    pretrain_only_fbp:
+      - run_path: multirun/2022-10-14/17-57-37
+        name: no_stats_no_sigmoid_adversarial_pretraining_epochs_100
 
 # coordinator.py --multirun ...
 pretraining:
@@ -167,6 +173,8 @@ pretraining:
         name: no_stats_no_sigmoid_train_run1
       - run_path: multirun/2021-10-09/11-49-17/
         name: no_stats_no_sigmoid_train_run2
+      - run_path: multirun/2022-10-05/18-49-19/
+        name: no_stats_no_sigmoid_adversarial_pretraining
   ellipses_lotus_limited_45:
     pretrain: # same as pretrain_only_fbp
       - run_path: multirun/2021-10-22/17-09-41/
@@ -200,6 +208,12 @@ pretraining:
       - single_run_path: outputs/2022-04-27/11-30-58/
         name: default
 
+meta_pretraining:
+  lotus_20:
+    pretrain:  # same as pretrain_only_fbp
+      - run_path: multirun/2022-10-12/14-09-30/
+        name: default
+
 # validation_baseline.py ...
 validation_baseline:
   ellipses_lotus_20:
@@ -207,7 +221,7 @@ validation_baseline:
       - single_run_path: outputs/2021-10-10/11-57-23/
         name: no_stats_no_sigmoid
   ellipses_lotus_limited_45:
-    no_pretrain: 
+    no_pretrain:
       - single_run_path: multirun/2021-10-25/14-18-55/0/
         name: no_stats_no_sigmoid
   ellipses_walnut_120:
@@ -218,7 +232,7 @@ validation_baseline:
     no_pretrain:
       - single_run_path: outputs/2021-10-21/17-12-21/  # taken from ellipses_walnut_120
         name: no_stats_no_sigmoid
- 
+
 # validation.py ...
 validation:
   ellipses_lotus_20:

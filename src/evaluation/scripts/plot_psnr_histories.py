@@ -40,19 +40,21 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'runs.yaml'),
 # data = 'brain_walnut_120'
 # data = 'ellipses_walnut_120'
 # data = 'ellipsoids_walnut_3d'
-data = 'ellipsoids_walnut_3d_60'
+# data = 'ellipsoids_walnut_3d_60'
+data = 'meta_pretraining_lotus_20'
 
-# variant = ''
-variant = 'all'
+variant = ''
+# variant = 'all'
 # variant = 'checkpoints'
 # variant = 'checkpoints_epochs'
+# variant = 'adversarial'
 
 show_tv_in_inset = (variant == 'all' and not '3d' in data)
 
 use_best_output_psnr = False
 
 # Additional `run_spec` dict fields:
-# 
+#
 #     color : str, optional
 #         Line color.
 #     skip_psnr0 : bool, optional
@@ -185,6 +187,30 @@ if data == 'ellipses_lotus_20':
             'name_title': '',
             },
         ]
+    elif variant == 'adversarial':
+        runs_to_compare = [
+            {
+            'experiment': 'no_pretrain',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
+            },
+            {
+            'experiment': 'no_pretrain_fbp',
+            'name': 'no_stats_no_sigmoid',
+            'name_title': '',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_train_run2_epochs100',
+            'name_title': '',
+            },
+            {
+            'experiment': 'pretrain_only_fbp',
+            'name': 'no_stats_no_sigmoid_adversarial_pretraining_epochs100',
+            'name_title': 'Adversarial',
+            'color': '#ffaa00'
+            },
+        ]
 
 elif data == 'ellipses_lotus_limited_45':
     if (not variant) or variant == 'all':
@@ -222,8 +248,8 @@ elif data == 'ellipses_lotus_limited_45':
             },
             {
             'experiment': 'pretrain',
-            'name': 'no_stats_no_sigmoid_train_run1_epochs100', 
-            'name_title': '', 
+            'name': 'no_stats_no_sigmoid_train_run1_epochs100',
+            'name_title': '',
             },
             {
             'experiment': 'pretrain_only_fbp',
@@ -292,7 +318,7 @@ elif data == 'ellipses_lotus_limited_45':
             'name_title': '',
             },
         ]
-        
+
 
 elif data == 'brain_walnut_120':
     if (not variant) or variant == 'all':
@@ -647,11 +673,23 @@ elif data == 'ellipsoids_walnut_3d_60':
             },
         ]
 
+elif data == 'meta_pretraining_lotus_20':
+    runs_to_compare = [
+        {
+        'experiment': 'pretrain_only_fbp',
+        'name': 'no_stats_no_sigmoid_adversarial_pretraining_epochs_100',
+        'name_title': 'MAML',
+        'color': '#00ff00'
+        },
+    ]
+
 
 if not variant or variant == 'all':
     baseline_run_idx = 0
 elif variant == 'checkpoints' or variant == 'checkpoints_epochs':
     baseline_run_idx = -1
+elif variant == 'adversarial':
+    baseline_run_idx = 0
 
 title = None
 runs_title = ''  # None -> auto from run_specs
@@ -773,7 +811,7 @@ plot_settings_dict = {
             (-1875, 30000) if (not variant) or variant == 'all' else (
             # (-20, 100) if (not variant) or variant == 'all' else (
             (-2625, 30000) if variant == 'checkpoints' else (
-            (-4125, 30000) if variant == 'checkpoints_epochs' else 
+            (-4125, 30000) if variant == 'checkpoints_epochs' else
             (None, None)))
         ),
         'xlim_inset': (
@@ -1074,6 +1112,65 @@ plot_settings_dict = {
         'run_legend_handletextpad': (0.4 if variant == 'checkpoints' else None),
         'run_legend_columnspacing': (1.2 if variant == 'checkpoints' else None),
     },
+    'meta_pretraining_lotus_20': {
+        'xlim': (
+            (-625, 10000) if (not variant) or variant == 'all' else (
+            (-1125, 10000) if variant == 'checkpoints' else
+            (None, None))
+        ),
+        'xlim_inset': (
+            (-200, 6750) if (not variant) or variant == 'all' else (
+            (-50, 2250) if variant == 'checkpoints' else
+            (None, None))
+        ),
+        'ylim': (
+            (None, 34.05) if (not variant) or variant == 'all' else (
+            (None, 36.5) if variant == 'checkpoints' else
+            (None, None))
+        ),
+        'ylim_inset': (
+            (30.5, 31.85) if (not variant) or variant == 'all' else (
+            (30.75, 31.85) if variant == 'checkpoints' else
+            (29.25, 31.85))
+        ),
+        'psnr0_x_pos': -187.5,
+        'psnr0_x_shift_per_run_idx': {
+            0: -250,
+        } if (not variant) or variant == 'all' else ({
+            0: 0,
+        } if variant == 'checkpoints' else {}),
+        'rise_time_to_baseline_y_pos': 32.5,
+        'rise_time_to_baseline_y_shift_per_run_idx': {
+        } if not variant else ({
+        } if variant == 'all' else ({
+            0: 0.,
+        } if variant == 'checkpoints' else {})),
+        'zorder_per_run_idx': {
+        } if (not variant) or variant == 'all' else ({
+            0: 2.4,
+        } if variant == 'checkpoints' else {}),
+        'inset_axes_rect': (
+            [0.255, 0.175, 0.725, 0.55]
+            if (not variant) or variant == 'all' else (
+            [0.265, 0.175, 0.715, 0.5]
+            if variant == 'checkpoints' else
+            [0.255, 0.175, 0.725, 0.55])
+        ),
+        'inset_axes_rect_border': (
+            [0.085, 0.0675] if (not variant) or variant == 'all' else (
+            [0.07, 0.0675] if variant == 'checkpoints' else
+            [0.085, 0.0675])
+        ),
+        'tv_text_shift': [30, 0.02],
+        'run_legend_bbox_to_anchor': (
+            (0.5, -0.125) if (not variant) or variant == 'all' else (
+            (0.48, -0.125) if variant == 'checkpoints' else
+            (0.5, -0.125))
+        ),
+        'run_legend_loc': 'upper center',
+        'run_legend_handletextpad': (0.6 if variant == 'checkpoints' else None),
+        'run_legend_columnspacing': (1.5 if variant == 'checkpoints' else None),
+    },
 }
 
 eval_settings_dict = {
@@ -1107,6 +1204,11 @@ eval_settings_dict = {
         'psnr_steady_stop': None,
         'rise_time_to_baseline_remaining_psnr': 0.1,
     },
+    'meta_pretraining_lotus_20': {
+        'psnr_steady_start': -5000,
+        'psnr_steady_stop': None,
+        'rise_time_to_baseline_remaining_psnr': 0.1,
+    }
 }
 
 data_title = data_title_dict[data]
@@ -1188,11 +1290,12 @@ for run_spec in runs_to_compare:
         assert all((cfg['data']['name'] == data for cfg in cfgs))
     except AssertionError:
         data_name_valid = (
-                data in ['ellipses_walnut_120', 'brain_walnut_120'] and
-                all((not cfg['mdl']['load_pretrain_model']) and
-                     cfg['data']['name'] in [
-                            'ellipses_walnut_120', 'brain_walnut_120']
-                    for cfg in cfgs))
+                data == 'meta_pretraining_lotus_20' or (
+                    data in ['ellipses_walnut_120', 'brain_walnut_120'] and
+                    all((not cfg['mdl']['load_pretrain_model']) and
+                        cfg['data']['name'] in [
+                                'ellipses_walnut_120', 'brain_walnut_120']
+                        for cfg in cfgs)))
         if not data_name_valid:
             raise
     swa = cfgs[0]['mdl']['load_pretrain_model'] and uses_swa_weights(cfgs[0])

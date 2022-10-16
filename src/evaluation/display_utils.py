@@ -18,6 +18,7 @@ data_title_dict = {
     'ellipses_walnut_120': 'Ellipses-Walnut (Sparse 120)',
     'ellipsoids_walnut_3d': 'Ellipsoids-Walnut (3D Sparse 20)',
     'ellipsoids_walnut_3d_60': 'Ellipsoids-Walnut (3D Sparse 60)',
+    'meta_pretraining_lotus_20': 'MAML Lotus (Sparse 20)',
 }
 
 experiment_color_dict = {
@@ -46,7 +47,7 @@ def get_title_from_run_spec(run_spec):
         ' [{}]'.format(name_title) if name_title else '',
         title_suffix,
         ])
-    
+
     return title
 
 def get_data_title_full(data, validation_run):

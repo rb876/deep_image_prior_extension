@@ -1,6 +1,7 @@
 # these numbers are obtained manually by selecting the maximum final PSNR value
 # from multiple runs with different gamma values
 ellipses_lotus_20: 30.73  # (no relu) lr=0.0005 gamma=0.0001 iterations=5000 (baselines/multirun/2021-10-19/00-32-16/1/)
+meta_pretraining_lotus_20: 30.73  # (no relu) lr=0.0005 gamma=0.0001 iterations=5000 (baselines/multirun/2021-10-19/00-32-16/1/)
 ellipses_lotus_limited_45: 29.62  # (no relu) lr=0.0005 gamma=4e-05 iterations=5000 (baselines/multirun/2021-10-25/22-14-07/8/)
 brain_walnut_120: 31.67  # (no relu) lr=0.0005 gamma=4e-07 iterations=10000, taken from ellipses_walnut_120
 ellipses_walnut_120: 31.67  # (no relu) lr=0.0005 gamma=4e-07 iterations=10000 (baselines/multirun/2021-10-19/14-32-36)
