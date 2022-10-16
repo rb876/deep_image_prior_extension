@@ -1007,19 +1007,29 @@ for i, (run_spec, cfgs, experiment_names, histories) in enumerate(zip(
     best_psnr_data = [best_psnr_histories[median_psnr_rep]] if use_only_median_rep else best_psnr_histories
     for best_psnr_history in best_psnr_data:
         h = ax_psnr.plot(best_psnr_history, label=label, color=color,
-                        linestyle=linestyle, linewidth=2,
+                        linestyle=(linestyle if show_stop_times else 'dashed'), linewidth=2,
                         zorder=zorder)
     run_handles += h
+    best_psnr_handle = h[0]
+    psnr_data = [psnr_histories[median_psnr_rep]] if use_only_median_rep else psnr_histories
+    for psnr_history in psnr_data:
+        h = ax_psnr.plot(psnr_history, label=label, color=color,
+                        linestyle='-', linewidth=2,
+                        zorder=zorder-0.5, alpha=0.5)
+    psnr_handle = h[0]
 
     best_loss_data = [best_loss_histories[median_psnr_rep]] if use_only_median_rep else best_loss_histories
     for best_loss_history in best_loss_data:
         h = ax_loss.plot(best_loss_history, label=label, color=color,
-                        linestyle=linestyle, linewidth=2,
+                        linestyle=(linestyle if show_stop_times else 'dashed'), linewidth=2,
                         zorder=zorder)
-    # for loss_history in loss_histories:
-    #     h = ax_loss.plot(loss_history, label=label, color=color,
-    #                     linestyle=linestyle, linewidth=2,
-    #                     zorder=zorder, alpha=0.15)
+    best_loss_handle = h[0]
+    loss_data = [loss_histories[median_psnr_rep]] if use_only_median_rep else loss_histories
+    for loss_history in loss_data:
+        h = ax_loss.plot(loss_history, label=label, color=color,
+                        linestyle='-', linewidth=2,
+                        zorder=zorder-0.5, alpha=0.5)
+    loss_handle = h[0]
 
     if show_stop_times:
         x_stop_times = sorted([
@@ -1101,9 +1111,15 @@ ax_loss.set_xlim(xlim)
 ax_loss_diff.set_xlim(plot_settings_dict[data].get(
         'xlim_loss_diff', (None, None)))
 
-ax_psnr.set_title('$\mathrm{PSNR}(\\varphi_{\\theta^{[i]}_{\\mathrm{min\u2010loss}}}(z); x)$')
+if show_stop_times:
+    ax_psnr.set_title('$\mathrm{PSNR}(\\varphi_{\\theta^{[i]}_{\\mathrm{min\u2010loss}}}(z); x)$')
+else:
+    ax_psnr.set_title('PSNR')
 ax_psnr.set_ylabel('PSNR [dB]')
-ax_loss.set_title('DIP+TV loss $l_t(\\theta^{[i]}_{\\mathrm{min\u2010loss}})$')
+if show_stop_times:
+    ax_loss.set_title('DIP+TV loss $l_t(\\theta^{[i]}_{\\mathrm{min\u2010loss}})$')
+else:
+    ax_loss.set_title('DIP+TV loss')
 ax_loss_diff.set_title(
         'Moving average of $|l_t(\\theta^{[i+1]})-l_t(\\theta^{[i]})|$',
         loc='right')
@@ -1142,6 +1158,21 @@ if show_stop_times:
             ncol=1, framealpha=1.,
             )
     symbol_legend_loss.set_zorder(50.)
+else:
+    best_loss_handle = copy(best_loss_handle)
+    best_loss_handle.set_color('gray')
+    loss_handle = copy(loss_handle)
+    loss_handle.set_color('gray')
+    symbol_legend_loss = ax_loss.legend(
+            [loss_handle, best_loss_handle],
+            ['$l_t(\\theta^{[i]})$', '$l_t(\\theta^{[i]}_{\\mathrm{min\u2010loss}})$'],
+            bbox_to_anchor=plot_settings_dict[data].get(
+                    'symbol_legend_loss_bbox_to_anchor', (1., 0.825)),
+            loc=plot_settings_dict[data].get('symbol_legend_loss_loc', 'upper right'),
+            ncol=1, framealpha=1.,
+            )
+    symbol_legend_loss.set_zorder(50.)
+
 if show_rise_times:
     rise_time_handle = copy(rise_time_handles[0])
     rise_time_handle.set_color('gray')
@@ -1149,6 +1180,20 @@ if show_rise_times:
             [rise_time_handle],
             ['Rise times'],
             handler_map={rise_time_handle: HandlerLine2D(numpoints=3)},
+            bbox_to_anchor=plot_settings_dict[data].get(
+                    'symbol_legend_psnr_bbox_to_anchor', (1., 0.825)),
+            loc=plot_settings_dict[data].get('symbol_legend_psnr_loc', 'upper right'),
+            ncol=1, framealpha=1.,
+            )
+    symbol_legend_psnr.set_zorder(50.)
+else:
+    best_psnr_handle = copy(best_psnr_handle)
+    best_psnr_handle.set_color('gray')
+    psnr_handle = copy(psnr_handle)
+    psnr_handle.set_color('gray')
+    symbol_legend_psnr = ax_psnr.legend(
+            [best_psnr_handle, psnr_handle],
+            ['$\mathrm{PSNR}(\\varphi_{\\theta^{[i]}_{\\mathrm{min\u2010loss}}}(z); x)$', '$\mathrm{PSNR}(\\varphi_{\\theta^{[i]}}(z); x)$'],
             bbox_to_anchor=plot_settings_dict[data].get(
                     'symbol_legend_psnr_bbox_to_anchor', (1., 0.825)),
             loc=plot_settings_dict[data].get('symbol_legend_psnr_loc', 'upper right'),
